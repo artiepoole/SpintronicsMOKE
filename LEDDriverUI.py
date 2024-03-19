@@ -4,9 +4,9 @@ import sys
 import time
 
 
-class LEDDriver_UI(QtWidgets.QMainWindow):
+class LEDDriverUI(QtWidgets.QMainWindow):
     def __init__(self):
-        super(LEDDriver_UI, self).__init__()  # Call the inherited classes __init__ method
+        super(LEDDriverUI, self).__init__()  # Call the inherited classes __init__ method
         uic.loadUi('res/LED_driver_UI.ui', self)  # Load the .ui file
         self.show()
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     sys.excepthook = my_exception_hook
 
     app = QtWidgets.QApplication(sys.argv)
-    window = LEDDriver_UI()
+    window = LEDDriverUI()
 
     try:
         sys.exit(app.exec_())
