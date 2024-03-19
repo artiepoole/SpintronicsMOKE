@@ -1,8 +1,7 @@
 from pylablib.devices import DCAM
-import numpy as np
 import time
 import cv2
-from LampController import LampController
+from WrapperClasses.LampController import LampController
 
 cam = DCAM.DCAMCamera(idx=0)
 cam.set_attribute_value("EXPOSURE TIME", 0.05)
