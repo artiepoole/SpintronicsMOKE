@@ -7,7 +7,7 @@ import time
 class LEDDriverUI(QtWidgets.QMainWindow):
     def __init__(self):
         super(LEDDriverUI, self).__init__()  # Call the inherited classes __init__ method
-        uic.loadUi('res/LED_driver_UI.ui', self)  # Load the .ui file
+        uic.loadUi(r'C:\Users\User\PycharmProjects\SpintronicsMOKE\res\ArtieLab.ui', self)  # Load the .ui file
         self.show()
 
         self.button_left_led.toggled.connect(self.__on_left)
@@ -20,6 +20,13 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         self.button_long_trans.clicked.connect(self.__on_long_trans)
         self.button_pure_long.clicked.connect(self.__on_pure_long)
         self.button_pure_trans.clicked.connect(self.__on_pure_trans)
+
+        self.button_left_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
+        self.button_right_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
+        self.button_up_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
+        self.button_down_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
+
+
 
         self.controller = LampController()
         self.controller.disable_all()
@@ -102,10 +109,12 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         self.controller.enable_assortment(self.__left, self.__right, self.__up, self.__down)
 
     def closeEvent(self, event):
+        self.close()
+
+    def close(self):
         self.controller.disable_all()
         time.sleep(0.1)
         self.controller.close()
-
 
 if __name__ == '__main__':
     # Back up the reference to the exceptionhook
@@ -124,6 +133,7 @@ if __name__ == '__main__':
     sys.excepthook = my_exception_hook
 
     app = QtWidgets.QApplication(sys.argv)
+    app.setStyle('fusion')
     window = LEDDriverUI()
 
     try:
