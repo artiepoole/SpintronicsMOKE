@@ -92,8 +92,20 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QCheckBox::indicator {
+width: 50px;
+height: 50px;
+}</string>
+          </property>
           <property name="text">
            <string/>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>50</width>
+            <height>50</height>
+           </size>
           </property>
           <property name="autoExclusive">
            <bool>false</bool>
@@ -108,8 +120,20 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QCheckBox::indicator {
+width: 50px;
+height: 50px;
+}</string>
+          </property>
           <property name="text">
            <string/>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>50</width>
+            <height>50</height>
+           </size>
           </property>
           <property name="autoExclusive">
            <bool>false</bool>
@@ -124,8 +148,20 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QCheckBox::indicator {
+width: 50px;
+height: 50px;
+}</string>
+          </property>
           <property name="text">
            <string/>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>50</width>
+            <height>50</height>
+           </size>
           </property>
           <property name="autoExclusive">
            <bool>false</bool>
@@ -140,8 +176,20 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QCheckBox::indicator {
+width: 50px;
+height: 50px;
+}</string>
+          </property>
           <property name="text">
            <string/>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>50</width>
+            <height>50</height>
+           </size>
           </property>
           <property name="autoExclusive">
            <bool>false</bool>
