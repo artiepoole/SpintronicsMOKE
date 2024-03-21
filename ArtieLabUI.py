@@ -15,7 +15,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         uic.loadUi('res/ArtieLab.ui', self)  # Load the .ui file
         self.show()
 
-
         self.controller = LampController()
         self.controller.disable_all()
         self.__up = False
@@ -28,17 +27,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.height, self.width = self.camera_grabber.get_detector_size()
         self.camera_grabber.moveToThread(self.camera_thread)
 
-
         self.frame_processor_thread = QtCore.QThread()
         self.frame_processor = FrameProcessor()
         self.frame_processor.moveToThread(self.frame_processor_thread)
 
-
         self.__connect_signals()
         self.__prepare_view()
         self.camera_grabber.start()
-
-
 
     def __prepare_view(self):
         self.stream_window = 'HamamatsuView'
@@ -83,11 +78,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.frame_processed_signal.connect(self.__on_processed_frame)
         self.camera_grabber.frame_from_camera_ready_signal.connect(self.__on_new_raw_frame)
 
-
     def __on_image_processing_spin_box_change(self, ignored_event):
         self.frame_processor.set_percentile_lower(self.spin_percentile_lower.value())
         self.frame_processor.set_percentile_upper(self.spin_percentile_upper.value())
         self.frame_processor.set_clip_limit(self.spin_clip.value())
+
     def __on_image_processing_mode_change(self, mode):
         self.frame_processor.set_mode(mode)
         match mode:
@@ -208,9 +203,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # time.sleep(0.1)
         self.controller.close()
         cv2.destroyAllWindows()
-        QtCore.QMetaObject.invokeMethod(self.camera_grabber, 'close')
-
-
+        self.camera_grabber.running = False
 
 
 if __name__ == '__main__':
@@ -224,6 +217,7 @@ if __name__ == '__main__':
         # Call the normal Exception hook after
         sys._excepthook(exctype, value, traceback)
         sys.exit(1)
+
 
     # Set the exception hook to our wrapping function
     sys.excepthook = my_exception_hook

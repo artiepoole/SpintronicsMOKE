@@ -11,9 +11,14 @@ class CameraGrabber(QtCore.QObject):
     running = False
 
     def start(self):
+        self.cam.setup_acquisition()
+        self.cam.start_acquisition()
         self.running = True
         while self.running:
-            self.frame_from_camera_ready_signal.emit(self.cam.snap())
+            frame = self.cam.read_newest_image()
+            if frame is not None:
+                self.frame_from_camera_ready_signal.emit(frame)
+        self.cam.stop_acquisition()
 
     def snap(self):
         self.frame_from_camera_ready_signal.emit(self.cam.snap())

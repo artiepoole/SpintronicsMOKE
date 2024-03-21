@@ -2,6 +2,7 @@ from pylablib.devices import DCAM
 import time
 import cv2
 from WrapperClasses.LampController import LampController
+import skimage
 
 cam = DCAM.DCAMCamera(idx=0)
 cam.set_attribute_value("EXPOSURE TIME", 0.05)
@@ -31,10 +32,15 @@ if fullscreen:
 lampController = LampController()
 lampController.enable_left()
 
+cam.setup_acquisition()
+cam.start_acquisition()
+
 running = True  # press esc to close
 while running:
-    frame = cam.snap()
-    cv2.imshow(stream_window, frame)
+    frame = cam.read_newest_image()
+    if frame is not None:
+        cv2.imshow(stream_window, skimage.exposure.equalize_hist(frame))
+
     k = cv2.waitKey(10)
     if k == 27:
         running = False

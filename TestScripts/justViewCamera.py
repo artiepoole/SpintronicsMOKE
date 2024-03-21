@@ -2,6 +2,7 @@ from pylablib.devices import DCAM
 import numpy as np
 import time
 import cv2
+import skimage
 
 # https://scikit-image.org/docs/stable/auto_examples/color_exposure/plot_equalize.html
 
@@ -28,13 +29,14 @@ cv2.moveWindow(
     0)
 
 
-scaler = 1e7
 start_time = time.time()
 running = True
 while running:
-    frame = np.array(cam.snap())
+    frame = cam.read_newest_image()
+    if frame is not None:
+        cv2.imshow(stream_window, frame)
     # cv2.imshow(stream_window, frame)
-    cv2.imshow(stream_window, cv2.normalize(frame, None, scaler))
+    cv2.imshow(stream_window, skimage.exposure.equalize_hist(frame))
 
     # cv2.imshow(stream_window, cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX))
     k = cv2.waitKey(10)
