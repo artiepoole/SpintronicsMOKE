@@ -13,10 +13,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         super(ArtieLabUI, self).__init__()  # Call the inherited classes __init__ method
         uic.loadUi('res/ArtieLab.ui', self)  # Load the .ui file
+        self.showMaximized()
         self.show()
 
-        self.controller = LampController()
-        self.controller.disable_all()
+        self.lamp_controller = LampController()
+        self.lamp_controller.disable_all()
         self.__up = False
         self.__down = False
         self.__left = False
@@ -33,6 +34,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.__connect_signals()
         self.__prepare_view()
+
+        # TODO: IMPLEMENT SETTING EXPOSURE TIME TO THE SETTING FROM GUI ON START
         self.camera_grabber.start()
 
     def __prepare_view(self):
@@ -74,6 +77,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_right_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
         self.button_up_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
         self.button_down_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
+        self.combo_targetfps.currentIndexChanged.connect(self.__on_exposure_time_changed)
+
 
         self.frame_processor.frame_processed_signal.connect(self.__on_processed_frame)
         self.camera_grabber.frame_from_camera_ready_signal.connect(self.__on_new_raw_frame)
@@ -184,7 +189,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.__update_controller()
 
     def __update_controller(self):
-        self.controller.enable_assortment(self.__left, self.__right, self.__up, self.__down)
+        self.lamp_controller.enable_assortment_pairs(self.__left, self.__right, self.__up, self.__down)
 
     def __on_new_raw_frame(self, raw_frame):
         self.frame_processor.process_frame(raw_frame)
@@ -195,38 +200,44 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         cv2.imshow(self.stream_window, processed_frame)
         cv2.waitKey(1)
 
+    def __on_exposure_time_changed(self, exposure_time_idx):
+        # print(exposure_time)
+        self.camera_grabber.running = False
+        self.camera_grabber.set_exposure_time(exposure_time_idx)
+
     def closeEvent(self, event):
         self.close()
 
     def close(self):
-        self.controller.disable_all()
+
+        self.lamp_controller.disable_all()
         # time.sleep(0.1)
-        self.controller.close()
-        cv2.destroyAllWindows()
+        self.lamp_controller.close()
+
         self.camera_grabber.running = False
+        self.camera_thread.exit()
+        self.frame_processor_thread.exit()
+        cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
-    # Back up the reference to the exceptionhook
-    sys._excepthook = sys.excepthook
-
-
-    def my_exception_hook(exctype, value, traceback):
-        # Print the error and traceback
-        print(exctype, value, traceback)
-        # Call the normal Exception hook after
-        sys._excepthook(exctype, value, traceback)
-        sys.exit(1)
-
-
-    # Set the exception hook to our wrapping function
-    sys.excepthook = my_exception_hook
+    # # Back up the reference to the exceptionhook
+    # sys._excepthook = sys.excepthook
+    #
+    #
+    # def my_exception_hook(exctype, value, traceback):
+    #     # Print the error and traceback
+    #     print(exctype, value, traceback)
+    #     # Call the normal Exception hook after
+    #     sys._excepthook(exctype, value, traceback)
+    #     sys.exit(1)
+    #
+    #
+    # # Set the exception hook to our wrapping function
+    # sys.excepthook = my_exception_hook
 
     app = QtWidgets.QApplication(sys.argv)
     app.setStyle('fusion')
     window = ArtieLabUI()
-
-    try:
-        sys.exit(app.exec_())
-    except:
-        print("Exiting")
+    app.exec_()
+    app.exit()
