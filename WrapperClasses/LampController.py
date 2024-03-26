@@ -3,6 +3,9 @@ from ctypes import *
 import numpy as np
 from nidaqmx.constants import LineGrouping, AcquisitionType
 from nidaqmx.stream_writers import DigitalSingleChannelWriter
+from itertools import chain
+
+flatten = chain.from_iterable
 
 
 class LampController:
@@ -12,11 +15,13 @@ class LampController:
         self.__LEFT_CONST = 1
         self.__RIGHT_CONST = 2
 
+
         self.__SCK_CONST = 2
         self.__DATA_CONST = 4
         self.__SS_CONST = 8
         self.__MODE_CONST = 16
-
+        self.__resting_state_noSPI = self.__DATA_CONST + self.__SS_CONST
+        self.__resting_state_SPI = self.__DATA_CONST + self.__SS_CONST + self.__MODE_CONST
         self.dev = nidaq.system.device.Device('Dev1')
         self.dev.reset_device()
 
@@ -25,10 +30,12 @@ class LampController:
         self.TTL_output_task.do_channels.add_do_chan('Dev1/port0/line0:7')
         self.TTL_stream = DigitalSingleChannelWriter(self.TTL_output_task.out_stream, True)
         self.SPI_task = nidaq.Task()
+
         self.SPI_task.do_channels.add_do_chan('Dev1/port1/line1:4')
-        self.SPI_stream = DigitalSingleChannelWriter(self.SPI_task.out_stream)
-        self.SPI_stream.write_one_sample_port_byte(self.__SS_CONST)  # set SS high
+        self.SPI_stream = DigitalSingleChannelWriter(self.SPI_task.out_stream, True)
+        self.SPI_task.write(self.__resting_state_noSPI)
         self.__SPI_enabled = False
+        self.enable_SPI()
 
     def disable_all(self):
         if self.__SPI_enabled:
@@ -66,9 +73,10 @@ class LampController:
         :return:
         '''
         if self.__SPI_enabled:
+            print("disabling SPI")
             self.disable_SPI()
         self.TTL_stream.write_one_sample_port_byte(
-            [left * self.__LEFT_CONST + right * self.__RIGHT_CONST + up * self.__UP_CONST + down * self.__DOWN_CONST])
+            left * self.__LEFT_CONST + right * self.__RIGHT_CONST + up * self.__UP_CONST + down * self.__DOWN_CONST)
 
     def close(self):
         self.TTL_output_task.close()
@@ -76,41 +84,53 @@ class LampController:
         self.dev.reset_device()
 
     def enable_SPI(self):
-        self.SPI_task.write(self.__SS_CONST + self.__MODE_CONST)
-        time.sleep(50e-3)# Set SS high and mode high
+        self.SPI_task.write(self.__resting_state_SPI)
+        time.sleep(50e-3)
         self.__SPI_enabled = True
 
     def disable_SPI(self):
-        self.SPI_task.write(self.__SS_CONST)
-        time.sleep(50e-3)  # Set SS high and mode low
+        self.SPI_task.write(self.__resting_state_noSPI)
+        time.sleep(50e-3)
         self.__SPI_enabled = False
 
     def write_SPI(self, command, value):
-        self.enable_SPI()
-        command_array = [int(i) for i in list(format(command, '08b'))]
-        # command_array.reverse()
-        value_array = [int(i) for i in list(format(value, '08b'))]
-        # value_array.reverse()
-        # self.SPI_task.write(self.__MODE_CONST + self.__SS_CONST)  # set SS high and mode high to enable SPI
-        self.SPI_task.write(self.__MODE_CONST)  # set ss low 5ms before transmission
-        # time.sleep(10e-5)
-        for bit in command_array:
-            self.SPI_task.write(self.__DATA_CONST * bit + self.__MODE_CONST) # Set the data and SS low before clock signal
-            # time.sleep(2e-5)
-            self.SPI_task.write(self.__DATA_CONST * bit + self.__SCK_CONST + self.__MODE_CONST)  # Raise the clock
-            # time.sleep(2e-5)
-            self.SPI_task.write(self.__DATA_CONST * bit + self.__MODE_CONST)  # Lower the clock
-            # time.sleep(2e-5)
-        # time.sleep(5e-5)  # delay between bytes
-        for bit in value_array:
-            self.SPI_task.write(self.__DATA_CONST * bit + self.__MODE_CONST)  # Set the data before clock signal
-            # time.sleep(2e-5)
-            self.SPI_task.write(self.__DATA_CONST * bit + self.__SCK_CONST + self.__MODE_CONST)  # Raise the clock
-            # time.sleep(2e-5)
-            self.SPI_task.write(self.__DATA_CONST * bit + self.__MODE_CONST)  # Lower the clock
-            # time.sleep(2e-5)
-        # time.sleep(3e-5)  # total of 5ms after data before disabling SPI
-        self.SPI_task.write(self.__SS_CONST + self.__MODE_CONST)  # Set SS high and mode high
+        '''
+        Constructs a command message and sends it.
+        :param command:
+        :param value:
+        :return:
+        '''
+
+        if not self.__SPI_enabled:
+            self.enable_SPI()
+
+        mode_array = [self.__MODE_CONST] * 48
+        #  ss_array = [0] * 32   # Since this is only added and its always zero, we can ignore this.
+
+        command_array = [int(i) * self.__DATA_CONST for i in list(format(command, '08b'))]
+        command_array = list(flatten(zip(command_array, command_array, command_array)))  # doubles the data: 10101010 -> 1100110011001100
+
+        value_array = [int(i) * self.__DATA_CONST for i in list(format(value, '08b'))]
+        value_array = list(flatten(zip(value_array, value_array, value_array)))  # doubles the data: 10101010 -> 1100110011001100
+
+        byte_array = command_array + value_array
+
+        clock_array = [0, self.__SCK_CONST, 0] * 16   # total length of 32
+
+        write_array = [self.__MODE_CONST + self.__DATA_CONST]  # Set SS low before the transfer.
+
+        time.sleep(100e-6)
+        for bit in range(len(clock_array)):
+            write_array.append(clock_array[bit] + byte_array[bit] + mode_array[bit])  # append the data. SS is always zero.
+
+        print(write_array)
+        for bit in write_array:
+            self.SPI_stream.write_one_sample_port_byte(bit)
+            time.sleep(50e-6)
+
+        self.SPI_stream.write_one_sample_port_byte(self.__resting_state_SPI - self.__SS_CONST)
+        time.sleep(100e-6)
+        self.SPI_stream.write_one_sample_port_byte(self.__resting_state_SPI)
 
 
 if __name__ == '__main__':
@@ -118,14 +138,34 @@ if __name__ == '__main__':
 
     controller = LampController()
     controller.disable_all()
-    time.sleep(1)
-    controller.write_SPI(160, 85)
-    time.sleep(3)
-    # controller.enable_assortment(True, True, True, True)
-    # time.sleep(5)
-    controller.close()
     # time.sleep(1)
+    controller.enable_left()
+    time.sleep(1)
+    # Sets brightness of all LEDs to max
+    controller.write_SPI(int('0xB9', 16), int('0xB4', 16))
+    time.sleep(1)# Swaps between alterneating even and odd LEDs all on
+    for loop in range(100):
+        controller.write_SPI(int('0xA0', 16), int('0x50', 16))
+        time.sleep(0.1)
+        controller.write_SPI(int('0xA0', 16),  int('0x05', 16))
+        time.sleep(0.1)
+    # print("enable all?")
+    # controller.TTL_stream.write_one_sample_port_byte(15)
+    # print("enable all?")
+    # time.sleep(3)
+    # controller.enable_assortment(True, True, True, True)
+    # print("enable all!")
+    # controller.enable_assortment(True, True, True, True)
+    # time.sleep(3)
     # controller.close()
+    # time.sleep(1)
+    # for i in range(20):
+    #     controller.enable_SPI()
+    #
+    #     controller.disable_SPI()
+
+
+    controller.close()
 
     # for i in range(100):
     #     controller.enable_left()
