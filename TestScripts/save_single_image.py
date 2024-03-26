@@ -31,7 +31,7 @@ if fullscreen:
         0)
 
 lampController = LampController()
-lampController.enable_left()
+lampController.enable_left_pair()
 
 time.sleep(1)
 
