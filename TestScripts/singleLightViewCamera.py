@@ -30,7 +30,7 @@ if fullscreen:
         0)
 
 lampController = LampController()
-lampController.enable_left()
+lampController.enable_left_pair()
 
 cam.setup_acquisition()
 cam.start_acquisition()
