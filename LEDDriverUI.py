@@ -106,7 +106,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         self.__update_controller()
 
     def __update_controller(self):
-        self.controller.enable_assortment(self.__left, self.__right, self.__up, self.__down)
+        self.controller.enable_assortment_pairs(self.__left, self.__right, self.__up, self.__down)
 
     def closeEvent(self, event):
         self.close()
