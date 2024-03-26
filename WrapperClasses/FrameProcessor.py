@@ -14,7 +14,6 @@ class FrameProcessor(QtCore.QObject):
     p_low = 0
     p_high = 100
     clip = 0.03
-    __is_running = True
 
     def update_settings(self, settings):
         '''
