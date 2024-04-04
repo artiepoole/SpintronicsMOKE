@@ -4,6 +4,7 @@ import numpy as np
 from nidaqmx.constants import LineGrouping, AcquisitionType
 from nidaqmx.stream_writers import DigitalSingleChannelWriter
 from itertools import chain
+import time
 
 flatten = chain.from_iterable
 
@@ -34,7 +35,8 @@ class LampController:
         self.SPI_stream = DigitalSingleChannelWriter(self.SPI_task.out_stream, True)
         self.SPI_task.write(self.__resting_state_noSPI)
         self.__SPI_enabled = False
-        self.enable_spi()  # not sure whether to enable or not at the start but it does not matter, really.
+        self.set_all_brightness(180)
+
 
     def disable_all(self):
         if self.__SPI_enabled:
@@ -62,20 +64,20 @@ class LampController:
             self.disable_spi()
         self.TTL_stream.write_one_sample_port_byte(self.__DOWN_CONST)
 
-    def enable_assortment_pairs(self, left, right, up, down):
+    def enable_assortment_pairs(self, pairs):
         """
 
-        :param bool left: True to enable left pair
-        :param bool right: True to enable right  pair
-        :param bool up: True to enable up pair
-        :param bool down: True to enable down pair
+        :param dict pairs: dictionary of booleans containing "left", "right", "up", "down".
         :return:
         """
         if self.__SPI_enabled:
             print("disabling SPI")
             self.disable_spi()
         self.TTL_stream.write_one_sample_port_byte(
-            left * self.__LEFT_CONST + right * self.__RIGHT_CONST + up * self.__UP_CONST + down * self.__DOWN_CONST)
+            pairs["left"] * self.__LEFT_CONST +
+            pairs["right"] * self.__RIGHT_CONST +
+            pairs["up"] * self.__UP_CONST +
+            pairs["down"] * self.__DOWN_CONST)
 
     def close(self):
         self.TTL_output_task.close()
@@ -95,13 +97,26 @@ class LampController:
     def enable_leds(self, led_byte: int):
         self._write_spi(int('0xA0', 16), led_byte)
 
-    def enable_leds_bools(self, led0: bool, led1: bool, led2: bool, led3: bool, led4: bool, led5: bool, led6: bool,
-                          led7: bool):
-        self.enable_leds(led0 * 1 + led1 * 2 + led2 * 4 + led3 * 8 + led4 * 16 + led5 * 32 + led6 * 64 + led7 * 128)
+    def set_all_brightness(self, brightness: int):
+        """
+        Set the brightness of all LEDs simultaneously
+        :param brightness: the brightness between 0 and 180
+        :return:
+        """
+        if not self.__SPI_enabled:
+            self.enable_spi()
+        self._write_spi(int('0xA9', 16), brightness)
 
-    def enable_leds_list(self, leds: list):
-        values = [1, 2, 4, 8, 16, 32, 64, 128]
-        self.enable_leds(sum([a * b for a, b in zip(leds, values)]))
+    def set_one_brightness(self, brightness: int, led: int):
+        """
+        Set the brightness of one LED at a time
+        :param brightness: the brightness between 0 and 180
+        :param led: Integer value for LEDS from 1 to 8
+        :return:
+        """
+        if not self.__SPI_enabled:
+            self.enable_spi()
+        self._write_spi(int('0xA0', 16)+led, brightness)
 
     def _write_spi(self, command, value):
         """
@@ -165,12 +180,18 @@ if __name__ == '__main__':
     time.sleep(1)
     # Sets brightness of all LEDs to max
     controller._write_spi(int('0xA9', 16), int('0xB4', 16))
-    time.sleep(1)  # Swaps between alterneating even and odd LEDs all on
-    for loop in range(10):
-        controller.enable_leds(int('0x50', 16))
-        time.sleep(0.1)
-        controller.enable_leds_bools(0, 1, 0, 1, 0, 0, 0, 0)
-        time.sleep(0.1)
+
+    time.sleep(1)
+    values = [0, 1, 2, 4, 8, 16, 32, 64, 128]
+    for value in values:
+        controller.enable_leds(value)
+        time.sleep(2)
+    # time.sleep(1)  # Swaps between alterneating even and odd LEDs all on
+    # for loop in range(10):
+    #     controller.enable_leds(int('0x50', 16))
+    #     time.sleep(0.1)
+    #     controller.enable_leds_bools(0, 1, 0, 1, 0, 0, 0, 0)
+    #     time.sleep(0.1)
     # print("enable all?")
     # controller.TTL_stream.write_one_sample_port_byte(15)
     # print("enable all?")
