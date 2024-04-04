@@ -1,6 +1,9 @@
+import time
+
 from pylablib.devices import DCAM
 from PyQt5 import QtCore, QtWidgets, uic
 import numpy as np
+
 
 class CameraGrabber(QtCore.QObject):
     EXPOSURE_TWENTY_FPS = 0
@@ -27,8 +30,8 @@ class CameraGrabber(QtCore.QObject):
         self.cam.stop_acquisition()
         match exposure_time_idx:
             case self.EXPOSURE_TWENTY_FPS:
-                self.cam.set_attribute_value("EXPOSURE TIME", 1/20)
-                print(f"setting exposure time to {1/20}")
+                self.cam.set_attribute_value("EXPOSURE TIME", 1 / 20)
+                print(f"setting exposure time to {1 / 20}")
             case self.EXPOSURE_THIRTY_FPS:
                 self.cam.set_attribute_value("EXPOSURE TIME", 1 / 30)
                 print(f"setting exposure time to {1 / 30}")
@@ -36,13 +39,17 @@ class CameraGrabber(QtCore.QObject):
                 print(f"Unexpected exposure time setting")
         self.start()
 
-
     def snap(self):
         self.frame_from_camera_ready_signal.emit(self.cam.snap())
 
     def get_detector_size(self):
         return self.cam.get_detector_size()
 
+    def grab_n_frames(self, n_frames):
+        start_time = time.time()
+        frames = self.cam.grab(n_frames)
+        print(time.time()-start_time)
+        return frames
 
 # class CameraLiveFeeder(QtCore.QObject):
 #
@@ -59,4 +66,14 @@ class CameraGrabber(QtCore.QObject):
 #     def start(self):
 #         while self.running:
 #             self.frame_from_camera_ready_signal.emit(self.cam.snap())
-        
+
+
+if __name__ == "__main__":
+    import cv2
+    import skimage
+
+    camera_grabber = CameraGrabber(None)
+    frames = camera_grabber.grab_n_frames(500)
+    cv2.imshow('avg', skimage.exposure.equalize_hist(np.mean(np.array(frames), axis=0)))
+    cv2.waitKey(0)
+
