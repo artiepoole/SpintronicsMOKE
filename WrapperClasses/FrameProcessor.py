@@ -10,10 +10,12 @@ class FrameProcessor(QtCore.QObject):
     IMAGE_PROCESSING_HISTEQ = 2
     IMAGE_PROCESSING_ADAPTEQ = 3
     frame_processed_signal = QtCore.pyqtSignal(np.ndarray)
+    frame_stack_processed_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     mode = 0
     p_low = 0
     p_high = 100
     clip = 0.03
+    background = None
 
     def update_settings(self, settings):
         '''
@@ -60,3 +62,21 @@ class FrameProcessor(QtCore.QObject):
                 print("Unrecognized image processing mode")
                 processed_frame = raw_frame
         self.frame_processed_signal.emit(processed_frame)
+
+    def process_stack(self, raw_stack):
+        # mean_frame = np.mean(np.array(raw_stack), axis=0)
+        mean_frame = raw_stack[0]
+        match self.mode:
+            case self.IMAGE_PROCESSING_NONE:
+                processed_frame = mean_frame
+            case self.IMAGE_PROCESSING_PERCENTILE:
+                px_low, px_high = np.percentile(mean_frame, (self.p_low, self.p_high))
+                processed_frame = exposure.rescale_intensity(mean_frame, in_range=(px_low, px_high))
+            case self.IMAGE_PROCESSING_HISTEQ:
+                processed_frame = exposure.equalize_hist(mean_frame)
+            case self.IMAGE_PROCESSING_ADAPTEQ:
+                processed_frame = exposure.equalize_adapthist(mean_frame, clip_limit=self.clip)
+            case _:
+                print("Unrecognized image processing mode")
+                processed_frame = mean_frame
+        self.frame_stack_processed_signal.emit(mean_frame, processed_frame)
