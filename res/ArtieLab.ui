@@ -18,7 +18,10 @@
     <bool>true</bool>
    </property>
    <property name="autoFillBackground">
-    <bool>true</bool>
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgba(255, 255, 255, 1); </string>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
@@ -49,45 +52,168 @@
         <property name="bottomMargin">
          <number>10</number>
         </property>
-        <item row="0" column="1">
-         <widget class="QPushButton" name="button_trans_pol">
-          <property name="text">
-           <string>Trans &amp; Pol</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QPushButton" name="button_pure_long">
-          <property name="text">
-           <string>Pure Long</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="0">
-         <widget class="QPushButton" name="button_long_pol">
+         <widget class="QToolButton" name="button_long_pol">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
           <property name="text">
-           <string>Long &amp; Pol</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/long_and_pol_off.png</normaloff>
+            <normalon>icons/long_and_pol_on.png</normalon>icons/long_and_pol_off.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>100</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QPushButton" name="button_long_trans">
+        <item row="0" column="1">
+         <widget class="QToolButton" name="button_trans_pol">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
           <property name="text">
-           <string>Long &amp; Trans &amp; Pol</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/trans_and_pol_off.png</normaloff>
+            <normalon>icons/trans_and_pol_on.png</normalon>icons/trans_and_pol_off.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>100</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
         <item row="0" column="2">
-         <widget class="QPushButton" name="button_polar">
+         <widget class="QToolButton" name="button_polar">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
           <property name="text">
-           <string>Polar</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/pol_off.png</normaloff>
+            <normalon>icons/pol_on.png</normalon>icons/pol_off.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>100</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QToolButton" name="button_long_trans">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/long_and_trans_and_pol_off.png</normaloff>
+            <normalon>icons/long_and_trans_and_pol_on.png</normalon>icons/long_and_trans_and_pol_off.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>100</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QToolButton" name="button_pure_long">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/long_off.png</normaloff>
+            <normalon>icons/long_on.png</normalon>icons/long_off.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>100</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
         <item row="1" column="2">
-         <widget class="QPushButton" name="button_pure_trans">
+         <widget class="QToolButton" name="button_pure_trans">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
           <property name="text">
-           <string>Pure Trans</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/trans_off.png</normaloff>
+            <normalon>icons/trans_on.png</normalon>icons/trans_off.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>100</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -121,7 +247,7 @@
          <number>10</number>
         </property>
         <item>
-         <layout class="QGridLayout" name="LEDBUTTONS" columnstretch="0,0,0">
+         <layout class="QGridLayout" name="LEDBUTTONS" columnstretch="0,0,0,0,0">
           <property name="leftMargin">
            <number>0</number>
           </property>
@@ -134,155 +260,20 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
-          <item row="2" column="0">
-           <widget class="QRadioButton" name="button_left_led">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
+          <item row="0" column="2">
+           <spacer name="verticalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
             </property>
-            <property name="minimumSize">
+            <property name="sizeHint" stdset="0">
              <size>
-              <width>50</width>
-              <height>50</height>
+              <width>20</width>
+              <height>40</height>
              </size>
             </property>
-            <property name="maximumSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true"/>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="autoExclusive">
-             <bool>false</bool>
-            </property>
-           </widget>
+           </spacer>
           </item>
-          <item row="3" column="1">
-           <widget class="QRadioButton" name="button_down_led">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true"/>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="autoExclusive">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QRadioButton" name="button_up_led">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true"/>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="autoExclusive">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QRadioButton" name="button_right_led">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true"/>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>50</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="autoExclusive">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
+          <item row="6" column="2">
            <spacer name="verticalSpacer_3">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -295,18 +286,387 @@
             </property>
            </spacer>
           </item>
-          <item row="0" column="1">
-           <spacer name="verticalSpacer_4">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
+          <item row="5" column="2">
+           <widget class="QPushButton" name="button_down_led2">
+            <property name="minimumSize">
              <size>
-              <width>20</width>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgba(255, 255, 255, 0); 
+border:  none;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>icons/radio_unchecked.png</normaloff>
+              <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="autoExclusive">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QPushButton" name="button_left_led1">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgba(255, 255, 255, 0); 
+border:  none;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>icons/radio_unchecked.png</normaloff>
+              <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="autoExclusive">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="4">
+           <widget class="QPushButton" name="button_right_led2">
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgba(255, 255, 255, 0); 
+border:  none;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>icons/radio_unchecked.png</normaloff>
+              <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="autoExclusive">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QPushButton" name="button_right_led1">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgba(255, 255, 255, 0); 
+border:  none;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>icons/radio_unchecked.png</normaloff>
+              <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="autoExclusive">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="button_up_led2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgba(255, 255, 255, 0); 
+border:  none;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>icons/radio_unchecked.png</normaloff>
+              <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="autoExclusive">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="button_up_led1">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgba(255, 255, 255, 0); 
+border:  none;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>icons/radio_unchecked.png</normaloff>
+              <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="autoExclusive">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QPushButton" name="button_down_led1">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgba(255, 255, 255, 0); 
+border:  none;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>icons/radio_unchecked.png</normaloff>
+              <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="autoExclusive">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QToolButton" name="button_leds_off">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true"/>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>icons/croscirc.png</normaloff>icons/croscirc.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>40</width>
               <height>40</height>
              </size>
             </property>
-           </spacer>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QPushButton" name="button_left_led2">
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgba(255, 255, 255, 0); 
+border:  none;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>icons/radio_unchecked.png</normaloff>
+              <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="autoExclusive">
+             <bool>false</bool>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -382,6 +742,20 @@ Pairs</string>
         </item>
         <item>
          <widget class="QScrollBar" name="scroll_LED_brightness">
+          <property name="minimumSize">
+           <size>
+            <width>30</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
           <property name="maximum">
            <number>180</number>
           </property>
@@ -551,20 +925,40 @@ Pairs</string>
               </property>
              </widget>
             </item>
+            <item row="1" column="0">
+             <widget class="QComboBox" name="combo_lens">
+              <item>
+               <property name="text">
+                <string>20x / 0.22</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>20x / 0.5</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>50x</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>60x</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>100x</string>
+               </property>
+              </item>
+             </widget>
+            </item>
             <item row="0" column="2">
              <widget class="QLabel" name="label_correction">
               <property name="text">
                <string>Correction</string>
               </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QComboBox" name="combo_lens">
-              <item>
-               <property name="text">
-                <string>20x</string>
-               </property>
-              </item>
              </widget>
             </item>
             <item row="1" column="2">
@@ -586,6 +980,27 @@ Pairs</string>
                 <width>50</width>
                 <height>16777215</height>
                </size>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QComboBox" name="combo_targetfps">
+              <item>
+               <property name="text">
+                <string>20 (50ms)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>30 (33ms)</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLabel" name="label_targetFPS">
+              <property name="text">
+               <string>Target FPS</string>
               </property>
              </widget>
             </item>
@@ -612,27 +1027,6 @@ Pairs</string>
               <property name="readOnly">
                <bool>true</bool>
               </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QLabel" name="label_targetFPS">
-              <property name="text">
-               <string>Target FPS</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QComboBox" name="combo_targetfps">
-              <item>
-               <property name="text">
-                <string>20 (50ms)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>30 (33ms)</string>
-               </property>
-              </item>
              </widget>
             </item>
             <item row="2" column="2">
@@ -910,12 +1304,15 @@ Pairs</string>
              </size>
             </property>
             <property name="text">
-             <string>Get Background</string>
+             <string>Get Background (F1)</string>
+            </property>
+            <property name="shortcut">
+             <string>F1</string>
             </property>
            </widget>
           </item>
           <item row="0" column="2">
-           <widget class="QPushButton" name="button_show_averaged">
+           <widget class="QPushButton" name="button_toggle_averaging">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -935,7 +1332,13 @@ Pairs</string>
              </size>
             </property>
             <property name="text">
-             <string>Show Averaged</string>
+             <string>Enable Averaging (F3)</string>
+            </property>
+            <property name="shortcut">
+             <string>F3</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -960,7 +1363,10 @@ Pairs</string>
              </size>
             </property>
             <property name="text">
-             <string>Show Subtraction</string>
+             <string>Show Subtraction (F2)</string>
+            </property>
+            <property name="shortcut">
+             <string>F2</string>
             </property>
            </widget>
           </item>
@@ -985,7 +1391,10 @@ Pairs</string>
              </size>
             </property>
             <property name="text">
-             <string>Pause</string>
+             <string>Pause (F4)</string>
+            </property>
+            <property name="shortcut">
+             <string>F4</string>
             </property>
            </widget>
           </item>
@@ -1001,19 +1410,6 @@ Pairs</string>
         <property name="topMargin">
          <number>10</number>
         </property>
-        <item row="1" column="0">
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
         <item row="0" column="0">
          <layout class="QGridLayout" name="gridLayout_2">
           <property name="leftMargin">
@@ -1028,6 +1424,19 @@ Pairs</string>
              <string>Magnetic Field Control</string>
             </property>
            </widget>
+          </item>
+          <item row="1" column="0">
+           <spacer name="verticalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
