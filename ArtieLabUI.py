@@ -5,7 +5,7 @@ from WrapperClasses.FrameProcessor import FrameProcessor
 import cv2
 from PyQt5 import QtCore, QtWidgets, uic
 import sys
-import time
+import numpy as np
 
 
 class ArtieLabUI(QtWidgets.QMainWindow):
@@ -13,15 +13,28 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         super(ArtieLabUI, self).__init__()  # Call the inherited classes __init__ method
         uic.loadUi('res/ArtieLab.ui', self)  # Load the .ui file
+        right_monitor = QtWidgets.QDesktopWidget().screenGeometry(1)
+        self.move(right_monitor.left(), right_monitor.top())
         self.showMaximized()
         self.show()
+        self.activateWindow()
 
         self.lamp_controller = LampController()
         self.lamp_controller.disable_all()
-        self.__up = False
-        self.__down = False
-        self.__left = False
-        self.__right = False
+
+        self.enabled_leds_spi = {"left1": False,
+                                 "left2": False,
+                                 "right1": False,
+                                 "right2": False,
+                                 "up1": False,
+                                 "up2": False,
+                                 "down1": False,
+                                 "down2": False}
+
+        self.enabled_led_pairs = {"left": False,
+                                  "right": False,
+                                  "up": False,
+                                  "down": False}
 
         self.camera_thread = QtCore.QThread()
         self.camera_grabber = CameraGrabber()
@@ -37,6 +50,25 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         # TODO: IMPLEMENT SETTING EXPOSURE TIME TO THE SETTING FROM GUI ON START
         self.camera_grabber.start()
+
+    def __reset_pairs(self):
+        self.enabled_led_pairs.update(
+            {"left": False,
+             "right": False,
+             "up": False,
+             "down": False})
+
+    def __reset_led_spis(self):
+        self.enabled_led_pairs.update(
+            {"left1": False,
+             "left2": False,
+             "right1": False,
+             "right2": False,
+             "up1": False,
+             "up2": False,
+             "down1": False,
+             "down2": False}
+        )
 
     def __prepare_view(self):
         self.stream_window = 'HamamatsuView'
@@ -57,10 +89,17 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             0)
 
     def __connect_signals(self):
-        self.button_left_led.toggled.connect(self.__on_left)
-        self.button_right_led.toggled.connect(self.__on_right)
-        self.button_up_led.toggled.connect(self.__on_up)
-        self.button_down_led.toggled.connect(self.__on_down)
+
+        self.button_left_led1.toggled.connect(self.__on_individual_led)
+        self.button_right_led1.toggled.connect(self.__on_individual_led)
+        self.button_up_led1.toggled.connect(self.__on_individual_led)
+        self.button_down_led1.toggled.connect(self.__on_individual_led)
+        self.button_left_led2.toggled.connect(self.__on_individual_led)
+        self.button_right_led2.toggled.connect(self.__on_individual_led)
+        self.button_up_led2.toggled.connect(self.__on_individual_led)
+        self.button_down_led2.toggled.connect(self.__on_individual_led)
+        self.button_leds_off.clicked.connect(self.__disable_all_leds)
+
         self.button_long_pol.clicked.connect(self.__on_long_pol)
         self.button_trans_pol.clicked.connect(self.__on_trans_pol)
         self.button_polar.clicked.connect(self.__on_polar)
@@ -73,12 +112,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spin_clip.valueChanged.connect(self.__on_image_processing_spin_box_change)
         # self.camera_grabber.frame_signal.connect(self.on_frame_signal)
 
-        self.button_left_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
-        self.button_right_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
-        self.button_up_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
-        self.button_down_led.setStyleSheet('QRadioButton::indicator { width: 50px; height: 50px;}')
         self.combo_targetfps.currentIndexChanged.connect(self.__on_exposure_time_changed)
 
+        self.button_toggle_averaging.toggled.connect(self.__on_averaging)
 
         self.frame_processor.frame_processed_signal.connect(self.__on_processed_frame)
         self.camera_grabber.frame_from_camera_ready_signal.connect(self.__on_new_raw_frame)
@@ -117,83 +153,181 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.frame_processor.set_clip_limit(self.spin_clip.value())
                 # this is Adaptive EQ and needs a clip limit
 
-    def __on_up(self, state):
-        self.__up = state
-        self.__update_controller()
+    def __disable_all_leds(self):
+        self.__reset_led_spis()
+        self.__reset_pairs()
 
-    def __on_down(self, state):
-        self.__down = state
-        self.__update_controller()
+        self.button_up_led1.setChecked(False)
+        self.button_up_led2.setChecked(False)
+        self.button_down_led1.setChecked(False)
+        self.button_down_led2.setChecked(False)
+        self.button_left_led1.setChecked(False)
+        self.button_left_led2.setChecked(False)
+        self.button_right_led1.setChecked(False)
+        self.button_right_led2.setChecked(False)
 
-    def __on_left(self, state):
-        self.__left = state
-        self.__update_controller()
+        self.button_long_pol.setChecked(False)
+        self.button_trans_pol.setChecked(False)
+        self.button_polar.setChecked(False)
+        self.button_long_trans.setChecked(False)
+        self.button_pure_long.setChecked(False)
+        self.button_pure_trans.setChecked(False)
 
-    def __on_right(self, state):
-        self.__right = state
-        self.__update_controller()
+        self.__update_controller_pairs()
+
+    def __on_individual_led(self, state):
+        self.enabled_leds_spi["up1"] = self.button_up_led1.isChecked()
+        self.enabled_leds_spi["up2"] = self.button_up_led2.isChecked()
+        self.enabled_leds_spi["down1"] = self.button_down_led1.isChecked()
+        self.enabled_leds_spi["down2"] = self.button_down_led2.isChecked()
+        self.enabled_leds_spi["left1"] = self.button_left_led1.isChecked()
+        self.enabled_leds_spi["left2"] = self.button_left_led2.isChecked()
+        self.enabled_leds_spi["right1"] = self.button_right_led1.isChecked()
+        self.enabled_leds_spi["right2"] = self.button_right_led2.isChecked()
+        self.__update_controller_spi()
 
     def __on_long_pol(self):
-        self.__up = True
-        self.__down = False
-        self.__left = False
-        self.__right = False
-        self.button_up_led.setChecked(True)
-        self.button_down_led.setChecked(False)
-        self.button_left_led.setChecked(False)
-        self.button_right_led.setChecked(False)
-        self.__update_controller()
+        if self.button_long_pol.isChecked():
+            self.enabled_led_pairs.update(
+                {"left": False,
+                 "right": False,
+                 "up": True,
+                 "down": False})
+            self.__reset_led_spis()
+
+            self.button_up_led1.setChecked(True)
+            self.button_up_led2.setChecked(True)
+            self.button_down_led1.setChecked(False)
+            self.button_down_led2.setChecked(False)
+            self.button_left_led1.setChecked(False)
+            self.button_left_led2.setChecked(False)
+            self.button_right_led1.setChecked(False)
+            self.button_right_led2.setChecked(False)
+
+            self.button_trans_pol.setChecked(False)
+            self.button_polar.setChecked(False)
+            self.button_long_trans.setChecked(False)
+            self.button_pure_long.setChecked(False)
+            self.button_pure_trans.setChecked(False)
+
+            self.__update_controller_pairs()
+        else:
+            self.__disable_all_leds()
 
     def __on_trans_pol(self):
-        self.__up = False
-        self.__down = False
-        self.__left = True
-        self.__right = False
-        self.button_up_led.setChecked(False)
-        self.button_down_led.setChecked(False)
-        self.button_left_led.setChecked(True)
-        self.button_right_led.setChecked(False)
-        self.__update_controller()
+        if self.button_trans_pol.isChecked():
+            self.enabled_led_pairs.update({"left": True,
+                                           "right": False,
+                                           "up": False,
+                                           "down": False})
+            self.__reset_led_spis()
+
+            self.button_up_led1.setChecked(False)
+            self.button_up_led2.setChecked(False)
+            self.button_down_led1.setChecked(False)
+            self.button_down_led2.setChecked(False)
+            self.button_left_led1.setChecked(True)
+            self.button_left_led2.setChecked(True)
+            self.button_right_led1.setChecked(False)
+            self.button_right_led2.setChecked(False)
+
+            self.button_long_pol.setChecked(False)
+            self.button_polar.setChecked(False)
+            self.button_long_trans.setChecked(False)
+            self.button_pure_long.setChecked(False)
+            self.button_pure_trans.setChecked(False)
+
+            self.__update_controller_pairs()
+        else:
+            self.__disable_all_leds()
 
     def __on_polar(self):
-        self.__up = False
-        self.__down = False
-        self.__left = False
-        self.__right = False
-        print(
-            "Sorry, this feature is not available. Can't select individual channels yet for some reason, only pairs.")
-        self.__update_controller()
+        if self.button_polar.isChecked():
+            self.__reset_pairs()
+            self.enabled_leds_spi.update(
+                {"left1": False,
+                 "left2": False,
+                 "right1": False,
+                 "right2": False,
+                 "up1": True,
+                 "up2": False,
+                 "down1": True,
+                 "down2": False})
+            self.button_up_led1.setChecked(True)
+            self.button_up_led2.setChecked(False)
+            self.button_down_led1.setChecked(True)
+            self.button_down_led2.setChecked(False)
+            self.button_left_led1.setChecked(False)
+            self.button_left_led2.setChecked(False)
+            self.button_right_led1.setChecked(False)
+            self.button_right_led2.setChecked(False)
+
+            self.button_long_pol.setChecked(False)
+            self.button_trans_pol.setChecked(False)
+            self.button_long_trans.setChecked(False)
+            self.button_pure_long.setChecked(False)
+            self.button_pure_trans.setChecked(False)
+
+            self.__update_controller_spi()
+        else:
+            self.__disable_all_leds()
 
     def __on_long_trans(self):
-        self.__up = False
-        self.__down = False
-        self.__left = False
-        self.__right = False
         print("Flashing Feature Not Implemented Yet....")
-        self.__update_controller()
+        if self.button_long_trans.isChecked():
+            self.__disable_all_leds()
+            self.button_long_pol.setChecked(False)
+            self.button_trans_pol.setChecked(False)
+            self.button_polar.setChecked(False)
+            self.button_pure_long.setChecked(False)
+            self.button_pure_trans.setChecked(False)
+        else:
+            self.__disable_all_leds()
 
     def __on_pure_long(self):
-        self.__up = False
-        self.__down = False
-        self.__left = False
-        self.__right = False
-        print("Flashing Feature Not Implemented Yet....")
-        self.__update_controller()
+        if self.button_pure_long.isChecked():
+            print("Flashing Feature Not Implemented Yet....")
+            self.__disable_all_leds()
+            self.button_long_pol.setChecked(False)
+            self.button_trans_pol.setChecked(False)
+            self.button_polar.setChecked(False)
+            self.button_long_trans.setChecked(False)
+            self.button_pure_trans.setChecked(False)
+        else:
+            self.__disable_all_leds()
 
     def __on_pure_trans(self):
-        self.__up = False
-        self.__down = False
-        self.__left = False
-        self.__right = False
-        print("Flashing Feature Not Implemented Yet....")
-        self.__update_controller()
+        if self.button_pure_trans.isChecked():
+            self.__disable_all_leds()
+            print("Flashing Feature Not Implemented Yet....")
+            self.button_long_pol.setChecked(False)
+            self.button_trans_pol.setChecked(False)
+            self.button_polar.setChecked(False)
+            self.button_long_trans.setChecked(False)
+            self.button_pure_long.setChecked(False)
+        else:
+            self.__disable_all_leds()
 
-    def __update_controller(self):
-        self.lamp_controller.enable_assortment_pairs(self.__left, self.__right, self.__up, self.__down)
+    def __update_controller_pairs(self):
+        self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
+
+    def __update_controller_spi(self):
+        # I assumed the numbering would go outside then inside but it goes inside then outside
+        value = self.enabled_leds_spi["left1"] * 2 \
+                + self.enabled_leds_spi["left2"] * 1 \
+                + self.enabled_leds_spi["right1"] * 8 \
+                + self.enabled_leds_spi["right2"] * 4 \
+                + self.enabled_leds_spi["up1"] * 32 \
+                + self.enabled_leds_spi["up2"] * 16 \
+                + self.enabled_leds_spi["down1"] * 128 \
+                + self.enabled_leds_spi["down2"] * 64
+        self.lamp_controller.enable_leds(value)
 
     def __on_new_raw_frame(self, raw_frame):
         self.frame_processor.process_frame(raw_frame)
         self.latest_raw_frame = raw_frame.copy()
+        self.intensity = np.sum(np.sum(self.latest_raw_frame))
+        self.intensity_range = [np.amin(self.latest_raw_frame), np.amax(self.latest_raw_frame)]
 
     def __on_processed_frame(self, processed_frame):
         self.latest_processed_frame = processed_frame.copy()
@@ -207,6 +341,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.close()
+        super(ArtieLabUI, self).closeEvent(event)
 
     def close(self):
 
@@ -221,23 +356,25 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
 
 if __name__ == '__main__':
-    # # Back up the reference to the exceptionhook
-    # sys._excepthook = sys.excepthook
-    #
-    #
-    # def my_exception_hook(exctype, value, traceback):
-    #     # Print the error and traceback
-    #     print(exctype, value, traceback)
-    #     # Call the normal Exception hook after
-    #     sys._excepthook(exctype, value, traceback)
-    #     sys.exit(1)
-    #
-    #
-    # # Set the exception hook to our wrapping function
-    # sys.excepthook = my_exception_hook
+    # Back up the reference to the exceptionhook
+    sys._excepthook = sys.excepthook
+
+
+    def my_exception_hook(exctype, value, traceback):
+        # Print the error and traceback
+        print(exctype, value, traceback)
+        # Call the normal Exception hook after
+        sys._excepthook(exctype, value, traceback)
+        sys.exit(1)
+
+
+    # Set the exception hook to our wrapping function
+    sys.excepthook = my_exception_hook
 
     app = QtWidgets.QApplication(sys.argv)
     app.setStyle('fusion')
     window = ArtieLabUI()
-    app.exec_()
-    app.exit()
+    try:
+        sys.exit(app.exec_())
+    except:
+        print("Exiting")
