@@ -336,10 +336,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.lamp_controller.enable_leds(value)
 
     def __on_new_raw_frame(self, raw_frame):
-        start_time = time.time()
         self.frame_processor.process_frame(raw_frame)
-        print("time to send single frame to processor = ", time.time() - start_time)
-        # self.latest_raw_frame = raw_frame.copy()
+        self.latest_raw_frame = raw_frame.copy()
 
     def __on_new_raw_frame_stack(self, raw_frames):
         self.frame_processor.process_stack(raw_frames)
