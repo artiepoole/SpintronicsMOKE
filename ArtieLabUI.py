@@ -47,13 +47,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor = FrameProcessor()
         self.frame_processor.moveToThread(self.frame_processor_thread)
 
-        self.frame_processor.background = np.zeros((self.height, self.width))
-
         self.__connect_signals()
         self.__prepare_view()
 
         # TODO: IMPLEMENT SETTING EXPOSURE TIME TO THE SETTING FROM GUI ON START
         self.camera_grabber.start_live_single_frame()
+        self.averaging = False
+        self.background = None
 
     def __reset_pairs(self):
         self.enabled_led_pairs.update(
@@ -124,6 +124,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         # Camera Controls
         self.combo_targetfps.currentIndexChanged.connect(self.__on_exposure_time_changed)
+        self.button_pause_camera.toggled.connect(self.__on_pause_button)
+        self.button_display_subtraction.toggled.connect(self.__on_show_subtraction)
 
         # Data Streams and Signals
         self.frame_processor.frame_processed_signal.connect(self.__on_processed_frame)
@@ -349,7 +351,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         cv2.imshow(self.stream_window, processed_frame)
         cv2.waitKey(1)
 
-
     def __on_processed_stack(self, averaged, processed):
         self.latest_raw_frame = averaged
         self.latest_processed_frame = processed
@@ -358,10 +359,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_get_new_background(self, ignored_event):
         self.camera_grabber.running = False
+
         frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
         self.background_raw_Stack = frames.copy()
-        self.background_averaged = np.mean(np.array(frames), axis=0)
-        self.frame_processor.background = self.background_averaged
+        self.background = np.mean(np.array(frames), axis=0)
+        self.frame_processor.background = self.background
+
         if self.camera_grabber.averaging:
             self.camera_grabber.averaging = self.spin_foreground_averages.value()
             self.camera_grabber.start_averaging()
@@ -377,15 +380,35 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_averaging(self, enabled):
         if enabled:
-            print("averaging enabled")
+            self.button_toggle_averaging.setText("Disable Averaging (F3)")
             self.averaging = True
             self.camera_grabber.running = False
             self.camera_grabber.averaging = self.spin_foreground_averages.value()
             self.camera_grabber.start_averaging()
         else:
+            self.button_toggle_averaging.setText("Enable Averaging (F3)")
             self.averaging = False
             print("averaging disabled")
             self.camera_grabber.start_live_single_frame()
+
+    def __on_show_subtraction(self, subtracting):
+        if subtracting:
+            self.button_display_subtraction.setText("Ignore Background (F2)")
+            self.frame_processor.subtracting = True
+        else:
+            self.button_display_subtraction.setText("Show Subtraction (F2)")
+            self.frame_processor.subtracting = False
+
+    def __on_pause_button(self, paused):
+        if paused:
+            self.camera_grabber.running = False
+            self.button_pause_camera.setText("Unpause (F4)")
+        else:
+            self.button_pause_camera.setText("Pause (F4)")
+            if self.averaging:
+                self.camera_grabber.start_averaging()
+            else:
+                self.camera_grabber.start_live_single_frame()
 
     def closeEvent(self, event):
         self.close()

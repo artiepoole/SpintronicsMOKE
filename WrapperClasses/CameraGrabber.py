@@ -29,15 +29,26 @@ class CameraGrabber(QtCore.QObject):
             if frame is not None:
                 self.frame_from_camera_ready_signal.emit(frame)
         self.cam.stop_acquisition()
-        self.cam.clear_acquisition()
 
     def start_averaging(self):
         self.running = True
         self.averaging = True
+        self.cam.setup_acquisition()
+        self.cam.start_acquisition()
+        frames = []
+        i = 0
         while self.running:
-            frames = self.grab_n_frames(self.averages)
-            self.frame_stack_from_camera_ready_signal.emit(np.array(frames))
-        self.cam.clear_acquisition()
+            frame = self.cam.read_newest_image()
+            if frame is not None:
+                if i % self.averages < len(frames):
+                    frames[i % self.averages] = frame
+                else:
+                    frames.append(frame)
+                if len(frames) > self.averages:
+                    frames = frames[0:self.averages]
+                self.frame_stack_from_camera_ready_signal.emit(np.array(frames))
+                i = i + 1
+        self.cam.stop_acquisition()
 
     def set_exposure_time(self, exposure_time_idx):
         self.cam.stop_acquisition()
