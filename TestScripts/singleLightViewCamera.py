@@ -36,12 +36,18 @@ cam.setup_acquisition()
 cam.start_acquisition()
 
 running = True  # press esc to close
+i=0
 while running:
     frame = cam.read_newest_image()
     if frame is not None:
         cv2.imshow(stream_window, skimage.exposure.equalize_hist(frame))
+        k = cv2.waitKey(1)
+        if i == 0:
+            ROI = cv2.selectROI(stream_window, skimage.exposure.equalize_hist(frame))
+            print(ROI)
+            i = 1
 
-    k = cv2.waitKey(10)
+    k = cv2.waitKey(1)
     if k == 27:
         running = False
 
