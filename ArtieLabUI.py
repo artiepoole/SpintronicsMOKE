@@ -464,7 +464,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
                                                                                                           '_') + '.h5')
         print("Saving to: "+str(file_path)+' This takes time. Please be patient.')
-        store = pd.HDFStore(str(file_path))
+        try:
+            store = pd.HDFStore(str(file_path))
+        except:
+            print("Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
+            return
 
         if self.button_toggle_averaging.isChecked():
             if self.check_save_avg.isChecked():
