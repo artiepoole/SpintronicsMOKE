@@ -825,7 +825,7 @@ Pairs</string>
         <item row="3" column="0">
          <widget class="QLabel" name="label_prefix">
           <property name="text">
-           <string>Prefix:</string>
+           <string>Sample Name:</string>
           </property>
          </widget>
         </item>
@@ -839,7 +839,10 @@ Pairs</string>
         <item row="2" column="0">
          <widget class="QLineEdit" name="line_directory">
           <property name="text">
-           <string>C:\Users\User\Desktop\Images</string>
+           <string>C:\Users\User\Desktop\USERS</string>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -850,20 +853,59 @@ Pairs</string>
           </property>
          </widget>
         </item>
+        <item row="5" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QCheckBox" name="check_save_avg">
+            <property name="text">
+             <string>Save AVG?</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="check_save_stack">
+            <property name="text">
+             <string>Save stack?</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="check_save_as_seen">
+            <property name="text">
+             <string>Save as seen?</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="check_save_background">
+            <property name="text">
+             <string>Save BKG?</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="check_save_bkg_stack">
+            <property name="text">
+             <string>Save BKG Stack?</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
         <item row="4" column="1">
-         <widget class="QCheckBox" name="check_save_avg">
+         <widget class="QPushButton" name="button_save_single">
           <property name="text">
-           <string>Save AVG?</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
+           <string>Save As Seen</string>
           </property>
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QPushButton" name="pushButton_2">
+         <widget class="QPushButton" name="button_save_package">
           <property name="text">
-           <string>Save</string>
+           <string>Save HDF5 Package</string>
           </property>
          </widget>
         </item>
