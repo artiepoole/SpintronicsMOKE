@@ -6,7 +6,10 @@ import cv2
 from PyQt5 import QtCore, QtWidgets, uic
 import sys
 import numpy as np
-import time
+import tifffile
+import pandas as pd
+from datetime import datetime
+from pathlib import Path
 
 
 class ArtieLabUI(QtWidgets.QMainWindow):
@@ -20,9 +23,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.show()
         self.activateWindow()
 
-        self.lamp_controller = LampController()
-        self.lamp_controller.disable_all()
-
+        # define variables
+        self.mutex = QtCore.QMutex()
+        self.close_event = None
+        self.background = None
+        self.binning = 2
         self.enabled_leds_spi = {"left1": False,
                                  "left2": False,
                                  "right1": False,
@@ -37,23 +42,22 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                   "up": False,
                                   "down": False}
 
-        self.camera_thread = QtCore.QThread()
+        # Create controller objects and threads
+        self.lamp_controller = LampController()
+        self.lamp_controller.disable_all()
+
         self.camera_grabber = CameraGrabber()
-        self.height, self.width = self.camera_grabber.get_detector_size()
-
+        self.camera_thread = QtCore.QThread()
         self.camera_grabber.moveToThread(self.camera_thread)
-
-        self.frame_processor_thread = QtCore.QThread()
+        self.height, self.width = self.camera_grabber.get_detector_size()
         self.frame_processor = FrameProcessor()
+        self.frame_processor_thread = QtCore.QThread()
         self.frame_processor.moveToThread(self.frame_processor_thread)
 
         self.__connect_signals()
         self.__prepare_view()
 
-        # TODO: IMPLEMENT SETTING EXPOSURE TIME TO THE SETTING FROM GUI ON START
         self.camera_grabber.start_live_single_frame()
-        self.averaging = False
-        self.background = None
 
     def __reset_pairs(self):
         self.enabled_led_pairs.update(
@@ -76,8 +80,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __prepare_view(self):
         self.stream_window = 'HamamatsuView'
-        window_width = self.width // 2
-        window_height = self.height // 2
+        window_width = self.width // self.binning
+        window_height = self.height // self.binning
         cv2.namedWindow(
             self.stream_window,
             flags=(cv2.WINDOW_NORMAL | cv2.WINDOW_GUI_NORMAL | cv2.WINDOW_FREERATIO))
@@ -132,6 +136,35 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.frame_stack_processed_signal.connect(self.__on_processed_stack)
         self.camera_grabber.frame_from_camera_ready_signal.connect(self.__on_new_raw_frame)
         self.camera_grabber.frame_stack_from_camera_ready_signal.connect(self.__on_new_raw_frame_stack)
+        self.camera_grabber.quit_ready.connect(self.__on_quit_ready)
+
+        # saving GUI
+        self.button_save_package.clicked.connect(self.__on_save)
+        self.button_save_single.clicked.connect(self.__on_save_single)
+        self.button_dir_browse.clicked.connect(self.__on_browse)
+
+    def __get_lighting_configuration(self):
+        if self.button_long_pol.isChecked():
+            return "longitudinal and polar"
+        elif self.button_trans_pol.isChecked():
+            return "transpose and polar"
+        elif self.button_polar.isChecked():
+            return "polar"
+        elif self.button_long_trans.isChecked():
+            return "longitudinal and transpose and polar"
+        elif self.button_pure_long.isChecked():
+            return "pure longitudinal"
+        elif self.button_pure_trans.isChecked():
+            return "pure transpose"
+        else:
+            return [self.button_up_led1.isChecked(),
+                    self.button_up_led2.isChecked(),
+                    self.button_down_led1.isChecked(),
+                    self.button_down_led2.isChecked(),
+                    self.button_left_led1.isChecked(),
+                    self.button_left_led2.isChecked(),
+                    self.button_right_led1.isChecked(),
+                    self.button_right_led2.isChecked()]
 
     def __on_image_processing_spin_box_change(self, ignored_event):
         self.frame_processor.set_percentile_lower(self.spin_percentile_lower.value())
@@ -326,7 +359,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
 
     def __update_controller_spi(self):
-        # I assumed the numbering would go outside then inside but it goes inside then outside
+        # I assumed the numbering would go outside then inside, but it goes inside then outside
         value = self.enabled_leds_spi["left1"] * 2 \
                 + self.enabled_leds_spi["left2"] * 1 \
                 + self.enabled_leds_spi["right1"] * 8 \
@@ -343,7 +376,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_new_raw_frame_stack(self, raw_frames):
         self.frame_processor.process_stack(raw_frames)
-        self.latest_frame_stack = raw_frames.copy()
+        self.latest_raw_frame_stack = raw_frames.copy()
 
     def __on_processed_frame(self, processed_frame):
 
@@ -358,21 +391,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         cv2.waitKey(1)
 
     def __on_get_new_background(self, ignored_event):
+        self.mutex.lock()
         self.camera_grabber.running = False
-
+        self.mutex.unlock()
         frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
-        self.background_raw_Stack = frames.copy()
+        self.background_raw_stack = frames.copy()
         self.background = np.mean(np.array(frames), axis=0)
         self.frame_processor.background = self.background
-
         if self.camera_grabber.averaging:
             self.camera_grabber.averaging = self.spin_foreground_averages.value()
             self.camera_grabber.start_averaging()
         else:
             self.camera_grabber.start_live_single_frame()
+        print("Background Measured")
 
     def __on_exposure_time_changed(self, exposure_time_idx):
+        self.mutex.lock()
         self.camera_grabber.running = False
+        self.mutex.unlock()
         self.camera_grabber.set_exposure_time(exposure_time_idx)
 
     def __on_average_changed(self, value):
@@ -381,13 +417,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_averaging(self, enabled):
         if enabled:
             self.button_toggle_averaging.setText("Disable Averaging (F3)")
-            self.averaging = True
+            print("averaging enabled")
             self.camera_grabber.running = False
             self.camera_grabber.averaging = self.spin_foreground_averages.value()
             self.camera_grabber.start_averaging()
         else:
             self.button_toggle_averaging.setText("Enable Averaging (F3)")
-            self.averaging = False
             print("averaging disabled")
             self.camera_grabber.start_live_single_frame()
 
@@ -410,20 +445,145 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             else:
                 self.camera_grabber.start_live_single_frame()
 
+    def __on_save(self, event):
+        meta_data = {
+            'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
+                           "Nottingham using ArtieLab V0-2024.04.05.",
+            'camera': 'Hamamatsu C11440',
+            'sample': self.line_prefix.text(),
+            'lighting configuration': [self.__get_lighting_configuration()],
+            'binnning': self.combo_binning.currentText(),
+            'lens': self.combo_lens.currentText(),
+            'magnification': self.combo_magnification.currentText(),
+            'target fps': self.combo_targetfps.currentText(),
+            'correction': self.line_correction.text(),
+            'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        contents = []
+        file_path = Path(self.line_directory.text()).joinpath(
+            datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
+                                                                                                          '_') + '.h5')
+        print("Saving to: "+str(file_path)+' This takes time. Please be patient.')
+        store = pd.HDFStore(str(file_path))
+
+        if self.button_toggle_averaging.isChecked():
+            if self.check_save_avg.isChecked():
+                key = 'frame_avg'
+                contents.append(key)
+                store[key] = pd.DataFrame(self.latest_raw_frame)
+            if self.check_save_stack.isChecked():
+                for i in range(self.latest_raw_frame_stack.shape[0]):
+                    key = 'stack_' + str(i)
+                    contents.append(key)
+                    store[key] = pd.DataFrame(self.latest_raw_frame_stack[i])
+        else:
+            if self.check_save_avg.isChecked():
+                print("Average not saved: measuring in single frame mode")
+            if self.check_save_stack.isChecked():
+                print("Stack not saved: measuring in single frame mode")
+            key = 'frame'
+            contents.append(key)
+            store[key] = pd.DataFrame(self.latest_raw_frame)
+        if self.check_save_as_seen.isChecked():
+            if self.button_toggle_averaging.isChecked():
+                if self.button_display_subtraction.isChecked():
+                    key = f'averaged({self.spin_foreground_averages.value()}) and subtracted'
+                else:
+                    key = f'averaged({self.spin_foreground_averages.value()})'
+            elif self.button_display_subtraction.isChecked():
+                key = 'subtracted'
+            else:
+                key = 'single'
+            meta_data['normalisation'] = f'type: {self.combo_normalisation_selector.currentText()} ' + \
+                                         f'lower: {self.spin_percentile_lower.value()} ' + \
+                                         f'upper: {self.spin_percentile_upper.value()} ' + \
+                                         f'clip: {self.spin_clip.value()}'
+            contents.append(key)
+            store[key] = pd.DataFrame(self.latest_processed_frame)
+        if self.check_save_background.isChecked():
+            if self.background is not None:
+                key = 'background_avg'
+                contents.append(key)
+                store[key] = pd.DataFrame(self.background)
+            else:
+                print("Background not saved: no background measured")
+        if self.check_save_bkg_stack.isChecked():
+            if self.background is not None:
+                for i in range(len(self.background_raw_stack)):
+                    key = 'bkg_stack_' + str(i)
+                    contents.append(key)
+                    store[key] = pd.DataFrame(self.background_raw_stack[i])
+            else:
+                print("Background stack not saved: no background measured")
+        meta_data['contents'] = [contents]
+        store['meta_data'] = pd.DataFrame(meta_data)
+        store.close()
+        print("Saving done.")
+
+    def __on_save_single(self, event):
+        # Assemble metadata
+        meta_data = {
+            'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of Nottingham using ArtieLab V0-2024.04.05.",
+            'camera': 'Hamamatsu C11440',
+            'sample': self.line_prefix.text(),
+            'lighting configuration': self.__get_lighting_configuration(),
+            'binnning': self.combo_binning.currentText(),
+            'lens': self.combo_lens.currentText(),
+            'magnification': self.combo_magnification.currentText(),
+            'target fps': self.combo_targetfps.currentText(),
+            'correction': self.line_correction.text(),
+            'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'normalisation': f'type: {self.combo_normalisation_selector.currentText()} ' +
+                             f'lower: {self.spin_percentile_lower.value()} ' +
+                             f'upper: {self.spin_percentile_upper.value()} ' +
+                             f'clip: {self.spin_clip.value()}',
+            'contents': 'frame_0'
+        }
+        if self.button_toggle_averaging.isChecked():
+            if self.button_display_subtraction.isChecked():
+                meta_data['type'] = 'averaged and subtracted'
+                meta_data['averages'] = self.spin_foreground_averages.value()
+            else:
+                meta_data['type'] = 'averaged'
+                meta_data['averages'] = self.spin_foreground_averages.value()
+        elif self.button_display_subtraction.isChecked():
+            meta_data['type'] = 'subtracted'
+            meta_data['averages'] = 1
+        else:
+            meta_data['type'] = 'single'
+            meta_data['averages'] = 1
+        file_path = Path(self.line_directory.text()).joinpath(
+            datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
+                                                                                                          '_') + '.tiff')
+        # file_path.mkdir(parents=True, exist_ok=True)
+
+        tifffile.imwrite(str(file_path), self.latest_processed_frame, photometric='minisblack', metadata=meta_data)
+        print("saved file as " + str(file_path))
+
+    def __on_browse(self, event):
+        startingDir = str(Path(r'C:\Users\User\Desktop\USERS'))
+        destDir = QtWidgets.QFileDialog.getExistingDirectory(None,
+                                                             'Choose Save Directory',
+                                                             startingDir,
+                                                             QtWidgets.QFileDialog.ShowDirsOnly)
+        self.line_directory.setText(str(Path(destDir)))
+
     def closeEvent(self, event):
-        self.close()
-        super(ArtieLabUI, self).closeEvent(event)
-
-    def close(self):
-
-        self.lamp_controller.disable_all()
+        self.close_event = event
         # time.sleep(0.1)
         self.lamp_controller.close()
-
+        self.mutex.lock()
+        self.camera_grabber.closing = True
         self.camera_grabber.running = False
-        self.camera_thread.exit()
-        self.frame_processor_thread.exit()
+        self.mutex.unlock()
         cv2.destroyAllWindows()
+
+    def __on_quit_ready(self):
+        print("Closing threads and exiting")
+        self.camera_thread.quit()
+        self.frame_processor_thread.quit()
+        super(ArtieLabUI, self).closeEvent(self.close_event)
+        sys.exit()
 
 
 if __name__ == '__main__':
@@ -449,3 +609,5 @@ if __name__ == '__main__':
         sys.exit(app.exec_())
     except:
         print("Exiting")
+    print("test")
+    print(app.exit())
