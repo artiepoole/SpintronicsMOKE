@@ -69,7 +69,7 @@ class FrameProcessor(QtCore.QObject):
     def process_stack(self, raw_stack):
         mean_frame = np.mean(np.array(raw_stack), axis=0)
         if self.subtracting and self.background is not None:
-            sub = mean_frame.astype(np.int16) - self.background.astype(np.int16)
+            sub = mean_frame - self.background
             sub[sub < 0] = 0
         else:
             sub = mean_frame
@@ -82,7 +82,7 @@ class FrameProcessor(QtCore.QObject):
             case self.IMAGE_PROCESSING_HISTEQ:
                 processed_frame = (exposure.equalize_hist(sub) * 65535).astype(np.uint16)
             case self.IMAGE_PROCESSING_ADAPTEQ:
-                processed_frame = (exposure.equalize_adapthist(sub.astype(np.uint16), clip_limit=self.clip)*65535).astype(np.uint16)
+                processed_frame = (exposure.equalize_adapthist(sub.astype(np.uint16), clip_limit=self.clip)*65535)
             case _:
                 print("Unrecognized image processing mode")
                 processed_frame = sub
