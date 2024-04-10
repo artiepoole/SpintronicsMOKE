@@ -67,25 +67,10 @@ class FrameProcessor(QtCore.QObject):
                 return frame_in
 
     def process_frame(self, raw_frame):
-        self.frame_processed_signal.emit(self.__process_frame(raw_frame).astype(np.uint16))
+        self.frame_processed_signal.emit(self.__process_frame(raw_frame))
 
-    def process_stack(self, raw_stack):
-        mean_frame = np.mean(np.array(raw_stack), axis=0)
-        self.frame_stack_processed_signal.emit(mean_frame, self.__process_frame(mean_frame))
-
-    def process_single_diff(self, frames):
-        frame_a = frames[0]
-        frame_b = frames[1]
+    def process_diff(self, frame_a, frame_b):
         diff_frame = np.abs(frame_a.astype(np.int16) - frame_b.astype(np.int16)).astype(np.uint16)
         self.diff_processed_signal.emit(diff_frame, self.__process_frame(diff_frame))
 
-    def process_diff_stack(self, frames):
-        frames_a = frames[0]
-        frames_b = frames[1]
-
-        mean_a = np.mean(np.array(frames_a), axis=0)
-        mean_b = np.mean(np.array(frames_b), axis=0)
-
-        meaned_diff = np.abs(mean_a.astype(np.int16) - mean_b.astype(np.int16)).astype(np.uint16)
-        self.diff_processed_signal.emit(meaned_diff, self.__process_frame(meaned_diff))
 

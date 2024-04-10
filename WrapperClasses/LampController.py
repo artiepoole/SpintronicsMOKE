@@ -85,11 +85,13 @@ class LampController:
         self.dev.reset_device()
 
     def enable_spi(self):
+        print("Enabling SPI")
         self.SPI_task.write(self.__resting_state_SPI)
         time.sleep(50e-3)
         self.__SPI_enabled = True
 
     def disable_spi(self):
+        print("Disabling SPI")
         self.SPI_task.write(self.__resting_state_noSPI)
         time.sleep(50e-3)
         self.__SPI_enabled = False
@@ -171,8 +173,8 @@ class LampController:
 
     def continuous_flicker(self, mode):
         self.disable_spi()
-
         self.TTL_output_task.stop()
+        print("Enabling LED flicker mode with mode: ", mode)
         match mode:
             case 0:
                 # long trans pol
@@ -202,9 +204,17 @@ class LampController:
         self.TTL_stream.write_many_sample_port_byte(out_array.astype(np.uint8))
 
     def stop_flicker(self):
+        print("Stopping LED flicker mode")
         self.TTL_output_task.stop()
         self.TTL_output_task.timing.samp_timing_type = SampleTimingType.ON_DEMAND
         self.TTL_stream.write_one_sample_port_byte(0)
+
+    def pause_flicker(self, paused):
+        if paused:
+            self.enable_spi()
+        else:
+            self.disable_spi()
+
 
 
 if __name__ == '__main__':

@@ -11,11 +11,15 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
+import time
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import *
 from matplotlib.figure import Figure
+from skimage import exposure
 
 plt.rcParams['axes.formatter.useoffset'] = False
+plt.rcParams['figure.autolayout'] = True
 
 
 class ArtieLabUI(QtWidgets.QMainWindow):
@@ -56,7 +60,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_grabber = CameraGrabber()
         self.camera_thread = QtCore.QThread()
         self.camera_grabber.moveToThread(self.camera_thread)
-        self.height, self.width = self.camera_grabber.get_detector_size()
+        self.height, self.width = self.camera_grabber.get_data_dims()
         self.frame_processor = FrameProcessor()
         self.frame_processor_thread = QtCore.QThread()
         self.frame_processor.moveToThread(self.frame_processor_thread)
@@ -69,60 +73,17 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.__prepare_views()
 
         self.camera_grabber.start_live_single_frame()
+        self.frame_counter = 0
+        self.latest_raw_frame = None
+        self.latest_diff_frame_a = None
+        self.latest_diff_frame_b = None
+        self.latest_processed_frame = None
+        self.background = None
 
-    def __reset_pairs(self):
-        self.enabled_led_pairs.update(
-            {"left": False,
-             "right": False,
-             "up": False,
-             "down": False})
-
-    def __reset_led_spis(self):
-        self.enabled_led_pairs.update(
-            {"left1": False,
-             "left2": False,
-             "right1": False,
-             "right2": False,
-             "up1": False,
-             "up2": False,
-             "down1": False,
-             "down2": False}
-        )
-
-    def __prepare_views(self):
-        self.stream_window = 'HamamatsuView'
-        window_width = self.width // self.binning
-        window_height = self.height // self.binning
-        cv2.namedWindow(
-            self.stream_window,
-            flags=(cv2.WINDOW_NORMAL | cv2.WINDOW_GUI_NORMAL | cv2.WINDOW_FREERATIO))
-        cv2.setWindowProperty(self.stream_window, cv2.WND_PROP_TOPMOST, 1.0)
-        cv2.setWindowProperty(self.stream_window, cv2.WND_PROP_FULLSCREEN, 1.0)
-        cv2.resizeWindow(
-            self.stream_window,
-            window_width,
-            window_height)
-        cv2.moveWindow(
-            self.stream_window,
-            0,
-            0)
-
-        self.intensity_canvas = FigureCanvasQTAgg(Figure())
-        self.intensity_ax = self.intensity_canvas.figure.add_subplot(111)
-        self.intensity_y = []
-        self.intensity_line, = self.intensity_ax.plot(self.intensity_y, 'k+')
-        self.intensity_ax.set(xlabel="Frame", ylabel="Average Intensity")
-        self.layout_plot1.addWidget(self.intensity_canvas)
-        plt.ticklabel_format(style='plain')
-
-    def __update_intensity_plot(self):
-        length = len(self.intensity_y)
-        self.intensity_line.set_xdata(list(range(min(length, 100))))
-        self.intensity_line.set_ydata(self.intensity_y[-min(100, length):])
-        self.intensity_ax.relim()
-        self.intensity_ax.autoscale_view()
-        self.intensity_canvas.draw()
-        self.intensity_canvas.flush_events()
+        self.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        self.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        self.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        self.background_raw_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
 
     def __connect_signals(self):
         # LED controls
@@ -161,13 +122,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         # Data Streams and Signals
         self.frame_processor.frame_processed_signal.connect(self.__on_processed_frame)
-        self.frame_processor.frame_stack_processed_signal.connect(self.__on_processed_stack)
         self.frame_processor.diff_processed_signal.connect(self.__on_processed_diff)
-        self.camera_grabber.frame_from_camera_ready_signal.connect(self.__on_new_raw_frame)
-        self.camera_grabber.frame_stack_from_camera_ready_signal.connect(self.__on_new_raw_frame_stack)
-        self.camera_grabber.quit_ready.connect(self.__on_quit_ready)
+        self.camera_grabber.frame_ready_signal.connect(self.__on_new_raw_frame)
         self.camera_grabber.difference_frame_ready.connect(self.__on_new_diff_frame)
-        self.camera_grabber.difference_frame_stack_ready.connect(self.__on_new_diff_frame_stack)
+        self.camera_grabber.camera_ready.connect(self.__on_camera_ready)
+        self.camera_grabber.quit_ready.connect(self.__on_quit_ready)
 
         # saving GUI
         self.button_save_package.clicked.connect(self.__on_save)
@@ -182,6 +141,81 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # TODO: Add plot of intensity
         # TODO: Add change the number of frames
         # TODO: Add histogram plot
+
+    def __prepare_views(self):
+        self.stream_window = 'HamamatsuView'
+        window_width = self.width
+        window_height = self.height
+        cv2.namedWindow(
+            self.stream_window,
+            flags=(cv2.WINDOW_NORMAL | cv2.WINDOW_GUI_NORMAL | cv2.WINDOW_FREERATIO))
+        cv2.setWindowProperty(self.stream_window, cv2.WND_PROP_TOPMOST, 1.0)
+        cv2.setWindowProperty(self.stream_window, cv2.WND_PROP_FULLSCREEN, 1.0)
+        cv2.resizeWindow(
+            self.stream_window,
+            window_width,
+            window_height)
+        cv2.moveWindow(
+            self.stream_window,
+            0,
+            0)
+
+        self.plots_canvas = FigureCanvasQTAgg(Figure())
+        self.intensity_ax = self.plots_canvas.figure.add_subplot(311)
+        self.intensity_y = []
+        self.intensity_line, = self.intensity_ax.plot(self.intensity_y, 'k+')
+        self.intensity_ax.set(title="Raw frame average intensity", xlabel="Frame", ylabel="Average Intensity")
+
+        self.hist_ax = self.plots_canvas.figure.add_subplot(312)
+        self.hist_line, = self.hist_ax.plot([], [], 'b-')
+        self.hist_ax.set(title="Histogram as Seen", xlabel="Brightness", ylabel="Counts")
+
+        self.blank_ax = self.plots_canvas.figure.add_subplot(313)
+        self.blank_line, = self.hist_ax.plot([], [], 'r-')
+        self.blank_ax.set(title="Unused Plot", xlabel="", ylabel="")
+        self.plots_canvas.figure.tight_layout(pad=0.1)
+        self.layout_plot1.addWidget(self.plots_canvas)
+
+    def __update_plots(self):
+        length = len(self.intensity_y)
+        self.intensity_line.set_xdata(list(range(min(length, 100))))
+        self.intensity_line.set_ydata(self.intensity_y[-min(100, length):])
+        self.intensity_ax.relim()
+        self.intensity_ax.autoscale_view()
+
+        hist_data, hist_bins = exposure.histogram(self.latest_processed_frame)
+        self.hist_line.set_xdata(hist_bins)
+        self.hist_line.set_ydata(hist_data)
+        self.hist_ax.relim()
+        self.hist_ax.autoscale_view()
+
+        self.blank_line.set_xdata([])
+        self.blank_line.set_ydata([])
+        self.blank_ax.relim()
+        self.blank_ax.autoscale_view()
+
+        plt.autoscale()
+        self.plots_canvas.draw()
+        self.plots_canvas.flush_events()
+
+    def __reset_pairs(self):
+        self.enabled_led_pairs.update(
+            {"left": False,
+             "right": False,
+             "up": False,
+             "down": False})
+
+    def __reset_led_spis(self):
+        self.enabled_led_pairs.update(
+            {"left1": False,
+             "left2": False,
+             "right1": False,
+             "right2": False,
+             "up1": False,
+             "up2": False,
+             "down1": False,
+             "down2": False}
+        )
 
     def __get_lighting_configuration(self):
         if self.button_long_pol.isChecked():
@@ -210,17 +244,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.set_percentile_lower(self.spin_percentile_lower.value())
         self.frame_processor.set_percentile_upper(self.spin_percentile_upper.value())
         self.frame_processor.set_clip_limit(self.spin_clip.value())
-
-    def prepare_difference_mode(self):
-        self.frame_processor.subtracting = False
-        self.button_display_subtraction.setEnabled(False)
-
-        # TODO: Add new displays of raw frames but half size of each to the right of the displayed image
-
-    def __disable_difference_mode(self):
-        self.button_display_subtraction.setEnabled(True)
-        self.frame_processor.subtracting = self.button_display_subtraction.isChecked(False)
-        # TODO: hide the CV2 windows for the raw pos/neg
 
     def __on_image_processing_mode_change(self, mode):
         self.frame_processor.set_mode(mode)
@@ -271,12 +294,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_left_led2.setChecked(False)
         self.button_right_led1.setChecked(False)
         self.button_right_led2.setChecked(False)
-
-        self.camera_grabber.running = False
-        if self.button_toggle_averaging.isChecked():
-            self.camera_grabber.start_averaging()
-        else:
-            self.camera_grabber.start_live_single_frame()
 
         self.__update_controller_pairs()
 
@@ -386,7 +403,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.__disable_all_leds()
 
     def __on_long_trans(self):
-        print("Long trans clicked. state: ", self.button_long_trans.isChecked())
         if self.button_long_trans.isChecked():
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
@@ -394,19 +410,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_pure_long.setChecked(False)
             self.button_pure_trans.setChecked(False)
 
-            self.lamp_controller.continuous_flicker(0)
-
-            self.__prepare_for_flicker_mode()
-
             self.button_up_led1.setChecked(True)
             self.button_up_led2.setChecked(True)
             self.button_left_led1.setChecked(True)
             self.button_left_led2.setChecked(True)
 
-            self.__start_flicker_mode()
+            self.lamp_controller.continuous_flicker(0)
+
+            self.__prepare_for_flicker_mode()
 
         else:
-            print("resetting")
             self.__reset_after_flicker_mode()
 
     def __on_pure_long(self):
@@ -425,8 +438,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_up_led2.setChecked(True)
             self.button_down_led1.setChecked(True)
             self.button_down_led2.setChecked(True)
-
-            self.__start_flicker_mode()
         else:
             self.__reset_after_flicker_mode()
 
@@ -446,14 +457,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_up_led2.setChecked(True)
             self.button_right_led1.setChecked(True)
             self.button_right_led2.setChecked(True)
-
-            self.__start_flicker_mode()
         else:
             self.__reset_after_flicker_mode()
 
     def __prepare_for_flicker_mode(self):
+
+        self.frame_processor.subtracting = False
+        self.button_display_subtraction.setEnabled(False)
+        # TODO: Add cv2 windows for raw frames
+
         self.led_control_enabled = False
         self.flickering = True
+
+        self.mutex.lock()
+        self.camera_grabber.running = False
+        self.mutex.unlock()
 
         self.button_up_led1.setEnabled(False)
         self.button_up_led2.setEnabled(False)
@@ -473,16 +491,29 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_right_led1.setChecked(False)
         self.button_right_led2.setChecked(False)
 
-    def __start_flicker_mode(self):
-        if self.button_toggle_averaging.isChecked():
-            self.camera_grabber.start_difference_mode_averaging()
-            print("Camera grabber starting difference mode averaging")
-        else:
-            self.camera_grabber.start_difference_mode_single()
-            print("Camera grabber starting difference mode single")
+    def __on_camera_ready(self):
+        """
+        Whenever the camera is stopped, this is automatically called but cannot be instigated until after the method
+        that changed the running mode has been executed fully. If paused, this is ignored and unpausing manually
+        restarts the camera.
+        :return:
+        """
+        if not self.button_pause_camera.isChecked():
+            if self.flickering:
+                self.camera_grabber.start_live_difference_mode()
+                print("Camera grabber starting difference mode")
+            else:
+                self.camera_grabber.start_live_single_frame()
+                print("Camera grabber starting normal mode")
 
     def __reset_after_flicker_mode(self):
         self.lamp_controller.stop_flicker()
+        self.camera_grabber.running = False
+
+        self.button_display_subtraction.setEnabled(True)
+        self.frame_processor.subtracting = self.button_display_subtraction.isChecked()
+        # TODO: hide the CV2 windows for the raw pos/neg
+
         print("Resetting after flicker mode")
         self.button_up_led1.setEnabled(True)
         self.button_up_led2.setEnabled(True)
@@ -497,11 +528,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.flickering = False
 
         self.__disable_all_leds()
-
-        if self.button_toggle_averaging.isChecked():
-            self.camera_grabber.start_averaging()
-        else:
-            self.camera_grabber.start_live_single_frame()
 
     def __update_controller_pairs(self):
         self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
@@ -519,50 +545,54 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.lamp_controller.enable_leds(value)
 
     def __on_new_raw_frame(self, raw_frame):
-        self.frame_processor.process_frame(raw_frame)
+        self.latest_raw_frame = raw_frame
         self.intensity_y.append(np.mean(raw_frame, axis=(0, 1)))
-        self.__update_intensity_plot()
-        self.latest_raw_frame = raw_frame.copy()
+        if self.averaging:
+            if self.frame_counter % self.averages < len(self.raw_frame_stack):
+                self.raw_frame_stack[self.frame_counter % self.averages] = raw_frame
+            else:
+                self.raw_frame_stack = np.append(self.raw_frame_stack, np.expand_dims(raw_frame, 0), axis=0)
+            if len(self.raw_frame_stack) > self.averages:
+                self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
+            self.frame_counter += 1
+            self.frame_processor.process_frame(np.mean(self.raw_frame_stack, axis=0))
+        else:
+            self.frame_processor.process_frame(raw_frame)
 
-    def __on_new_raw_frame_stack(self, raw_frames, latest):
-        self.frame_processor.process_stack(raw_frames)
-        # Only append last value because stack grows with time
-        self.intensity_y.append(np.mean(raw_frames[latest], axis=(0, 1)))
-        self.__update_intensity_plot()
-
-        self.latest_raw_frame_stack = raw_frames.copy()
-
-    def __on_new_diff_frame(self, frames):
-        self.frame_processor.process_single_diff(frames)
-        intensity_a = np.mean(frames[0], axis=(0, 1))
-        intensity_b = np.mean(frames[1], axis=(0, 1))
+    def __on_new_diff_frame(self, frame_a, frame_b):
+        intensity_a = np.mean(frame_a, axis=(0, 1))
+        intensity_b = np.mean(frame_b, axis=(0, 1))
         self.intensity_y.append(intensity_a)
         self.intensity_y.append(intensity_b)
-        self.__update_intensity_plot()
-        self.latest_diff_frame = frames
-
-    def __on_new_diff_frame_stack(self, frames, latest):
-        self.frame_processor.process_diff_stack(frames)
-        self.intensity_y.append(np.mean(frames[0][latest], axis=(0, 1)))
-        self.intensity_y.append(np.mean(frames[1][latest], axis=(0, 1)))
-        self.__update_intensity_plot()
-        self.latest_diff_frame = frames
+        if self.averaging:
+            if self.frame_counter % self.averages < len(self.diff_frame_stack_a):
+                self.diff_frame_stack_a[self.frame_counter % self.averages] = frame_a
+                self.diff_frame_stack_b[self.frame_counter % self.averages] = frame_b
+            else:
+                self.diff_frame_stack_a = np.append(self.diff_frame_stack_a, np.expand_dims(frame_a, 0), axis=0)
+                self.diff_frame_stack_b = np.append(self.diff_frame_stack_b, np.expand_dims(frame_b, 0), axis=0)
+            if len(self.diff_frame_stack_a) > self.averages:
+                self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
+                self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
+            self.frame_counter += 1
+            self.frame_processor.process_diff(np.mean(self.diff_frame_stack_a, axis=0),
+                                              np.mean(self.diff_frame_stack_b, axis=0))
+        else:
+            self.latest_diff_frame_a = frame_a
+            self.latest_diff_frame_b = frame_b
+            self.frame_processor.process_diff(frame_a, frame_b)
 
     def __on_processed_frame(self, processed_frame):
         self.latest_processed_frame = processed_frame
         cv2.imshow(self.stream_window, processed_frame)
-        cv2.waitKey(1)
-
-    def __on_processed_stack(self, averaged, processed):
-        self.latest_raw_frame = averaged
-        self.latest_processed_frame = processed
-        cv2.imshow(self.stream_window, processed)
+        self.__update_plots()
         cv2.waitKey(1)
 
     def __on_processed_diff(self, diff, diff_processed):
         self.latest_diff_frame = diff
         self.latest_processed_frame = diff_processed
         cv2.imshow(self.stream_window, diff_processed)
+        self.__update_plots()
         cv2.waitKey(1)
 
     def __on_get_new_background(self, ignored_event):
@@ -570,12 +600,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_grabber.running = False
         self.mutex.unlock()
         frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
-        self.background_raw_stack = frames.copy()
-        self.background = np.mean(np.array(frames), axis=0)
+        self.background_raw_stack = frames
+        self.background = np.mean(frames, axis=0)
         self.frame_processor.background = self.background
-        if self.camera_grabber.averaging:
-            self.camera_grabber.averaging = self.spin_foreground_averages.value()
-            self.camera_grabber.start_averaging()
+        if self.flickering:
+            self.camera_grabber.start_live_difference_mode()
         else:
             self.camera_grabber.start_live_single_frame()
         print("Background Measured")
@@ -587,27 +616,27 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_grabber.set_exposure_time(exposure_time_idx)
 
     def __on_average_changed(self, value):
-        self.camera_grabber.averages = value
+        self.averages = value
 
     def __on_averaging(self, enabled):
         if enabled:
             self.button_toggle_averaging.setText("Disable Averaging (F3)")
-            print("averaging enabled")
+            print("Averaging enabled")
             self.averaging = True
             self.camera_grabber.running = False
-            self.camera_grabber.averaging = self.spin_foreground_averages.value()
-            if self.led_control_enabled:
-                self.camera_grabber.start_averaging()
-            else:
-                self.camera_grabber.start_difference_mode_averaging()
+            self.averages = self.spin_foreground_averages.value()
+            self.frame_counter = 0
+            self.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+            self.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+            self.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
         else:
             self.button_toggle_averaging.setText("Enable Averaging (F3)")
-            print("averaging disabled")
+            print("Averaging disabled")
             self.averaging = False
-            if self.led_control_enabled:
-                self.camera_grabber.start_live_single_frame()
-            else:
-                self.camera_grabber.start_difference_mode_single()
+            self.camera_grabber.running = False
+            self.raw_frame_stack = None
+            self.diff_frame_stack_a = None
+            self.diff_frame_stack_b = None
 
     def __on_show_subtraction(self, subtracting):
         if subtracting:
@@ -618,8 +647,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.subtracting = False
 
     def __on_pause_button(self, paused):
-
-        # TODO: pause the flicker (maybe just by enabling SPI?)
         if paused:
             self.camera_grabber.running = False
             self.button_pause_camera.setText("Unpause (F4)")
@@ -627,17 +654,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.lamp_controller.pause_flicker(paused)
         else:
             self.button_pause_camera.setText("Pause (F4)")
-            if self.averaging:
-                if self.flickering:
-                    self.lamp_controller.pause_flicker(paused)
-                    self.camera_grabber.start_difference_mode_averaging()
-                else:
-                    self.camera_grabber.start_averaging()
+            if self.flickering:
+                self.lamp_controller.pause_flicker(paused)
+                self.camera_grabber.start_live_difference_mode()
             else:
-                if self.flickering:
-                    self.camera_grabber.start_difference_mode_single()
-                else:
-                    self.camera_grabber.start_live_single_frame()
+                self.camera_grabber.start_live_single_frame()
 
     def __on_save(self, event):
         # TODO: Add the difference frame processing to this. Currently this only works for single light source modes
@@ -671,10 +692,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 contents.append(key)
                 store[key] = pd.DataFrame(self.latest_raw_frame)
             if self.check_save_stack.isChecked():
-                for i in range(self.latest_raw_frame_stack.shape[0]):
+                for i in range(self.raw_frame_stack.shape[0]):
                     key = 'stack_' + str(i)
                     contents.append(key)
-                    store[key] = pd.DataFrame(self.latest_raw_frame_stack[i])
+                    store[key] = pd.DataFrame(self.raw_frame_stack[i])
         else:
             if self.check_save_avg.isChecked():
                 print("Average not saved: measuring in single frame mode")
