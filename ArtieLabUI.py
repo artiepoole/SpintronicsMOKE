@@ -11,6 +11,12 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import *
+from matplotlib.figure import Figure
+
+plt.rcParams['axes.formatter.useoffset'] = False
+
 
 class ArtieLabUI(QtWidgets.QMainWindow):
     def __init__(self):
@@ -60,7 +66,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.averaging = False
 
         self.__connect_signals()
-        self.__prepare_view()
+        self.__prepare_views()
 
         self.camera_grabber.start_live_single_frame()
 
@@ -83,7 +89,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
              "down2": False}
         )
 
-    def __prepare_view(self):
+    def __prepare_views(self):
         self.stream_window = 'HamamatsuView'
         window_width = self.width // self.binning
         window_height = self.height // self.binning
@@ -100,6 +106,23 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.stream_window,
             0,
             0)
+
+        self.intensity_canvas = FigureCanvasQTAgg(Figure())
+        self.intensity_ax = self.intensity_canvas.figure.add_subplot(111)
+        self.intensity_y = []
+        self.intensity_line, = self.intensity_ax.plot(self.intensity_y, 'k+')
+        self.intensity_ax.set(xlabel="Frame", ylabel="Average Intensity")
+        self.layout_plot1.addWidget(self.intensity_canvas)
+        plt.ticklabel_format(style='plain')
+
+    def __update_intensity_plot(self):
+        length = len(self.intensity_y)
+        self.intensity_line.set_xdata(list(range(min(length, 100))))
+        self.intensity_line.set_ydata(self.intensity_y[-min(100, length):])
+        self.intensity_ax.relim()
+        self.intensity_ax.autoscale_view()
+        self.intensity_canvas.draw()
+        self.intensity_canvas.flush_events()
 
     def __connect_signals(self):
         # LED controls
@@ -151,6 +174,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_save_single.clicked.connect(self.__on_save_single)
         self.button_dir_browse.clicked.connect(self.__on_browse)
 
+        # TODO: Add planar subtraction
+        # TODO: Add ROI
+        # TODO: Add Draw Line feature
+        # TODO: Add brightness normalisation
+        # TODO: binning mode change handling#
+        # TODO: Add plot of intensity
+        # TODO: Add change the number of frames
+        # TODO: Add histogram plot
+
     def __get_lighting_configuration(self):
         if self.button_long_pol.isChecked():
             return "longitudinal and polar"
@@ -183,12 +215,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.subtracting = False
         self.button_display_subtraction.setEnabled(False)
 
-        # TODO(Add new displays of raw frames but half size of each to the right of the displayed image)
+        # TODO: Add new displays of raw frames but half size of each to the right of the displayed image
 
     def __disable_difference_mode(self):
         self.button_display_subtraction.setEnabled(True)
         self.frame_processor.subtracting = self.button_display_subtraction.isChecked(False)
-        # TODO(hide the CV2 windows for the raw pos/neg)
+        # TODO: hide the CV2 windows for the raw pos/neg
 
     def __on_image_processing_mode_change(self, mode):
         self.frame_processor.set_mode(mode)
@@ -230,8 +262,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_long_trans.setChecked(False)
         self.button_pure_long.setChecked(False)
         self.button_pure_trans.setChecked(False)
-
-
 
         self.button_up_led1.setChecked(False)
         self.button_up_led2.setChecked(False)
@@ -490,18 +520,32 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_new_raw_frame(self, raw_frame):
         self.frame_processor.process_frame(raw_frame)
+        self.intensity_y.append(np.mean(raw_frame, axis=(0, 1)))
+        self.__update_intensity_plot()
         self.latest_raw_frame = raw_frame.copy()
 
-    def __on_new_raw_frame_stack(self, raw_frames):
+    def __on_new_raw_frame_stack(self, raw_frames, latest):
         self.frame_processor.process_stack(raw_frames)
+        # Only append last value because stack grows with time
+        self.intensity_y.append(np.mean(raw_frames[latest], axis=(0, 1)))
+        self.__update_intensity_plot()
+
         self.latest_raw_frame_stack = raw_frames.copy()
 
     def __on_new_diff_frame(self, frames):
         self.frame_processor.process_single_diff(frames)
+        intensity_a = np.mean(frames[0], axis=(0, 1))
+        intensity_b = np.mean(frames[1], axis=(0, 1))
+        self.intensity_y.append(intensity_a)
+        self.intensity_y.append(intensity_b)
+        self.__update_intensity_plot()
         self.latest_diff_frame = frames
 
-    def __on_new_diff_frame_stack(self, frames):
+    def __on_new_diff_frame_stack(self, frames, latest):
         self.frame_processor.process_diff_stack(frames)
+        self.intensity_y.append(np.mean(frames[0][latest], axis=(0, 1)))
+        self.intensity_y.append(np.mean(frames[1][latest], axis=(0, 1)))
+        self.__update_intensity_plot()
         self.latest_diff_frame = frames
 
     def __on_processed_frame(self, processed_frame):
@@ -574,6 +618,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.subtracting = False
 
     def __on_pause_button(self, paused):
+
+        # TODO: pause the flicker (maybe just by enabling SPI?)
         if paused:
             self.camera_grabber.running = False
             self.button_pause_camera.setText("Unpause (F4)")
@@ -594,7 +640,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     self.camera_grabber.start_live_single_frame()
 
     def __on_save(self, event):
-        # TODO(Add the difference frame processing to this. Currently this only works for single light source modes)
+        # TODO: Add the difference frame processing to this. Currently this only works for single light source modes
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
