@@ -1593,7 +1593,7 @@ Pairs</string>
      </layout>
     </item>
     <item>
-     <layout class="QGridLayout" name="PLOTGRID" columnminimumwidth="0">
+     <layout class="QGridLayout" name="PLOTGRID">
       <property name="sizeConstraint">
        <enum>QLayout::SetDefaultConstraint</enum>
       </property>
@@ -1601,17 +1601,10 @@ Pairs</string>
        <number>20</number>
       </property>
       <item row="0" column="0">
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
+       <layout class="QVBoxLayout" name="layout_plot1"/>
+      </item>
+      <item row="1" column="0">
+       <layout class="QVBoxLayout" name="layout_plot2"/>
       </item>
      </layout>
     </item>
