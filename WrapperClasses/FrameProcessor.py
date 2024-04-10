@@ -11,6 +11,7 @@ class FrameProcessor(QtCore.QObject):
     IMAGE_PROCESSING_ADAPTEQ = 3
     frame_processed_signal = QtCore.pyqtSignal(np.ndarray)
     frame_stack_processed_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+    diff_processed_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     mode = 0
     p_low = 0
     p_high = 100
@@ -46,44 +47,45 @@ class FrameProcessor(QtCore.QObject):
     def set_clip_limit(self, new_clip_limit):
         self.clip = new_clip_limit
 
-    def process_frame(self, raw_frame):
+    def __process_frame(self, frame_in):
         if self.subtracting and self.background is not None:
-            raw_frame = raw_frame.astype(np.int16) - self.background.astype(np.int16)
-            raw_frame[raw_frame < 0] = 0
+            frame_in = frame_in.astype(np.int16) - self.background.astype(np.int16)
+            frame_in[frame_in < 0] = 0
         match self.mode:
             case self.IMAGE_PROCESSING_NONE:
-                processed_frame = raw_frame
+                return frame_in
             case self.IMAGE_PROCESSING_PERCENTILE:
-                px_low, px_high = np.percentile(raw_frame, (self.p_low, self.p_high))
-                processed_frame = exposure.rescale_intensity(raw_frame, in_range=(px_low, px_high))
+                px_low, px_high = np.percentile(frame_in, (self.p_low, self.p_high))
+                return exposure.rescale_intensity(frame_in, in_range=(px_low, px_high))
             case self.IMAGE_PROCESSING_HISTEQ:
-                processed_frame = (exposure.equalize_hist(raw_frame) * 65535).astype(np.uint16)
+                return (exposure.equalize_hist(frame_in) * 65535).astype(np.uint16)
             case self.IMAGE_PROCESSING_ADAPTEQ:
-                processed_frame = (exposure.equalize_adapthist(raw_frame, clip_limit=self.clip) * 65535).astype(
+                return (exposure.equalize_adapthist(frame_in, clip_limit=self.clip) * 65535).astype(
                     np.uint16)
             case _:
                 print("Unrecognized image processing mode")
-                processed_frame = raw_frame
-        self.frame_processed_signal.emit(processed_frame.astype(np.uint16))
+                return frame_in
+
+    def process_frame(self, raw_frame):
+        self.frame_processed_signal.emit(self.__process_frame(raw_frame).astype(np.uint16))
 
     def process_stack(self, raw_stack):
         mean_frame = np.mean(np.array(raw_stack), axis=0)
-        if self.subtracting and self.background is not None:
-            sub = mean_frame - self.background
-            sub[sub < 0] = 0
-        else:
-            sub = mean_frame
-        match self.mode:
-            case self.IMAGE_PROCESSING_NONE:
-                processed_frame = sub
-            case self.IMAGE_PROCESSING_PERCENTILE:
-                px_low, px_high = np.percentile(sub, (self.p_low, self.p_high))
-                processed_frame = exposure.rescale_intensity(sub, in_range=(px_low, px_high))
-            case self.IMAGE_PROCESSING_HISTEQ:
-                processed_frame = (exposure.equalize_hist(sub) * 65535).astype(np.uint16)
-            case self.IMAGE_PROCESSING_ADAPTEQ:
-                processed_frame = (exposure.equalize_adapthist(sub.astype(np.uint16), clip_limit=self.clip)*65535)
-            case _:
-                print("Unrecognized image processing mode")
-                processed_frame = sub
-        self.frame_stack_processed_signal.emit(mean_frame, processed_frame)
+        self.frame_stack_processed_signal.emit(mean_frame, self.__process_frame(mean_frame))
+
+    def process_single_diff(self, frames):
+        frame_a = frames[0]
+        frame_b = frames[1]
+        diff_frame = np.abs(frame_a.astype(np.int16) - frame_b.astype(np.int16)).astype(np.uint16)
+        self.diff_processed_signal.emit(diff_frame, self.__process_frame(diff_frame))
+
+    def process_diff_stack(self, frames):
+        frames_a = frames[0]
+        frames_b = frames[1]
+
+        mean_a = np.mean(np.array(frames_a), axis=0)
+        mean_b = np.mean(np.array(frames_b), axis=0)
+
+        meaned_diff = np.abs(mean_a.astype(np.int16) - mean_b.astype(np.int16)).astype(np.uint16)
+        self.diff_processed_signal.emit(meaned_diff, self.__process_frame(meaned_diff))
+

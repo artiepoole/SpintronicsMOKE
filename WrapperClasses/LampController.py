@@ -1,7 +1,7 @@
 import nidaqmx as nidaq
 from ctypes import *
 import numpy as np
-from nidaqmx.constants import LineGrouping, AcquisitionType
+from nidaqmx.constants import LineGrouping, AcquisitionType, SampleTimingType
 from nidaqmx.stream_writers import DigitalSingleChannelWriter
 from itertools import chain
 import time
@@ -27,8 +27,9 @@ class LampController:
 
         self.TTL_output_task = nidaq.Task()
 
-        self.TTL_output_task.do_channels.add_do_chan('Dev1/port0/line0:7')
+        self.TTL_output_task.do_channels.add_do_chan('Dev1/port0/line0:4')
         self.TTL_stream = DigitalSingleChannelWriter(self.TTL_output_task.out_stream, True)
+
         self.SPI_task = nidaq.Task()
 
         self.SPI_task.do_channels.add_do_chan('Dev1/port1/line1:4')
@@ -36,7 +37,6 @@ class LampController:
         self.SPI_task.write(self.__resting_state_noSPI)
         self.__SPI_enabled = False
         self.set_all_brightness(180)
-
 
     def disable_all(self):
         if self.__SPI_enabled:
@@ -116,7 +116,7 @@ class LampController:
         """
         if not self.__SPI_enabled:
             self.enable_spi()
-        self._write_spi(int('0xA0', 16)+led, brightness)
+        self._write_spi(int('0xA0', 16) + led, brightness)
 
     def _write_spi(self, command, value):
         """
@@ -169,44 +169,65 @@ class LampController:
         # return to resting state, leaving MODE, SS and DATA high.
         self.SPI_stream.write_one_sample_port_byte(self.__resting_state_SPI)
 
+    def continuous_flicker(self, mode):
+        self.disable_spi()
+
+        self.TTL_output_task.stop()
+        match mode:
+            case 0:
+                # long trans pol
+                pairs_pos = 1
+                pairs_neg = 4
+            case 1:
+                # pure long
+                pairs_pos = 4
+                pairs_neg = 8
+            case 2:
+                # pure pol
+                pairs_pos = 1
+                pairs_neg = 2
+        n_samples = 120
+        pulse_width_in_samples = 5
+        out_array = np.zeros(shape=[120])  # 120 sample is 120 ms. This means that the on off rate is 50ms per light. Exposure time is 50ms so this is too short
+
+        out_array[0:n_samples // 2] = pairs_pos
+        out_array[0:pulse_width_in_samples] = out_array[0:pulse_width_in_samples] + 16
+        out_array[n_samples // 2:] = pairs_neg
+        out_array[n_samples // 2:n_samples // 2 + pulse_width_in_samples] = out_array[
+                                                                            n_samples // 2:n_samples // 2 + pulse_width_in_samples] + 16
+        self.TTL_output_task.stop()
+        self.TTL_output_task.timing.cfg_samp_clk_timing(1000, sample_mode=AcquisitionType.CONTINUOUS,
+                                                        samps_per_chan=n_samples)
+        self.TTL_stream.write_many_sample_port_byte(out_array.astype(np.uint8))
+
+    def stop_flicker(self):
+        self.TTL_output_task.stop()
+        self.TTL_output_task.timing.samp_timing_type = SampleTimingType.ON_DEMAND
+        self.TTL_stream.write_one_sample_port_byte(0)
+
 
 if __name__ == '__main__':
     import time
 
     controller = LampController()
     controller.disable_all()
-    # time.sleep(1)
     controller.enable_left_pair()
     time.sleep(1)
-    # Sets brightness of all LEDs to max
-    controller._write_spi(int('0xA9', 16), int('0xB4', 16))
 
+    controller.continuous_flicker(0)
+
+    time.sleep(2)
+    controller.continuous_flicker(1)
+
+    time.sleep(2)
+    controller.continuous_flicker(2)
+
+    time.sleep(2)
+
+    controller.stop_flicker()
     time.sleep(1)
-    values = [0, 1, 2, 4, 8, 16, 32, 64, 128]
-    for value in values:
-        controller.enable_leds(value)
-        time.sleep(2)
-    # time.sleep(1)  # Swaps between alterneating even and odd LEDs all on
-    # for loop in range(10):
-    #     controller.enable_leds(int('0x50', 16))
-    #     time.sleep(0.1)
-    #     controller.enable_leds_bools(0, 1, 0, 1, 0, 0, 0, 0)
-    #     time.sleep(0.1)
-    # print("enable all?")
-    # controller.TTL_stream.write_one_sample_port_byte(15)
-    # print("enable all?")
-    # time.sleep(3)
-    # controller.enable_assortment(True, True, True, True)
-    # print("enable all!")
-    # controller.enable_assortment(True, True, True, True)
-    # time.sleep(3)
-    # controller.close()
-    # time.sleep(1)
-    # for i in range(20):
-    #     controller.enable_SPI()
-    #
-    #     controller.disable_SPI()
-
+    controller.enable_left_pair()
+    time.sleep(2)
     controller.close()
 
     # for i in range(100):

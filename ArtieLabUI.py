@@ -28,6 +28,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.close_event = None
         self.background = None
         self.binning = 2
+
         self.enabled_leds_spi = {"left1": False,
                                  "left2": False,
                                  "right1": False,
@@ -53,6 +54,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor = FrameProcessor()
         self.frame_processor_thread = QtCore.QThread()
         self.frame_processor.moveToThread(self.frame_processor_thread)
+
+        self.led_control_enabled = True
+        self.flickering = False
+        self.averaging = False
 
         self.__connect_signals()
         self.__prepare_view()
@@ -108,12 +113,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_down_led2.toggled.connect(self.__on_individual_led)
         self.button_leds_off.clicked.connect(self.__disable_all_leds)
 
-        self.button_long_pol.clicked.connect(self.__on_long_pol)
-        self.button_trans_pol.clicked.connect(self.__on_trans_pol)
-        self.button_polar.clicked.connect(self.__on_polar)
-        self.button_long_trans.clicked.connect(self.__on_long_trans)
-        self.button_pure_long.clicked.connect(self.__on_pure_long)
-        self.button_pure_trans.clicked.connect(self.__on_pure_trans)
+        self.button_long_pol.toggled.connect(self.__on_long_pol)
+        self.button_trans_pol.toggled.connect(self.__on_trans_pol)
+        self.button_polar.toggled.connect(self.__on_polar)
+        self.button_long_trans.toggled.connect(self.__on_long_trans)
+        self.button_pure_long.toggled.connect(self.__on_pure_long)
+        self.button_pure_trans.toggled.connect(self.__on_pure_trans)
 
         # Image Processing Controls
         self.combo_normalisation_selector.currentIndexChanged.connect(self.__on_image_processing_mode_change)
@@ -134,9 +139,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Data Streams and Signals
         self.frame_processor.frame_processed_signal.connect(self.__on_processed_frame)
         self.frame_processor.frame_stack_processed_signal.connect(self.__on_processed_stack)
+        self.frame_processor.diff_processed_signal.connect(self.__on_processed_diff)
         self.camera_grabber.frame_from_camera_ready_signal.connect(self.__on_new_raw_frame)
         self.camera_grabber.frame_stack_from_camera_ready_signal.connect(self.__on_new_raw_frame_stack)
         self.camera_grabber.quit_ready.connect(self.__on_quit_ready)
+        self.camera_grabber.difference_frame_ready.connect(self.__on_new_diff_frame)
+        self.camera_grabber.difference_frame_stack_ready.connect(self.__on_new_diff_frame_stack)
 
         # saving GUI
         self.button_save_package.clicked.connect(self.__on_save)
@@ -171,6 +179,17 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.set_percentile_upper(self.spin_percentile_upper.value())
         self.frame_processor.set_clip_limit(self.spin_clip.value())
 
+    def prepare_difference_mode(self):
+        self.frame_processor.subtracting = False
+        self.button_display_subtraction.setEnabled(False)
+
+        # TODO(Add new displays of raw frames but half size of each to the right of the displayed image)
+
+    def __disable_difference_mode(self):
+        self.button_display_subtraction.setEnabled(True)
+        self.frame_processor.subtracting = self.button_display_subtraction.isChecked(False)
+        # TODO(hide the CV2 windows for the raw pos/neg)
+
     def __on_image_processing_mode_change(self, mode):
         self.frame_processor.set_mode(mode)
         match mode:
@@ -201,8 +220,18 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 # this is Adaptive EQ and needs a clip limit
 
     def __disable_all_leds(self):
+        print("disabling all LEDs")
         self.__reset_led_spis()
         self.__reset_pairs()
+
+        self.button_long_pol.setChecked(False)
+        self.button_trans_pol.setChecked(False)
+        self.button_polar.setChecked(False)
+        self.button_long_trans.setChecked(False)
+        self.button_pure_long.setChecked(False)
+        self.button_pure_trans.setChecked(False)
+
+
 
         self.button_up_led1.setChecked(False)
         self.button_up_led2.setChecked(False)
@@ -213,27 +242,29 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_right_led1.setChecked(False)
         self.button_right_led2.setChecked(False)
 
-        self.button_long_pol.setChecked(False)
-        self.button_trans_pol.setChecked(False)
-        self.button_polar.setChecked(False)
-        self.button_long_trans.setChecked(False)
-        self.button_pure_long.setChecked(False)
-        self.button_pure_trans.setChecked(False)
+        self.camera_grabber.running = False
+        if self.button_toggle_averaging.isChecked():
+            self.camera_grabber.start_averaging()
+        else:
+            self.camera_grabber.start_live_single_frame()
 
         self.__update_controller_pairs()
 
     def __on_individual_led(self, state):
-        self.enabled_leds_spi["up1"] = self.button_up_led1.isChecked()
-        self.enabled_leds_spi["up2"] = self.button_up_led2.isChecked()
-        self.enabled_leds_spi["down1"] = self.button_down_led1.isChecked()
-        self.enabled_leds_spi["down2"] = self.button_down_led2.isChecked()
-        self.enabled_leds_spi["left1"] = self.button_left_led1.isChecked()
-        self.enabled_leds_spi["left2"] = self.button_left_led2.isChecked()
-        self.enabled_leds_spi["right1"] = self.button_right_led1.isChecked()
-        self.enabled_leds_spi["right2"] = self.button_right_led2.isChecked()
-        self.__update_controller_spi()
+
+        if self.led_control_enabled:
+            self.enabled_leds_spi["up1"] = self.button_up_led1.isChecked()
+            self.enabled_leds_spi["up2"] = self.button_up_led2.isChecked()
+            self.enabled_leds_spi["down1"] = self.button_down_led1.isChecked()
+            self.enabled_leds_spi["down2"] = self.button_down_led2.isChecked()
+            self.enabled_leds_spi["left1"] = self.button_left_led1.isChecked()
+            self.enabled_leds_spi["left2"] = self.button_left_led2.isChecked()
+            self.enabled_leds_spi["right1"] = self.button_right_led1.isChecked()
+            self.enabled_leds_spi["right2"] = self.button_right_led2.isChecked()
+            self.__update_controller_spi()
 
     def __on_long_pol(self):
+
         if self.button_long_pol.isChecked():
             self.enabled_led_pairs.update(
                 {"left": False,
@@ -241,6 +272,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                  "up": True,
                  "down": False})
             self.__reset_led_spis()
+            self.led_control_enabled = True
 
             self.button_up_led1.setChecked(True)
             self.button_up_led2.setChecked(True)
@@ -262,7 +294,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.__disable_all_leds()
 
     def __on_trans_pol(self):
+
         if self.button_trans_pol.isChecked():
+            self.led_control_enabled = True
             self.enabled_led_pairs.update({"left": True,
                                            "right": False,
                                            "up": False,
@@ -289,7 +323,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.__disable_all_leds()
 
     def __on_polar(self):
+
         if self.button_polar.isChecked():
+            self.led_control_enabled = True
             self.__reset_pairs()
             self.enabled_leds_spi.update(
                 {"left1": False,
@@ -320,40 +356,122 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.__disable_all_leds()
 
     def __on_long_trans(self):
-        print("Flashing Feature Not Implemented Yet....")
+        print("Long trans clicked. state: ", self.button_long_trans.isChecked())
         if self.button_long_trans.isChecked():
-            self.__disable_all_leds()
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
             self.button_pure_long.setChecked(False)
             self.button_pure_trans.setChecked(False)
+
+            self.lamp_controller.continuous_flicker(0)
+
+            self.__prepare_for_flicker_mode()
+
+            self.button_up_led1.setChecked(True)
+            self.button_up_led2.setChecked(True)
+            self.button_left_led1.setChecked(True)
+            self.button_left_led2.setChecked(True)
+
+            self.__start_flicker_mode()
+
         else:
-            self.__disable_all_leds()
+            print("resetting")
+            self.__reset_after_flicker_mode()
 
     def __on_pure_long(self):
         if self.button_pure_long.isChecked():
-            print("Flashing Feature Not Implemented Yet....")
-            self.__disable_all_leds()
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
             self.button_long_trans.setChecked(False)
             self.button_pure_trans.setChecked(False)
+
+            self.lamp_controller.continuous_flicker(1)
+
+            self.__prepare_for_flicker_mode()
+
+            self.button_up_led1.setChecked(True)
+            self.button_up_led2.setChecked(True)
+            self.button_down_led1.setChecked(True)
+            self.button_down_led2.setChecked(True)
+
+            self.__start_flicker_mode()
         else:
-            self.__disable_all_leds()
+            self.__reset_after_flicker_mode()
 
     def __on_pure_trans(self):
         if self.button_pure_trans.isChecked():
-            self.__disable_all_leds()
-            print("Flashing Feature Not Implemented Yet....")
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
             self.button_long_trans.setChecked(False)
             self.button_pure_long.setChecked(False)
+
+            self.lamp_controller.continuous_flicker(2)
+
+            self.__prepare_for_flicker_mode()
+
+            self.button_up_led1.setChecked(True)
+            self.button_up_led2.setChecked(True)
+            self.button_right_led1.setChecked(True)
+            self.button_right_led2.setChecked(True)
+
+            self.__start_flicker_mode()
         else:
-            self.__disable_all_leds()
+            self.__reset_after_flicker_mode()
+
+    def __prepare_for_flicker_mode(self):
+        self.led_control_enabled = False
+        self.flickering = True
+
+        self.button_up_led1.setEnabled(False)
+        self.button_up_led2.setEnabled(False)
+        self.button_down_led1.setEnabled(False)
+        self.button_down_led2.setEnabled(False)
+        self.button_left_led1.setEnabled(False)
+        self.button_left_led2.setEnabled(False)
+        self.button_right_led1.setEnabled(False)
+        self.button_right_led2.setEnabled(False)
+
+        self.button_up_led1.setChecked(False)
+        self.button_up_led2.setChecked(False)
+        self.button_down_led1.setChecked(False)
+        self.button_down_led2.setChecked(False)
+        self.button_left_led1.setChecked(False)
+        self.button_left_led2.setChecked(False)
+        self.button_right_led1.setChecked(False)
+        self.button_right_led2.setChecked(False)
+
+    def __start_flicker_mode(self):
+        if self.button_toggle_averaging.isChecked():
+            self.camera_grabber.start_difference_mode_averaging()
+            print("Camera grabber starting difference mode averaging")
+        else:
+            self.camera_grabber.start_difference_mode_single()
+            print("Camera grabber starting difference mode single")
+
+    def __reset_after_flicker_mode(self):
+        self.lamp_controller.stop_flicker()
+        print("Resetting after flicker mode")
+        self.button_up_led1.setEnabled(True)
+        self.button_up_led2.setEnabled(True)
+        self.button_down_led1.setEnabled(True)
+        self.button_down_led2.setEnabled(True)
+        self.button_left_led1.setEnabled(True)
+        self.button_left_led2.setEnabled(True)
+        self.button_right_led1.setEnabled(True)
+        self.button_right_led2.setEnabled(True)
+
+        self.led_control_enabled = True
+        self.flickering = False
+
+        self.__disable_all_leds()
+
+        if self.button_toggle_averaging.isChecked():
+            self.camera_grabber.start_averaging()
+        else:
+            self.camera_grabber.start_live_single_frame()
 
     def __update_controller_pairs(self):
         self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
@@ -378,8 +496,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.process_stack(raw_frames)
         self.latest_raw_frame_stack = raw_frames.copy()
 
-    def __on_processed_frame(self, processed_frame):
+    def __on_new_diff_frame(self, frames):
+        self.frame_processor.process_single_diff(frames)
+        self.latest_diff_frame = frames
 
+    def __on_new_diff_frame_stack(self, frames):
+        self.frame_processor.process_diff_stack(frames)
+        self.latest_diff_frame = frames
+
+    def __on_processed_frame(self, processed_frame):
         self.latest_processed_frame = processed_frame
         cv2.imshow(self.stream_window, processed_frame)
         cv2.waitKey(1)
@@ -388,6 +513,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.latest_raw_frame = averaged
         self.latest_processed_frame = processed
         cv2.imshow(self.stream_window, processed)
+        cv2.waitKey(1)
+
+    def __on_processed_diff(self, diff, diff_processed):
+        self.latest_diff_frame = diff
+        self.latest_processed_frame = diff_processed
+        cv2.imshow(self.stream_window, diff_processed)
         cv2.waitKey(1)
 
     def __on_get_new_background(self, ignored_event):
@@ -418,13 +549,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         if enabled:
             self.button_toggle_averaging.setText("Disable Averaging (F3)")
             print("averaging enabled")
+            self.averaging = True
             self.camera_grabber.running = False
             self.camera_grabber.averaging = self.spin_foreground_averages.value()
-            self.camera_grabber.start_averaging()
+            if self.led_control_enabled:
+                self.camera_grabber.start_averaging()
+            else:
+                self.camera_grabber.start_difference_mode_averaging()
         else:
             self.button_toggle_averaging.setText("Enable Averaging (F3)")
             print("averaging disabled")
-            self.camera_grabber.start_live_single_frame()
+            self.averaging = False
+            if self.led_control_enabled:
+                self.camera_grabber.start_live_single_frame()
+            else:
+                self.camera_grabber.start_difference_mode_single()
 
     def __on_show_subtraction(self, subtracting):
         if subtracting:
@@ -438,14 +577,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         if paused:
             self.camera_grabber.running = False
             self.button_pause_camera.setText("Unpause (F4)")
+            if self.flickering:
+                self.lamp_controller.pause_flicker(paused)
         else:
             self.button_pause_camera.setText("Pause (F4)")
             if self.averaging:
-                self.camera_grabber.start_averaging()
+                if self.flickering:
+                    self.lamp_controller.pause_flicker(paused)
+                    self.camera_grabber.start_difference_mode_averaging()
+                else:
+                    self.camera_grabber.start_averaging()
             else:
-                self.camera_grabber.start_live_single_frame()
+                if self.flickering:
+                    self.camera_grabber.start_difference_mode_single()
+                else:
+                    self.camera_grabber.start_live_single_frame()
 
     def __on_save(self, event):
+        # TODO(Add the difference frame processing to this. Currently this only works for single light source modes)
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
@@ -463,7 +612,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         file_path = Path(self.line_directory.text()).joinpath(
             datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
                                                                                                           '_') + '.h5')
-        print("Saving to: "+str(file_path)+' This takes time. Please be patient.')
+        print("Saving to: " + str(file_path) + ' This takes time. Please be patient.')
         try:
             store = pd.HDFStore(str(file_path))
         except:
