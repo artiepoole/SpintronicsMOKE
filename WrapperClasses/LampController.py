@@ -186,6 +186,7 @@ class LampController:
                 # pure pol
                 pairs_pos = 1
                 pairs_neg = 2
+        # TODO(Artie) Implement checking of exposure time to change this trigger rate)
         n_samples = 120
         pulse_width_in_samples = 5
         out_array = np.zeros(shape=[120])  # 120 sample is 120 ms. This means that the on off rate is 50ms per light. Exposure time is 50ms so this is too short
