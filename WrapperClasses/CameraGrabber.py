@@ -10,8 +10,8 @@ class CameraGrabber(QtCore.QObject):
     EXPOSURE_THIRTY_FPS = 1
     frame_from_camera_ready_signal = QtCore.pyqtSignal(np.ndarray)
     difference_frame_ready = QtCore.pyqtSignal(tuple)
-    difference_frame_stack_ready = QtCore.pyqtSignal(tuple)
-    frame_stack_from_camera_ready_signal = QtCore.pyqtSignal(np.ndarray)
+    difference_frame_stack_ready = QtCore.pyqtSignal(tuple, int)
+    frame_stack_from_camera_ready_signal = QtCore.pyqtSignal(np.ndarray, int)
     quit_ready = QtCore.pyqtSignal()
     cam = DCAM.DCAMCamera(idx=0)
     exposure_time = 0.05
@@ -62,13 +62,20 @@ class CameraGrabber(QtCore.QObject):
             frame = self.cam.read_newest_image()
             if frame is not None:
                 if i % self.averages < len(frames):
+                    start_time = time.time()
                     frames[i % self.averages] = frame
+                    print("assigning frame to index took: ", time.time() - start_time)
                 else:
                     frames.append(frame)
+                    print("appending frame")
                 if len(frames) > self.averages:
                     frames = frames[0:self.averages]
-                self.frame_stack_from_camera_ready_signal.emit(np.array(frames))
+                    print("Trimming frames")
+                start_time = time.time()
+                self.frame_stack_from_camera_ready_signal.emit(np.array(frames), i % self.averages)
+                print("emitting array took: ", time.time() - start_time)
                 i = i + 1
+
         self.cam.stop_acquisition()
         print("Camera stopped")
         if self.closing:
@@ -134,7 +141,7 @@ class CameraGrabber(QtCore.QObject):
             if len(frames_a) > self.averages:
                 frames_a = frames_a[0:self.averages]
                 frames_b = frames_b[0:self.averages]
-            self.difference_frame_stack_ready.emit((np.array(frames_a), np.array(frames_b)))
+            self.difference_frame_stack_ready.emit((np.array(frames_a), np.array(frames_b)), i % self.averages)
             i = i + 1
 
         self.cam.stop_acquisition()
@@ -192,8 +199,9 @@ if __name__ == "__main__":
 
     camera_grabber = CameraGrabber(None)
 
-    camera_grabber.cam.set_attribute_value('TRIGGER SOURCE', 2)  # External
-    camera_grabber.cam.set_attribute_value('TRIGGER MODE', 1)  # Normal (as opposed to "start")
-    camera_grabber.cam.set_attribute_value('TRIGGER ACTIVE', 1)  # Edge
-    camera_grabber.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
-    camera_grabber.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
+    # camera_grabber.cam.set_attribute_value('TRIGGER SOURCE', 2)  # External
+    # camera_grabber.cam.set_attribute_value('TRIGGER MODE', 1)  # Normal (as opposed to "start")
+    # camera_grabber.cam.set_attribute_value('TRIGGER ACTIVE', 1)  # Edge
+    # camera_grabber.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
+    # camera_grabber.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
+    print(camera_grabber.cam.get_data_dimensions())
