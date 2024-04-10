@@ -1600,11 +1600,49 @@ Pairs</string>
       <property name="leftMargin">
        <number>20</number>
       </property>
-      <item row="0" column="0">
-       <layout class="QVBoxLayout" name="layout_plot1"/>
-      </item>
+      <property name="topMargin">
+       <number>20</number>
+      </property>
+      <property name="rightMargin">
+       <number>20</number>
+      </property>
+      <property name="bottomMargin">
+       <number>20</number>
+      </property>
       <item row="1" column="0">
-       <layout class="QVBoxLayout" name="layout_plot2"/>
+       <layout class="QVBoxLayout" name="layout_plot2">
+        <property name="leftMargin">
+         <number>2</number>
+        </property>
+        <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="rightMargin">
+         <number>2</number>
+        </property>
+        <property name="bottomMargin">
+         <number>2</number>
+        </property>
+       </layout>
+      </item>
+      <item row="0" column="0">
+       <layout class="QVBoxLayout" name="layout_plot1">
+        <property name="leftMargin">
+         <number>2</number>
+        </property>
+        <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="rightMargin">
+         <number>2</number>
+        </property>
+        <property name="bottomMargin">
+         <number>2</number>
+        </property>
+       </layout>
+      </item>
+      <item row="2" column="0">
+       <layout class="QVBoxLayout" name="layout_plot3"/>
       </item>
      </layout>
     </item>
