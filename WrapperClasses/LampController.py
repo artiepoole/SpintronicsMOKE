@@ -71,7 +71,6 @@ class LampController:
         :return:
         """
         if self.__SPI_enabled:
-            print("disabling SPI")
             self.disable_spi()
         self.TTL_stream.write_one_sample_port_byte(
             pairs["left"] * self.__LEFT_CONST +
@@ -188,7 +187,7 @@ class LampController:
                 # pure pol
                 pairs_pos = 1
                 pairs_neg = 2
-        # TODO(Artie) Implement checking of exposure time to change this trigger rate)
+        # TODO: Implement checking of exposure time to change this trigger rate
         n_samples = 120
         pulse_width_in_samples = 5
         out_array = np.zeros(shape=[120])  # 120 sample is 120 ms. This means that the on off rate is 50ms per light. Exposure time is 50ms so this is too short
@@ -210,6 +209,7 @@ class LampController:
         self.TTL_stream.write_one_sample_port_byte(0)
 
     def pause_flicker(self, paused):
+        print("Pausing LED flicker")
         if paused:
             self.enable_spi()
         else:
