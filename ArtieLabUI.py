@@ -86,22 +86,22 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __connect_signals(self):
         # LED controls
-        self.button_left_led1.toggled.connect(self.__on_individual_led)
-        self.button_right_led1.toggled.connect(self.__on_individual_led)
-        self.button_up_led1.toggled.connect(self.__on_individual_led)
-        self.button_down_led1.toggled.connect(self.__on_individual_led)
-        self.button_left_led2.toggled.connect(self.__on_individual_led)
-        self.button_right_led2.toggled.connect(self.__on_individual_led)
-        self.button_up_led2.toggled.connect(self.__on_individual_led)
-        self.button_down_led2.toggled.connect(self.__on_individual_led)
+        self.button_left_led1.clicked.connect(self.__on_individual_led)
+        self.button_right_led1.clicked.connect(self.__on_individual_led)
+        self.button_up_led1.clicked.connect(self.__on_individual_led)
+        self.button_down_led1.clicked.connect(self.__on_individual_led)
+        self.button_left_led2.clicked.connect(self.__on_individual_led)
+        self.button_right_led2.clicked.connect(self.__on_individual_led)
+        self.button_up_led2.clicked.connect(self.__on_individual_led)
+        self.button_down_led2.clicked.connect(self.__on_individual_led)
         self.button_leds_off.clicked.connect(self.__disable_all_leds)
 
-        self.button_long_pol.toggled.connect(self.__on_long_pol)
-        self.button_trans_pol.toggled.connect(self.__on_trans_pol)
-        self.button_polar.toggled.connect(self.__on_polar)
-        self.button_long_trans.toggled.connect(self.__on_long_trans)
-        self.button_pure_long.toggled.connect(self.__on_pure_long)
-        self.button_pure_trans.toggled.connect(self.__on_pure_trans)
+        self.button_long_pol.clicked.connect(self.__on_long_pol)
+        self.button_trans_pol.clicked.connect(self.__on_trans_pol)
+        self.button_polar.clicked.connect(self.__on_polar)
+        self.button_long_trans.clicked.connect(self.__on_long_trans)
+        self.button_pure_long.clicked.connect(self.__on_pure_long)
+        self.button_pure_trans.clicked.connect(self.__on_pure_trans)
 
         # Image Processing Controls
         self.combo_normalisation_selector.currentIndexChanged.connect(self.__on_image_processing_mode_change)
@@ -111,13 +111,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         # Averaging controls
         self.button_measure_background.clicked.connect(self.__on_get_new_background)
-        self.button_toggle_averaging.toggled.connect(self.__on_averaging)
+        self.button_toggle_averaging.clicked.connect(self.__on_averaging)
         self.spin_foreground_averages.valueChanged.connect(self.__on_average_changed)
 
         # Camera Controls
         self.combo_targetfps.currentIndexChanged.connect(self.__on_exposure_time_changed)
-        self.button_pause_camera.toggled.connect(self.__on_pause_button)
-        self.button_display_subtraction.toggled.connect(self.__on_show_subtraction)
+        self.button_pause_camera.clicked.connect(self.__on_pause_button)
+        self.button_display_subtraction.clicked.connect(self.__on_show_subtraction)
 
         # Data Streams and Signals
         self.frame_processor.frame_processed_signal.connect(self.__on_processed_frame)
@@ -205,7 +205,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
              "down": False})
 
     def __reset_led_spis(self):
-        self.enabled_led_pairs.update(
+        self.enabled_leds_spi.update(
             {"left1": False,
              "left2": False,
              "right1": False,
@@ -274,7 +274,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 # this is Adaptive EQ and needs a clip limit
 
     def __disable_all_leds(self):
-        print("disabling all LEDs")
+        print("ArtieLabUI: Disabling all LEDs")
         self.__reset_led_spis()
         self.__reset_pairs()
         if self.flickering:
@@ -299,8 +299,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.__update_controller_pairs()
 
     def __on_individual_led(self, state):
-
+        print("ArtieLabUI: Individual LED being called")
         if not self.flickering:
+            if self.__check_for_any_active_mode():
+                self.button_long_pol.setChecked(False)
+                self.button_trans_pol.setChecked(False)
+                self.button_polar.setChecked(False)
+                self.button_long_trans.setChecked(False)
+                self.button_pure_long.setChecked(False)
+                self.button_pure_trans.setChecked(False)
             self.enabled_leds_spi["up1"] = self.button_up_led1.isChecked()
             self.enabled_leds_spi["up2"] = self.button_up_led2.isChecked()
             self.enabled_leds_spi["down1"] = self.button_down_led1.isChecked()
@@ -322,6 +329,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                  "down": False})
             self.__reset_led_spis()
 
+
             self.button_up_led1.setChecked(True)
             self.button_up_led2.setChecked(True)
             self.button_down_led1.setChecked(False)
@@ -337,9 +345,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_pure_long.setChecked(False)
             self.button_pure_trans.setChecked(False)
 
+
             self.__update_controller_pairs()
         else:
-            self.__check_for_no_modes()
+            if not self.__check_for_any_active_mode():
+                self.__disable_all_leds()
 
     def __on_trans_pol(self, checked):
 
@@ -369,7 +379,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_pairs()
         else:
-            self.__check_for_no_modes()
+            if not self.__check_for_any_active_mode():
+                self.__disable_all_leds()
 
     def __on_polar(self, checked):
 
@@ -403,7 +414,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_spi()
         else:
-            self.__check_for_no_modes()
+            if not self.__check_for_any_active_mode():
+                self.__disable_all_leds()
 
     def __on_long_trans(self, checked):
         if checked:
@@ -431,7 +443,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
 
         else:
-            self.__check_for_no_modes()
+            if not self.__check_for_any_active_mode():
+                self.__disable_all_leds()
 
     def __on_pure_long(self, checked):
         if checked:
@@ -456,7 +469,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_left_led1.setChecked(False)
             self.button_left_led2.setChecked(False)
         else:
-            self.__check_for_no_modes()
+            if not self.__check_for_any_active_mode():
+                self.__disable_all_leds()
 
     def __on_pure_trans(self, checked):
         if checked:
@@ -483,7 +497,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_left_led1.setChecked(False)
             self.button_left_led2.setChecked(False)
         else:
-            self.__check_for_no_modes()
+            if not self.__check_for_any_active_mode():
+                self.__disable_all_leds()
 
     def __prepare_for_flicker_mode(self):
 
@@ -525,12 +540,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         if not self.button_pause_camera.isChecked():
             if self.flickering:
                 self.camera_grabber.start_live_difference_mode()
-                print("Camera grabber starting difference mode")
+                print("ArtieLabUI: Camera grabber starting difference mode")
             else:
                 self.camera_grabber.start_live_single_frame()
-                print("Camera grabber starting normal mode")
+                print("ArtieLabUI: Camera grabber starting normal mode")
 
     def __reset_after_flicker_mode(self):
+        print("ArtieLabUI: Resetting after flicker mode")
         self.lamp_controller.stop_flicker()
         self.camera_grabber.running = False
         self.flickering = False
@@ -539,7 +555,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.subtracting = self.button_display_subtraction.isChecked()
         # TODO: hide the CV2 windows for the raw pos/neg
 
-        print("Resetting after flicker mode")
         self.button_up_led1.setEnabled(True)
         self.button_up_led2.setEnabled(True)
         self.button_down_led1.setEnabled(True)
@@ -550,10 +565,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_right_led2.setEnabled(True)
 
 
-    def __check_for_no_modes(self):
-        any_modes = self.button_long_pol.isChecked() + self.button_trans_pol.isChecked() + self.button_polar.isChecked() + self.button_long_trans.isChecked() + self.button_pure_long.isChecked() + self.button_pure_trans.isChecked()
-        if any_modes == 0:
-            self.__disable_all_leds()
+    def __check_for_any_active_mode(self):
+        return bool(self.button_long_pol.isChecked() + self.button_trans_pol.isChecked() + self.button_polar.isChecked() + self.button_long_trans.isChecked() + self.button_pure_long.isChecked() + self.button_pure_trans.isChecked())
+
 
     def __update_controller_pairs(self):
         self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
@@ -633,7 +647,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.camera_grabber.start_live_difference_mode()
         else:
             self.camera_grabber.start_live_single_frame()
-        print("Background Measured")
+        print("ArtieLabUI: Background Measured")
 
     def __on_exposure_time_changed(self, exposure_time_idx):
         self.mutex.lock()
@@ -647,7 +661,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_averaging(self, enabled):
         if enabled:
             self.button_toggle_averaging.setText("Disable Averaging (F3)")
-            print("Averaging enabled")
+            print("ArtieLabUI: Averaging enabled")
             self.averaging = True
             self.camera_grabber.running = False
             self.averages = self.spin_foreground_averages.value()
@@ -657,7 +671,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
         else:
             self.button_toggle_averaging.setText("Enable Averaging (F3)")
-            print("Averaging disabled")
+            print("ArtieLabUI: Averaging disabled")
             self.averaging = False
             self.camera_grabber.running = False
             self.raw_frame_stack = None
@@ -705,11 +719,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         file_path = Path(self.line_directory.text()).joinpath(
             datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
                                                                                                           '_') + '.h5')
-        print("Saving to: " + str(file_path) + ' This takes time. Please be patient.')
+        print("ArtieLabUI: Saving to: " + str(file_path) + ' This takes time. Please be patient.')
         try:
             store = pd.HDFStore(str(file_path))
         except:
-            print("Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
+            print("ArtieLabUI: Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
             return
 
         if self.button_toggle_averaging.isChecked():
@@ -724,9 +738,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     store[key] = pd.DataFrame(self.raw_frame_stack[i])
         else:
             if self.check_save_avg.isChecked():
-                print("Average not saved: measuring in single frame mode")
+                print("ArtieLabUI: Average not saved: measuring in single frame mode")
             if self.check_save_stack.isChecked():
-                print("Stack not saved: measuring in single frame mode")
+                print("ArtieLabUI: Stack not saved: measuring in single frame mode")
             key = 'frame'
             contents.append(key)
             store[key] = pd.DataFrame(self.latest_raw_frame)
@@ -752,7 +766,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 contents.append(key)
                 store[key] = pd.DataFrame(self.background)
             else:
-                print("Background not saved: no background measured")
+                print("ArtieLabUI: Background not saved: no background measured")
         if self.check_save_bkg_stack.isChecked():
             if self.background is not None:
                 for i in range(len(self.background_raw_stack)):
@@ -760,11 +774,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     contents.append(key)
                     store[key] = pd.DataFrame(self.background_raw_stack[i])
             else:
-                print("Background stack not saved: no background measured")
+                print("ArtieLabUI: Background stack not saved: no background measured")
         meta_data['contents'] = [contents]
         store['meta_data'] = pd.DataFrame(meta_data)
         store.close()
-        print("Saving done.")
+        print("ArtieLabUI: Saving done.")
 
     def __on_save_single(self, event):
         # Assemble metadata
@@ -804,7 +818,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # file_path.mkdir(parents=True, exist_ok=True)
 
         tifffile.imwrite(str(file_path), self.latest_processed_frame, photometric='minisblack', metadata=meta_data)
-        print("saved file as " + str(file_path))
+        print("ArtieLabUI: Saved file as " + str(file_path))
 
     def __on_browse(self, event):
         startingDir = str(Path(r'C:\Users\User\Desktop\USERS'))
@@ -825,7 +839,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         cv2.destroyAllWindows()
 
     def __on_quit_ready(self):
-        print("Closing threads and exiting")
+        print("ArtieLabUI: Closing threads and exiting")
         self.camera_thread.quit()
         self.frame_processor_thread.quit()
         super(ArtieLabUI, self).closeEvent(self.close_event)
@@ -839,7 +853,7 @@ if __name__ == '__main__':
 
     def my_exception_hook(exctype, value, traceback):
         # Print the error and traceback
-        print(exctype, value, traceback)
+        print("__main__:", exctype, value, traceback)
         # Call the normal Exception hook after
         sys._excepthook(exctype, value, traceback)
         sys.exit(1)
@@ -854,6 +868,5 @@ if __name__ == '__main__':
     try:
         sys.exit(app.exec_())
     except:
-        print("Exiting")
-    print("test")
+        print("__main__: Exiting")
     print(app.exit())
