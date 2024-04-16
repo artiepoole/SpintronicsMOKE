@@ -65,7 +65,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor_thread = QtCore.QThread()
         self.frame_processor.moveToThread(self.frame_processor_thread)
 
-        self.led_control_enabled = True
         self.flickering = False
         self.averaging = False
 
@@ -278,6 +277,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         print("disabling all LEDs")
         self.__reset_led_spis()
         self.__reset_pairs()
+        if self.flickering:
+            self.__reset_after_flicker_mode()
 
         self.button_long_pol.setChecked(False)
         self.button_trans_pol.setChecked(False)
@@ -299,7 +300,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_individual_led(self, state):
 
-        if self.led_control_enabled:
+        if not self.flickering:
             self.enabled_leds_spi["up1"] = self.button_up_led1.isChecked()
             self.enabled_leds_spi["up2"] = self.button_up_led2.isChecked()
             self.enabled_leds_spi["down1"] = self.button_down_led1.isChecked()
@@ -310,16 +311,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.enabled_leds_spi["right2"] = self.button_right_led2.isChecked()
             self.__update_controller_spi()
 
-    def __on_long_pol(self):
-
-        if self.button_long_pol.isChecked():
+    def __on_long_pol(self, checked):
+        if checked:
+            if self.flickering:
+                self.__reset_after_flicker_mode()
             self.enabled_led_pairs.update(
                 {"left": False,
                  "right": False,
                  "up": True,
                  "down": False})
             self.__reset_led_spis()
-            self.led_control_enabled = True
 
             self.button_up_led1.setChecked(True)
             self.button_up_led2.setChecked(True)
@@ -338,12 +339,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_pairs()
         else:
-            self.__disable_all_leds()
+            self.__check_for_no_modes()
 
-    def __on_trans_pol(self):
+    def __on_trans_pol(self, checked):
 
-        if self.button_trans_pol.isChecked():
-            self.led_control_enabled = True
+        if checked:
+            if self.flickering:
+                self.__reset_after_flicker_mode()
             self.enabled_led_pairs.update({"left": True,
                                            "right": False,
                                            "up": False,
@@ -367,12 +369,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_pairs()
         else:
-            self.__disable_all_leds()
+            self.__check_for_no_modes()
 
-    def __on_polar(self):
+    def __on_polar(self, checked):
 
-        if self.button_polar.isChecked():
-            self.led_control_enabled = True
+        if checked:
+            if self.flickering:
+                self.__reset_after_flicker_mode()
             self.__reset_pairs()
             self.enabled_leds_spi.update(
                 {"left1": False,
@@ -400,10 +403,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_spi()
         else:
-            self.__disable_all_leds()
+            self.__check_for_no_modes()
 
-    def __on_long_trans(self):
-        if self.button_long_trans.isChecked():
+    def __on_long_trans(self, checked):
+        if checked:
+            if not self.flickering:
+                self.__prepare_for_flicker_mode()
+            else:
+                self.lamp_controller.stop_flicker()
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
@@ -414,16 +421,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_up_led2.setChecked(True)
             self.button_left_led1.setChecked(True)
             self.button_left_led2.setChecked(True)
+            self.button_down_led1.setChecked(False)
+            self.button_down_led2.setChecked(False)
+            self.button_right_led1.setChecked(False)
+            self.button_right_led2.setChecked(False)
+
 
             self.lamp_controller.continuous_flicker(0)
 
-            self.__prepare_for_flicker_mode()
 
         else:
-            self.__reset_after_flicker_mode()
+            self.__check_for_no_modes()
 
-    def __on_pure_long(self):
-        if self.button_pure_long.isChecked():
+    def __on_pure_long(self, checked):
+        if checked:
+            if not self.flickering:
+                self.__prepare_for_flicker_mode()
+            else:
+                self.lamp_controller.stop_flicker()
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
@@ -432,17 +447,23 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.lamp_controller.continuous_flicker(1)
 
-            self.__prepare_for_flicker_mode()
-
             self.button_up_led1.setChecked(True)
             self.button_up_led2.setChecked(True)
             self.button_down_led1.setChecked(True)
             self.button_down_led2.setChecked(True)
+            self.button_right_led1.setChecked(False)
+            self.button_right_led2.setChecked(False)
+            self.button_left_led1.setChecked(False)
+            self.button_left_led2.setChecked(False)
         else:
-            self.__reset_after_flicker_mode()
+            self.__check_for_no_modes()
 
-    def __on_pure_trans(self):
-        if self.button_pure_trans.isChecked():
+    def __on_pure_trans(self, checked):
+        if checked:
+            if not self.flickering:
+                self.__prepare_for_flicker_mode()
+            else:
+                self.lamp_controller.stop_flicker()
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
@@ -457,8 +478,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_up_led2.setChecked(True)
             self.button_right_led1.setChecked(True)
             self.button_right_led2.setChecked(True)
+            self.button_down_led1.setChecked(False)
+            self.button_down_led2.setChecked(False)
+            self.button_left_led1.setChecked(False)
+            self.button_left_led2.setChecked(False)
         else:
-            self.__reset_after_flicker_mode()
+            self.__check_for_no_modes()
 
     def __prepare_for_flicker_mode(self):
 
@@ -466,7 +491,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_display_subtraction.setEnabled(False)
         # TODO: Add cv2 windows for raw frames
 
-        self.led_control_enabled = False
         self.flickering = True
 
         self.mutex.lock()
@@ -509,6 +533,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __reset_after_flicker_mode(self):
         self.lamp_controller.stop_flicker()
         self.camera_grabber.running = False
+        self.flickering = False
 
         self.button_display_subtraction.setEnabled(True)
         self.frame_processor.subtracting = self.button_display_subtraction.isChecked()
@@ -524,10 +549,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_right_led1.setEnabled(True)
         self.button_right_led2.setEnabled(True)
 
-        self.led_control_enabled = True
-        self.flickering = False
 
-        self.__disable_all_leds()
+    def __check_for_no_modes(self):
+        any_modes = self.button_long_pol.isChecked() + self.button_trans_pol.isChecked() + self.button_polar.isChecked() + self.button_long_trans.isChecked() + self.button_pure_long.isChecked() + self.button_pure_trans.isChecked()
+        if any_modes == 0:
+            self.__disable_all_leds()
 
     def __update_controller_pairs(self):
         self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
