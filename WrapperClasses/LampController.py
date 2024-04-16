@@ -11,6 +11,7 @@ flatten = chain.from_iterable
 
 class LampController:
     def __init__(self):
+        print("LampController: Initialising LampController")
         self.__UP_CONST = 4
         self.__DOWN_CONST = 8
         self.__LEFT_CONST = 1
@@ -36,6 +37,7 @@ class LampController:
         self.SPI_stream = DigitalSingleChannelWriter(self.SPI_task.out_stream, True)
         self.SPI_task.write(self.__resting_state_noSPI)
         self.__SPI_enabled = False
+        print("LampController: Setting all brightness to max")
         self.set_all_brightness(180)
 
     def disable_all(self):
@@ -72,11 +74,13 @@ class LampController:
         """
         if self.__SPI_enabled:
             self.disable_spi()
-        self.TTL_stream.write_one_sample_port_byte(
-            pairs["left"] * self.__LEFT_CONST +
-            pairs["right"] * self.__RIGHT_CONST +
-            pairs["up"] * self.__UP_CONST +
-            pairs["down"] * self.__DOWN_CONST)
+
+        send_byte = (pairs["left"] * self.__LEFT_CONST +
+                pairs["right"] * self.__RIGHT_CONST +
+                pairs["up"] * self.__UP_CONST +
+                pairs["down"] * self.__DOWN_CONST)
+        print("LampController: Enabling Pairs: ", send_byte)
+        self.TTL_stream.write_one_sample_port_byte(send_byte)
 
     def close(self):
         self.TTL_output_task.close()
@@ -84,18 +88,21 @@ class LampController:
         self.dev.reset_device()
 
     def enable_spi(self):
-        print("Enabling SPI")
+        print("LampController: Enabling SPI")
         self.SPI_task.write(self.__resting_state_SPI)
         time.sleep(50e-3)
         self.__SPI_enabled = True
 
     def disable_spi(self):
-        print("Disabling SPI")
+        print("LampController: Disabling SPI")
         self.SPI_task.write(self.__resting_state_noSPI)
         time.sleep(50e-3)
         self.__SPI_enabled = False
 
     def enable_leds(self, led_byte: int):
+        if not self.__SPI_enabled:
+            self.enable_spi()
+        print("LampController: Enabling SPI: ", led_byte)
         self._write_spi(int('0xA0', 16), led_byte)
 
     def set_all_brightness(self, brightness: int):
@@ -173,7 +180,7 @@ class LampController:
     def continuous_flicker(self, mode):
         self.disable_spi()
         self.TTL_output_task.stop()
-        print("Enabling LED flicker mode with mode: ", mode)
+        print("LampController: Enabling LED flicker mode with mode: ", mode)
         match mode:
             case 0:
                 # long trans pol
@@ -190,7 +197,8 @@ class LampController:
         # TODO: Implement checking of exposure time to change this trigger rate
         n_samples = 120
         pulse_width_in_samples = 5
-        out_array = np.zeros(shape=[120])  # 120 sample is 120 ms. This means that the on off rate is 50ms per light. Exposure time is 50ms so this is too short
+        out_array = np.zeros(shape=[
+            120])  # 120 sample is 120 ms. This means that the on off rate is 50ms per light. Exposure time is 50ms so this is too short
 
         out_array[0:n_samples // 2] = pairs_pos
         out_array[0:pulse_width_in_samples] = out_array[0:pulse_width_in_samples] + 16
@@ -203,18 +211,17 @@ class LampController:
         self.TTL_stream.write_many_sample_port_byte(out_array.astype(np.uint8))
 
     def stop_flicker(self):
-        print("Stopping LED flicker mode")
+        print("LampController: Stopping LED flicker mode")
         self.TTL_output_task.stop()
         self.TTL_output_task.timing.samp_timing_type = SampleTimingType.ON_DEMAND
         self.TTL_stream.write_one_sample_port_byte(0)
 
     def pause_flicker(self, paused):
-        print("Pausing LED flicker")
+        print("LampController: Pausing LED flicker")
         if paused:
             self.enable_spi()
         else:
             self.disable_spi()
-
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ import numpy as np
 
 
 class CameraGrabber(QtCore.QObject):
+    print("CameraGrabber: Initializing CameraGrabber...")
     EXPOSURE_TWENTY_FPS = 0
     EXPOSURE_THIRTY_FPS = 1
     frame_ready_signal = QtCore.pyqtSignal(np.ndarray)
@@ -53,14 +54,14 @@ class CameraGrabber(QtCore.QObject):
         :return:
         '''
         if self.difference_mode:
-            print("Setting camera trigger mode to external")
+            print("CameraGrabber: Setting camera trigger mode to external")
             self.cam.set_attribute_value('TRIGGER SOURCE', 2)  # External
             self.cam.set_attribute_value('TRIGGER MODE', 1)  # Normal (as opposed to "start")
             self.cam.set_attribute_value('TRIGGER ACTIVE', 1)  # Edge
             self.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
             self.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
         else:
-            print("Setting camera trigger mode to internal")
+            print("CameraGrabber: Setting camera trigger mode to internal")
             self.cam.set_trigger_mode('int')
 
     def get_detector_size(self):
@@ -86,15 +87,15 @@ class CameraGrabber(QtCore.QObject):
         self.__prepare_camera()
         self.cam.setup_acquisition()
         self.cam.start_acquisition()
-        print("Camera started in normal mode")
+        print("CameraGrabber: Camera started in normal mode")
         while self.running:
             frame = self.cam.read_newest_image()
             if frame is not None:
                 self.frame_ready_signal.emit(frame)
         self.cam.stop_acquisition()
-        print("Camera stopped")
+        print("CameraGrabber: Camera stopped")
         if self.closing:
-            print("Camera closing")
+            print("CameraGrabber: Camera closing")
             self.cam.close()
             self.quit_ready.emit()
         print("Camera ready")
@@ -110,7 +111,7 @@ class CameraGrabber(QtCore.QObject):
         self.__prepare_camera()
         self.cam.setup_acquisition()
         self.cam.start_acquisition()
-        print("Camera started in live difference mode")
+        print("CameraGrabber: Camera started in live difference mode")
         while self.running:
             frame_a = None
             frame_b = None
@@ -121,49 +122,13 @@ class CameraGrabber(QtCore.QObject):
             self.difference_frame_ready.emit(frame_a, frame_b)
 
         self.cam.stop_acquisition()
-        print("Camera stopped")
+        print("CameraGrabber: Camera stopped")
         if self.closing:
             print("Camera closing")
             self.cam.close()
             self.quit_ready.emit()
-        print("Camera ready")
+        print("CameraGrabber: Camera ready")
         self.camera_ready.emit()
-
-    # def start_averaging(self):
-    #     self.mutex.lock()
-    #     self.running = True
-    #     self.averaging = True
-    #     self.difference_mode = False
-    #     self.mutex.unlock()
-    #     self.set_trigger_mode()
-    #     self.cam.setup_acquisition()
-    #     self.cam.start_acquisition()
-    #     frames = []
-    #     i = 0
-    #     while self.running:
-    #         frame = self.cam.read_newest_image()
-    #         if frame is not None:
-    #             if i % self.averages < len(frames):
-    #                 start_time = time.time()
-    #                 frames[i % self.averages] = frame
-    #                 print("assigning frame to index took: ", time.time() - start_time)
-    #             else:
-    #                 frames.append(frame)
-    #                 print("appending frame")
-    #             if len(frames) > self.averages:
-    #                 frames = frames[0:self.averages]
-    #                 print("Trimming frames")
-    #             start_time = time.time()
-    #             self.frame_stack_from_camera_ready_signal.emit(np.array(frames), i % self.averages)
-    #             print("emitting array took: ", time.time() - start_time)
-    #             i = i + 1
-    #
-    #     self.cam.stop_acquisition()
-    #     print("Camera stopped")
-    #     if self.closing:
-    #         print("Camera closing")
-    #         self.cam.close()
-    #         self.quit_ready.emit()
 
 
 if __name__ == "__main__":

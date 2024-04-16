@@ -5,6 +5,7 @@ from skimage import exposure
 
 
 class FrameProcessor(QtCore.QObject):
+    print("FrameProcessor: Initializing FrameProcessor...")
     IMAGE_PROCESSING_NONE = 0
     IMAGE_PROCESSING_PERCENTILE = 1
     IMAGE_PROCESSING_HISTEQ = 2
@@ -30,19 +31,19 @@ class FrameProcessor(QtCore.QObject):
         if new_mode in [0, 1, 2, 3]:
             self.mode = new_mode
         else:
-            print("Invalid mode")
+            print("FrameProcessor: Invalid mode")
 
     def set_percentile_lower(self, new_percentile):
         if new_percentile < self.p_high:
             self.p_low = new_percentile
         else:
-            print("Please raise % max to avoid overlap")
+            print("FrameProcessor: Please raise % max to avoid overlap")
 
     def set_percentile_upper(self, new_percentile):
         if new_percentile > self.p_low:
             self.p_high = new_percentile
         else:
-            print("Please reduce lower % min to avoid overlap")
+            print("FrameProcessor: Please reduce lower % min to avoid overlap")
 
     def set_clip_limit(self, new_clip_limit):
         self.clip = new_clip_limit
@@ -63,7 +64,7 @@ class FrameProcessor(QtCore.QObject):
                 return (exposure.equalize_adapthist(frame_in, clip_limit=self.clip) * 65535).astype(
                     np.uint16)
             case _:
-                print("Unrecognized image processing mode")
+                print("FrameProcessor: Unrecognized image processing mode")
                 return frame_in
 
     def process_frame(self, raw_frame):
