@@ -61,9 +61,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_thread = QtCore.QThread()
         self.camera_grabber.moveToThread(self.camera_thread)
         self.height, self.width = self.camera_grabber.get_data_dims()
-        self.frame_processor = FrameProcessor()
-        self.frame_processor_thread = QtCore.QThread()
-        self.frame_processor.moveToThread(self.frame_processor_thread)
 
         self.flickering = False
         self.averaging = False
@@ -170,7 +167,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.hist_ax.set(title="Histogram as Seen", xlabel="Brightness", ylabel="Counts")
 
         self.blank_ax = self.plots_canvas.figure.add_subplot(313)
-        self.blank_line, = self.hist_ax.plot([], [], 'r-')
+        self.frame_times = []
+        self.old_frame_time = time.time()
+        self.blank_line, = self.blank_ax.plot(self.frame_times, 'r-')
         self.blank_ax.set(title="Unused Plot", xlabel="", ylabel="")
         self.plots_canvas.figure.tight_layout(pad=0.1)
         self.layout_plot1.addWidget(self.plots_canvas)
@@ -187,9 +186,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.hist_line.set_ydata(hist_data)
         self.hist_ax.relim()
         self.hist_ax.autoscale_view()
-
-        self.blank_line.set_xdata([])
-        self.blank_line.set_ydata([])
+        length = len(self.frame_times)
+        self.blank_line.set_xdata(list(range(min(length, 100))))
+        self.blank_line.set_ydata(self.frame_times[-min(100, length):])
         self.blank_ax.relim()
         self.blank_ax.autoscale_view()
 
@@ -329,7 +328,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                  "down": False})
             self.__reset_led_spis()
 
-
             self.button_up_led1.setChecked(True)
             self.button_up_led2.setChecked(True)
             self.button_down_led1.setChecked(False)
@@ -344,7 +342,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_long_trans.setChecked(False)
             self.button_pure_long.setChecked(False)
             self.button_pure_trans.setChecked(False)
-
 
             self.__update_controller_pairs()
         else:
@@ -437,7 +434,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_down_led2.setChecked(False)
             self.button_right_led1.setChecked(False)
             self.button_right_led2.setChecked(False)
-
 
             self.lamp_controller.continuous_flicker(0)
 
@@ -564,10 +560,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_right_led1.setEnabled(True)
         self.button_right_led2.setEnabled(True)
 
-
     def __check_for_any_active_mode(self):
-        return bool(self.button_long_pol.isChecked() + self.button_trans_pol.isChecked() + self.button_polar.isChecked() + self.button_long_trans.isChecked() + self.button_pure_long.isChecked() + self.button_pure_trans.isChecked())
-
+        return bool(
+            self.button_long_pol.isChecked() + self.button_trans_pol.isChecked() + self.button_polar.isChecked() + self.button_long_trans.isChecked() + self.button_pure_long.isChecked() + self.button_pure_trans.isChecked())
 
     def __update_controller_pairs(self):
         self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
@@ -585,8 +580,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.lamp_controller.enable_leds(value)
 
     def __on_new_raw_frame(self, raw_frame):
+        new_frame_time = time.time()
+        self.frame_times.append(new_frame_time - self.old_frame_time)
+        self.old_frame_time = new_frame_time
+
         self.latest_raw_frame = raw_frame
         self.intensity_y.append(np.mean(raw_frame, axis=(0, 1)))
+
         if self.averaging:
             if self.frame_counter % self.averages < len(self.raw_frame_stack):
                 self.raw_frame_stack[self.frame_counter % self.averages] = raw_frame
@@ -595,15 +595,27 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             if len(self.raw_frame_stack) > self.averages:
                 self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
             self.frame_counter += 1
-            self.frame_processor.process_frame(np.mean(self.raw_frame_stack, axis=0))
+            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_frame",
+                                            QtCore.Qt.ConnectionType.QueuedConnection,
+                                            QtCore.Q_ARG(np.ndarray,
+                                                         np.mean(self.raw_frame_stack, axis=0).astype(np.uint16))
+                                            )
         else:
-            self.frame_processor.process_frame(raw_frame)
+            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_frame",
+                                            QtCore.Qt.ConnectionType.QueuedConnection,
+                                            QtCore.Q_ARG(np.ndarray, raw_frame)
+                                            )
 
     def __on_new_diff_frame(self, frame_a, frame_b):
+        new_frame_time = time.time()
+        self.frame_times.append(new_frame_time - self.old_frame_time)
+        self.old_frame_time = new_frame_time
+
         intensity_a = np.mean(frame_a, axis=(0, 1))
         intensity_b = np.mean(frame_b, axis=(0, 1))
         self.intensity_y.append(intensity_a)
         self.intensity_y.append(intensity_b)
+
         if self.averaging:
             if self.frame_counter % self.averages < len(self.diff_frame_stack_a):
                 self.diff_frame_stack_a[self.frame_counter % self.averages] = frame_a
@@ -615,12 +627,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
                 self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
             self.frame_counter += 1
-            self.frame_processor.process_diff(np.mean(self.diff_frame_stack_a, axis=0),
-                                              np.mean(self.diff_frame_stack_b, axis=0))
+            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_diff",
+                                            QtCore.Qt.ConnectionType.QueuedConnection,
+                                            QtCore.Q_ARG(np.ndarray,
+                                                         np.mean(self.diff_frame_stack_a, axis=0, dtype=np.uint16)),
+                                            QtCore.Q_ARG(np.ndarray,
+                                                         np.mean(self.diff_frame_stack_b, axis=0, dtype=np.uint16))
+                                            )
         else:
             self.latest_diff_frame_a = frame_a
             self.latest_diff_frame_b = frame_b
-            self.frame_processor.process_diff(frame_a, frame_b)
+            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_diff",
+                                            QtCore.Qt.ConnectionType.QueuedConnection,
+                                            QtCore.Q_ARG(np.ndarray, frame_a),
+                                            QtCore.Q_ARG(np.ndarray, frame_b)
+                                            )
 
     def __on_processed_frame(self, processed_frame):
         self.latest_processed_frame = processed_frame
@@ -641,7 +662,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.mutex.unlock()
         frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
         self.background_raw_stack = frames
-        self.background = np.mean(frames, axis=0)
+        self.background = np.mean(frames, axis=0).astype(np.uint16)
         self.frame_processor.background = self.background
         if self.flickering:
             self.camera_grabber.start_live_difference_mode()
@@ -723,7 +744,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         try:
             store = pd.HDFStore(str(file_path))
         except:
-            print("ArtieLabUI: Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
+            print(
+                "ArtieLabUI: Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
             return
 
         if self.button_toggle_averaging.isChecked():

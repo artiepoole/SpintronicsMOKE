@@ -25,20 +25,20 @@ for file in onlyfiles:
     plt.plot(data["col_0"], data["col_1"], 'b+')
     plt.plot(data["col_2"], data["col_3"], 'r-')
     plt.title("Voltage Data")
-    plt.x_label("Voltage (V)")
-    plt.y_label("Field (mT)")
+    plt.xlabel("Voltage (V)")
+    plt.ylabel("Field (mT)")
     plt.figure()
     plt.plot(data["col_4"], data["col_5"], 'b+')
     plt.plot(data["col_6"], data["col_7"], 'r-')
-    plt.x_label("Current (A)")
-    plt.y_label("Field (mT)")
+    plt.xlabel("Current (A)")
+    plt.ylabel("Field (mT)")
     plt.title("Current Data")
 
-    save_data = np.column_stack([list(data.values())[i] for i in [0, 1, 4, 5]])
+    save_data = np.column_stack([list(data.values())[i] for i in [2, 3, 6, 7]])
     header = "Voltage (V), Field (mT), Current (A), Field (mT)"
-    savename = start_dir + file.replace(".cal", ".txt")
+    savename = start_dir + file.replace(".cal", "_fit.txt")
     np.savetxt(
         savename, save_data, delimiter=', ', header=header)
     print("saving file as: " + savename)
 
-
+plt.show()
