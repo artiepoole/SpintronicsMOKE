@@ -50,7 +50,7 @@ class FrameProcessor(QtCore.QObject):
 
     def __process_frame(self, frame_in):
         if self.subtracting and self.background is not None:
-            frame_in = frame_in.astype(np.int16) - self.background.astype(np.int16)
+            frame_in = frame_in - self.background
             frame_in[frame_in < 0] = 0
         match self.mode:
             case self.IMAGE_PROCESSING_NONE:
@@ -59,19 +59,22 @@ class FrameProcessor(QtCore.QObject):
                 px_low, px_high = np.percentile(frame_in, (self.p_low, self.p_high))
                 return exposure.rescale_intensity(frame_in, in_range=(px_low, px_high))
             case self.IMAGE_PROCESSING_HISTEQ:
-                return (exposure.equalize_hist(frame_in) * 65535).astype(np.uint16)
+                return (exposure.equalize_hist(frame_in))
             case self.IMAGE_PROCESSING_ADAPTEQ:
-                return (exposure.equalize_adapthist(frame_in, clip_limit=self.clip) * 65535).astype(
-                    np.uint16)
+                return (exposure.equalize_adapthist(frame_in/65535, clip_limit=self.clip))
             case _:
                 print("FrameProcessor: Unrecognized image processing mode")
                 return frame_in
 
+    @QtCore.pyqtSlot(np.ndarray)
     def process_frame(self, raw_frame):
+        print("FrameProcessor: Processing Frame...")
         self.frame_processed_signal.emit(self.__process_frame(raw_frame))
+        print("FrameProcessor: Done")
 
+    @QtCore.pyqtSlot(np.ndarray, np.ndarray)
     def process_diff(self, frame_a, frame_b):
-        diff_frame = np.abs(frame_a.astype(np.int16) - frame_b.astype(np.int16)).astype(np.uint16)
+        diff_frame = np.abs(frame_a.astype(np.int32) - frame_b.astype(np.int32)).astype(np.uint16)
         self.diff_processed_signal.emit(diff_frame, self.__process_frame(diff_frame))
 
 

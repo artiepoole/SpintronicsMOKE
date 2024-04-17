@@ -57,9 +57,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.lamp_controller = LampController()
         self.lamp_controller.disable_all()
 
+        self.frame_processor = FrameProcessor()
+        self.frame_processor_thread = QtCore.QThread()
+        self.frame_processor.moveToThread(self.frame_processor_thread)
+        self.frame_processor_thread.start()
+
         self.camera_grabber = CameraGrabber()
         self.camera_thread = QtCore.QThread()
         self.camera_grabber.moveToThread(self.camera_thread)
+        self.camera_thread.start()
+
         self.height, self.width = self.camera_grabber.get_data_dims()
 
         self.flickering = False
@@ -67,8 +74,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.__connect_signals()
         self.__prepare_views()
-
-        self.camera_grabber.start_live_single_frame()
+        time.sleep(1)
+        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
         self.frame_counter = 0
         self.latest_raw_frame = None
         self.latest_diff_frame_a = None

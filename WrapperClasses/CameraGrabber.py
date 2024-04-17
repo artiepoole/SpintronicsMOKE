@@ -77,6 +77,7 @@ class CameraGrabber(QtCore.QObject):
         frames = self.cam.grab(n_frames)
         return frames
 
+    @QtCore.pyqtSlot()
     def start_live_single_frame(self):
 
         self.mutex.lock()
@@ -92,6 +93,7 @@ class CameraGrabber(QtCore.QObject):
             frame = self.cam.read_newest_image()
             if frame is not None:
                 self.frame_ready_signal.emit(frame)
+                print("CameraGrabber: Emitting frame")
         self.cam.stop_acquisition()
         print("CameraGrabber: Camera stopped")
         if self.closing:
@@ -101,6 +103,7 @@ class CameraGrabber(QtCore.QObject):
         print("Camera ready")
         self.camera_ready.emit()
 
+    @QtCore.pyqtSlot()
     def start_live_difference_mode(self):
 
         self.mutex.lock()
