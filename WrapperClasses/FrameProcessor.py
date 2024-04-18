@@ -70,7 +70,7 @@ class FrameProcessor(QtCore.QObject):
     def process_frame(self, raw_frame):
         print("FrameProcessor: Processing Frame...")
         self.frame_processed_signal.emit(self.__process_frame(raw_frame))
-        print("FrameProcessor: Done")
+        print("FrameProcessor: Processing Frame...")
 
     @QtCore.pyqtSlot(np.ndarray, np.ndarray)
     def process_diff(self, frame_a, frame_b):

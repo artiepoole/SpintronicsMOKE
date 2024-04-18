@@ -113,6 +113,7 @@ class LampController:
         """
         if not self.__SPI_enabled:
             self.enable_spi()
+        print("LampController: Setting brightness of all to: ", brightness)
         self._write_spi(int('0xA9', 16), brightness)
 
     def set_one_brightness(self, brightness: int, led: int):

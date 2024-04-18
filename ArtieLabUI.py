@@ -71,12 +71,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.flickering = False
         self.averaging = False
+        self.paused = False
+        self.mode_changed = False
 
         self.__connect_signals()
         self.__prepare_views()
         time.sleep(1)
-        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
-                                        QtCore.Qt.ConnectionType.QueuedConnection)
+
         self.frame_counter = 0
         self.latest_raw_frame = None
         self.latest_diff_frame_a = None
@@ -88,6 +89,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
         self.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
         self.background_raw_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
+        QtCore.QMetaObject.invokeMethod(
+            self.camera_grabber,
+            "get_latest_single_frame",
+            QtCore.Qt.ConnectionType.QueuedConnection
+        )
 
     def __connect_signals(self):
         # LED controls
@@ -194,13 +202,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.hist_line.set_ydata(hist_data)
         self.hist_ax.relim()
         self.hist_ax.autoscale_view()
+
         length = len(self.frame_times)
         self.blank_line.set_xdata(list(range(min(length, 100))))
         self.blank_line.set_ydata(self.frame_times[-min(100, length):])
         self.blank_ax.relim()
         self.blank_ax.autoscale_view()
 
-        plt.autoscale()
         self.plots_canvas.draw()
         self.plots_canvas.flush_events()
 
@@ -327,8 +335,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_long_pol(self, checked):
         if checked:
+            self.mode_changed = True
             if self.flickering:
                 self.__reset_after_flicker_mode()
+
             self.enabled_led_pairs.update(
                 {"left": False,
                  "right": False,
@@ -359,12 +369,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_trans_pol(self, checked):
 
         if checked:
+            self.mode_changed = True
             if self.flickering:
                 self.__reset_after_flicker_mode()
             self.enabled_led_pairs.update({"left": True,
                                            "right": False,
                                            "up": False,
                                            "down": False})
+
             self.__reset_led_spis()
 
             self.button_up_led1.setChecked(False)
@@ -390,6 +402,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_polar(self, checked):
 
         if checked:
+            self.mode_changed = True
             if self.flickering:
                 self.__reset_after_flicker_mode()
             self.__reset_pairs()
@@ -424,6 +437,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_long_trans(self, checked):
         if checked:
+            self.mode_changed = True
             if not self.flickering:
                 self.__prepare_for_flicker_mode()
             else:
@@ -444,8 +458,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_right_led2.setChecked(False)
 
             self.lamp_controller.continuous_flicker(0)
-
-
         else:
             if not self.__check_for_any_active_mode():
                 self.__disable_all_leds()
@@ -456,6 +468,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__prepare_for_flicker_mode()
             else:
                 self.lamp_controller.stop_flicker()
+            self.mode_changed = True
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
@@ -482,6 +495,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__prepare_for_flicker_mode()
             else:
                 self.lamp_controller.stop_flicker()
+            self.mode_changed = True
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
@@ -489,8 +503,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_pure_long.setChecked(False)
 
             self.lamp_controller.continuous_flicker(2)
-
-            self.__prepare_for_flicker_mode()
 
             self.button_up_led1.setChecked(True)
             self.button_up_led2.setChecked(True)
@@ -511,10 +523,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # TODO: Add cv2 windows for raw frames
 
         self.flickering = True
-
-        self.mutex.lock()
-        self.camera_grabber.running = False
-        self.mutex.unlock()
 
         self.button_up_led1.setEnabled(False)
         self.button_up_led2.setEnabled(False)
@@ -541,18 +549,20 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         restarts the camera.
         :return:
         """
-        if not self.button_pause_camera.isChecked():
-            if self.flickering:
-                self.camera_grabber.start_live_difference_mode()
-                print("ArtieLabUI: Camera grabber starting difference mode")
-            else:
-                self.camera_grabber.start_live_single_frame()
-                print("ArtieLabUI: Camera grabber starting normal mode")
+        print("ArtielabUI: ready recieved")
+        # if not self.paused:
+        #     if self.flickering:
+        #         QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_difference_mode",
+        #                                         QtCore.Qt.ConnectionType.QueuedConnection)
+        #         print("ArtieLabUI: Camera grabber starting difference mode")
+        #     else:
+        #         QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+        #                                         QtCore.Qt.ConnectionType.QueuedConnection)
+        #         print("ArtieLabUI: Camera grabber starting normal mode")
 
     def __reset_after_flicker_mode(self):
         print("ArtieLabUI: Resetting after flicker mode")
         self.lamp_controller.stop_flicker()
-        self.camera_grabber.running = False
         self.flickering = False
 
         self.button_display_subtraction.setEnabled(True)
@@ -635,47 +645,126 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
                 self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
             self.frame_counter += 1
-            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_diff",
-                                            QtCore.Qt.ConnectionType.QueuedConnection,
-                                            QtCore.Q_ARG(np.ndarray,
-                                                         np.mean(self.diff_frame_stack_a, axis=0, dtype=np.uint16)),
-                                            QtCore.Q_ARG(np.ndarray,
-                                                         np.mean(self.diff_frame_stack_b, axis=0, dtype=np.uint16))
-                                            )
+            QtCore.QMetaObject.invokeMethod(
+                self.frame_processor, "process_diff",
+                QtCore.Qt.ConnectionType.QueuedConnection,
+                QtCore.Q_ARG(np.ndarray, np.mean(self.diff_frame_stack_a, axis=0, dtype=np.uint16)),
+                QtCore.Q_ARG(np.ndarray, np.mean(self.diff_frame_stack_b, axis=0, dtype=np.uint16))
+            )
         else:
             self.latest_diff_frame_a = frame_a
             self.latest_diff_frame_b = frame_b
-            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_diff",
-                                            QtCore.Qt.ConnectionType.QueuedConnection,
-                                            QtCore.Q_ARG(np.ndarray, frame_a),
-                                            QtCore.Q_ARG(np.ndarray, frame_b)
-                                            )
+            QtCore.QMetaObject.invokeMethod(
+                self.frame_processor,
+                "process_diff",
+                QtCore.Qt.ConnectionType.QueuedConnection,
+                QtCore.Q_ARG(np.ndarray, frame_a),
+                QtCore.Q_ARG(np.ndarray, frame_b)
+            )
 
     def __on_processed_frame(self, processed_frame):
         self.latest_processed_frame = processed_frame
+        print("ArtieLabUI: Drawing frame...")
         cv2.imshow(self.stream_window, processed_frame)
-        self.__update_plots()
+        # self.__update_plots()
         cv2.waitKey(1)
+        print("ArtieLabUI: Drawing frame... Done")
+        if not self.paused:
+            if not self.mode_changed:
+                QtCore.QMetaObject.invokeMethod(
+                    self.camera_grabber,
+                    "get_latest_single_frame",
+                    QtCore.Qt.ConnectionType.QueuedConnection
+                )
+            else:
+                if self.flickering:
+                    self.lamp_controller.stop_flicker()
+                    QtCore.QMetaObject.invokeMethod(
+                        self.camera_grabber,
+                        "stop_acquisition",
+                        QtCore.Qt.ConnectionType.QueuedConnection,
+                        QtCore.Q_ARG(bool, False)
+                    )
+                    QtCore.QMetaObject.invokeMethod(
+                        self.camera_grabber,
+                        "start_live_difference_mode",
+                        QtCore.Qt.ConnectionType.QueuedConnection
+                    )
+                    QtCore.QMetaObject.invokeMethod(
+                        self.camera_grabber,
+                        "get_latest_diff_frame",
+                        QtCore.Qt.ConnectionType.QueuedConnection
+                    )
+                else:
+                    QtCore.QMetaObject.invokeMethod(
+                        self.camera_grabber,
+                        "get_latest_single_frame",
+                        QtCore.Qt.ConnectionType.QueuedConnection
+                    )
+                self.mode_changed = False
+        self.__update_plots()
+
+        # QtCore.QCoreApplication.processEvents()
 
     def __on_processed_diff(self, diff, diff_processed):
         self.latest_diff_frame = diff
         self.latest_processed_frame = diff_processed
         cv2.imshow(self.stream_window, diff_processed)
-        self.__update_plots()
         cv2.waitKey(1)
+        self.__update_plots()
+        if not self.paused:
+            if not self.mode_changed:
+                QtCore.QMetaObject.invokeMethod(
+                    self.camera_grabber,
+                    "get_latest_diff_frame",
+                    QtCore.Qt.ConnectionType.QueuedConnection
+                )
+            else:
+                if not self.flickering:
+                    self.__reset_after_flicker_mode()
+                    QtCore.QMetaObject.invokeMethod(
+                        self.camera_grabber,
+                        "stop_acquisition",
+                        QtCore.Qt.ConnectionType.QueuedConnection,
+                        QtCore.Q_ARG(bool, False)
+                    )
+                    QtCore.QMetaObject.invokeMethod(
+                        self.camera_grabber,
+                        "start_live_single_frame",
+                        QtCore.Qt.ConnectionType.QueuedConnection
+                    )
+                    QtCore.QMetaObject.invokeMethod(
+                        self.camera_grabber,
+                        "get_latest_single_frame",
+                        QtCore.Qt.ConnectionType.QueuedConnection
+                    )
+                else:
+                    QtCore.QMetaObject.invokeMethod(
+                        self.camera_grabber,
+                        "get_latest_diff_frame",
+                        QtCore.Qt.ConnectionType.QueuedConnection
+                    )
+                self.mode_changed = False
+
+        # QtCore.QCoreApplication.processEvents()
 
     def __on_get_new_background(self, ignored_event):
         self.mutex.lock()
-        self.camera_grabber.running = False
+        self.camera_grabber.stop_acquisition()
         self.mutex.unlock()
         frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
         self.background_raw_stack = frames
         self.background = np.mean(frames, axis=0).astype(np.uint16)
         self.frame_processor.background = self.background
         if self.flickering:
-            self.camera_grabber.start_live_difference_mode()
+            QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_difference_mode",
+                                            QtCore.Qt.ConnectionType.QueuedConnection)
         else:
-            self.camera_grabber.start_live_single_frame()
+            QtCore.QMetaObject.invokeMethod(
+                self.camera_grabber,
+                "start_live_single_frame",
+                QtCore.Qt.ConnectionType.QueuedConnection
+            )
         print("ArtieLabUI: Background Measured")
 
     def __on_exposure_time_changed(self, exposure_time_idx):
@@ -716,8 +805,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.subtracting = False
 
     def __on_pause_button(self, paused):
+        self.paused = paused
         if paused:
-            self.camera_grabber.running = False
+            self.mutex.lock()
+            self.mutex.unlock()
             self.button_pause_camera.setText("Unpause (F4)")
             if self.flickering:
                 self.lamp_controller.pause_flicker(paused)
@@ -725,9 +816,17 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_pause_camera.setText("Pause (F4)")
             if self.flickering:
                 self.lamp_controller.pause_flicker(paused)
-                self.camera_grabber.start_live_difference_mode()
+                QtCore.QMetaObject.invokeMethod(
+                    self.camera_grabber,
+                    "get_latest_diff_frame",
+                    QtCore.Qt.ConnectionType.QueuedConnection
+                )
             else:
-                self.camera_grabber.start_live_single_frame()
+                QtCore.QMetaObject.invokeMethod(
+                    self.camera_grabber,
+                    "get_latest_single_frame",
+                    QtCore.Qt.ConnectionType.QueuedConnection
+                )
 
     def __on_save(self, event):
         # TODO: Add the difference frame processing to this. Currently this only works for single light source modes
@@ -865,6 +964,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.mutex.lock()
         self.camera_grabber.closing = True
         self.camera_grabber.running = False
+        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "stop_acquisition",
+                                        QtCore.Qt.ConnectionType.QueuedConnection,
+                                        QtCore.Q_ARG(bool, True))
+
         self.mutex.unlock()
         cv2.destroyAllWindows()
 
