@@ -624,7 +624,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         else:
             QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_frame",
                                             QtCore.Qt.ConnectionType.QueuedConnection,
-                                            QtCore.Q_ARG(np.ndarray, raw_frame)
+                                            QtCore.Q_ARG(np.ndarray, raw_frame),
                                             )
 
     def __on_new_diff_frame(self, frame_a, frame_b):
@@ -644,7 +644,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.frame_processor, "process_diff_stack",
                 QtCore.Qt.ConnectionType.QueuedConnection,
                 QtCore.Q_ARG(np.ndarray, self.diff_frame_stack_a),
-                QtCore.Q_ARG(np.ndarray, self.diff_frame_stack_b)
+                QtCore.Q_ARG(np.ndarray, self.diff_frame_stack_b),
+                QtCore.Q_ARG(int,
+                             min(
+                                 self.frame_counter % self.averages,
+                                 self.diff_frame_stack_a.shape[0] - 1
+                             )
+                             )
             )
         else:
             self.latest_diff_frame_a = frame_a

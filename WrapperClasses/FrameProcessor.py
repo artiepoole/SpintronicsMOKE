@@ -97,9 +97,8 @@ class FrameProcessor(QtCore.QObject):
 
         )
 
-    @QtCore.pyqtSlot(np.ndarray, np.ndarray)
-    def process_diff_stack(self, frames_a, frames_b):
-        # TODO: need indexing to only mean the proper frames.
+    @QtCore.pyqtSlot(np.ndarray, np.ndarray, int)
+    def process_diff_stack(self, frames_a, frames_b, intensity_index):
         mean_a = np.mean(np.array(frames_a), axis=0)
         mean_b = np.mean(np.array(frames_b), axis=0)
         meaned_diff = np.abs(mean_a.astype(np.int32) - mean_b.astype(np.int32)).astype(np.uint16)
@@ -107,7 +106,7 @@ class FrameProcessor(QtCore.QObject):
         self.diff_processed_signal.emit(
             meaned_diff,
             processed_frame,
-            np.mean(mean_a, axis=(0, 1)),
-            np.mean(mean_b, axis=(0, 1)),
+            np.mean(frames_a[intensity_index], axis=(0, 1)),
+            np.mean(frames_b[intensity_index], axis=(0, 1)),
             exposure.histogram(processed_frame)
         )
