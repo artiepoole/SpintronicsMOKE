@@ -111,10 +111,13 @@ class LampController:
         :param brightness: the brightness between 0 and 180
         :return:
         """
+        enabled = self.__SPI_enabled
         if not self.__SPI_enabled:
             self.enable_spi()
-        print("LampController: Setting brightness of all to: ", brightness)
+        print("LampController: Setting all brightnesses to: ", brightness)
         self._write_spi(int('0xA9', 16), brightness)
+        if not enabled:
+            self.disable_spi()
 
     def set_one_brightness(self, brightness: int, led: int):
         """
@@ -123,9 +126,29 @@ class LampController:
         :param led: Integer value for LEDS from 1 to 8
         :return:
         """
+        enabled = self.__SPI_enabled
         if not self.__SPI_enabled:
             self.enable_spi()
+        print(f"LampController: Setting LED: {led} to Brightness: {brightness}")
         self._write_spi(int('0xA0', 16) + led, brightness)
+        if not enabled:
+            self.disable_spi()
+
+    def set_some_brightness(self, brightnesses: list, leds: list):
+        """
+        Set the brightness of one LED at a time
+        :param brightness: the brightness between 0 and 180
+        :param led: Integer value for LEDS from 1 to 8
+        :return:
+        """
+        enabled = self.__SPI_enabled
+        if not self.__SPI_enabled:
+            self.enable_spi()
+        for i in range(len(brightnesses)):
+            print(f"LampController: Setting LED: {leds[i]} to Brightness: {brightnesses[i]}")
+            self._write_spi(int('0xA0', 16) + leds[i], brightnesses[i])
+        if not enabled:
+            self.disable_spi()
 
     def _write_spi(self, command, value):
         """

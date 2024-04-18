@@ -10,6 +10,26 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         uic.loadUi(r'C:\Users\User\PycharmProjects\SpintronicsMOKE\res\LED_driver_UI.ui', self)  # Load the .ui file
         self.show()
 
+        self.led_binary_enum = {
+            "left1": 2,
+            "left2": 1,
+            "right1": 8,
+            "right2": 4,
+            "up1": 32,
+            "up2": 16,
+            "down1": 128,
+            "down2": 64}
+
+        self.led_id_enum = {
+            "left1": 2,
+            "left2": 1,
+            "right1": 4,
+            "right2": 3,
+            "up1": 6,
+            "up2": 5,
+            "down1": 8,
+            "down2": 7}
+
         self.enabled_leds_spi = {"left1": False,
                                  "left2": False,
                                  "right1": False,
@@ -53,6 +73,9 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         self.button_control_all.clicked.connect(self.__on_control_change)
         self.button_reset_brightness.clicked.connect(self.__reset_brightness)
         self.scroll_LED_brightness.valueChanged.connect(self.__on_brightness_slider)
+        self.scroll_LED_brightness.setSingleStep(-1)
+        self.scroll_blocker = QtCore.QSignalBlocker(self.scroll_LED_brightness)
+        self.scroll_blocker.unblock()
 
         self.lamp_controller = LampController()
         self.lamp_controller.disable_all()
@@ -77,7 +100,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         )
 
     def __reset_brightness(self):
-        self.enabled_brightness.update(
+        self.LED_brightnesses.update(
             {"left1": 180,
              "left2": 180,
              "right1": 180,
@@ -115,14 +138,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
-        self.enabled_leds_spi["up1"] = self.button_up_led1.isChecked()
-        self.enabled_leds_spi["up2"] = self.button_up_led2.isChecked()
-        self.enabled_leds_spi["down1"] = self.button_down_led1.isChecked()
-        self.enabled_leds_spi["down2"] = self.button_down_led2.isChecked()
-        self.enabled_leds_spi["left1"] = self.button_left_led1.isChecked()
-        self.enabled_leds_spi["left2"] = self.button_left_led2.isChecked()
-        self.enabled_leds_spi["right1"] = self.button_right_led1.isChecked()
-        self.enabled_leds_spi["right2"] = self.button_right_led2.isChecked()
+        self.__update_active_LEDs()
         self.__update_controller_spi()
 
     def __on_long_pol(self, checked):
@@ -141,11 +157,11 @@ class LEDDriverUI(QtWidgets.QMainWindow):
             self.button_left_led2.setChecked(False)
             self.button_right_led1.setChecked(False)
             self.button_right_led2.setChecked(False)
-            self.__update_active_LEDs()
 
             self.button_trans_pol.setChecked(False)
             self.button_polar.setChecked(False)
 
+            self.__update_active_LEDs()
             self.__update_controller_pairs()
         else:
             if not self.__check_for_any_active_mode():
@@ -158,8 +174,6 @@ class LEDDriverUI(QtWidgets.QMainWindow):
                                            "up": False,
                                            "down": False})
 
-            self.__update_active_LEDs()
-
             self.button_up_led1.setChecked(False)
             self.button_up_led2.setChecked(False)
             self.button_down_led1.setChecked(False)
@@ -171,7 +185,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
 
             self.button_long_pol.setChecked(False)
             self.button_polar.setChecked(False)
-
+            self.__update_active_LEDs()
             self.__update_controller_pairs()
         else:
             if not self.__check_for_any_active_mode():
@@ -179,16 +193,6 @@ class LEDDriverUI(QtWidgets.QMainWindow):
 
     def __on_polar(self, checked):
         if checked:
-            self.enabled_leds_spi.update(
-                {"left1": False,
-                 "left2": False,
-                 "right1": False,
-                 "right2": False,
-                 "up1": True,
-                 "up2": False,
-                 "down1": True,
-                 "down2": False})
-
             self.__reset_pairs()
 
             self.button_up_led1.setChecked(True)
@@ -202,7 +206,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
 
             self.button_long_pol.setChecked(False)
             self.button_trans_pol.setChecked(False)
-
+            self.__update_active_LEDs()
             self.__update_controller_spi()
         else:
             if not self.__check_for_any_active_mode():
@@ -224,24 +228,16 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         self.enabled_leds_spi["left2"] = self.button_left_led2.isChecked()
         self.enabled_leds_spi["right1"] = self.button_right_led1.isChecked()
         self.enabled_leds_spi["right2"] = self.button_right_led2.isChecked()
-
-    def __get_active_LEDs(self):
-        self.__update_active_LEDs()
-        return [key for key, value in self.enabled_leds_spi if value is True]
+        self.__update_brightness_slider()
 
     def __update_controller_pairs(self):
         self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
 
     def __update_controller_spi(self):
-        # I assumed the numbering would go outside then inside, but it goes inside then outside
-        value = self.enabled_leds_spi["left1"] * 2 \
-                + self.enabled_leds_spi["left2"] * 1 \
-                + self.enabled_leds_spi["right1"] * 8 \
-                + self.enabled_leds_spi["right2"] * 4 \
-                + self.enabled_leds_spi["up1"] * 32 \
-                + self.enabled_leds_spi["up2"] * 16 \
-                + self.enabled_leds_spi["down1"] * 128 \
-                + self.enabled_leds_spi["down2"] * 64
+        keys = self.led_binary_enum.keys()
+        value = 0
+        for key in keys:
+            value += self.led_binary_enum[key] * self.enabled_leds_spi[key]
         self.lamp_controller.enable_leds(value)
 
     def __on_control_change(self, control_all):
@@ -250,29 +246,44 @@ class LEDDriverUI(QtWidgets.QMainWindow):
             self.button_control_all.setText("Control\nSelected")
         else:
             self.button_control_all.setText("Control\nAll")
-        self.__update_brightness()
+        self.__update_brightness(180 - self.scroll_LED_brightness.value())
 
     def __on_brightness_slider(self, value):
+        value = 180 - value
+        print("Slider Value Changed to: ", value)
         self.__update_brightness(value)
 
-    def __update_brightness(self, value=None):
-        if value is None:
-            value = self.scroll_LED_brightness.value()
+    def __update_brightness_slider(self):
         if self.control_all:
-            brightest_val = max(self.LED_brightnesses.values())
-            if value != brightest_val:
-                print("Changing slider")
-                self.scroll_LED_brightness.setValue(brightest_val)
-            self.LED_brightnesses = {key: value for key in self.LED_brightnesses}
-            self.lamp_controller.set_all_brightness(brightest_val)
+            keys = self.LED_brightnesses.keys()
+        else:
+            keys = [key for key, value in self.enabled_leds_spi.items() if value is True]
+        if keys:
+            print(keys)
+            brightest_val = max([self.LED_brightnesses[key] for key in keys])
+            print("Brightest val: ", brightest_val)
+            self.scroll_blocker.reblock()
+            self.scroll_LED_brightness.setValue(180-brightest_val)
+            self.scroll_blocker.unblock()
+            self.__update_brightness(brightest_val)
 
+    def __update_brightness(self, value):
+        if self.control_all:
+            keys = self.LED_brightnesses.keys()
+        else:
+            keys = [key for key, value in self.enabled_leds_spi.items() if value is True]
+        if self.control_all:
+            self.LED_brightnesses = {key: value for key in self.LED_brightnesses}
+            self.lamp_controller.set_all_brightness(value)
+        else:
+            for key in keys:
+                self.LED_brightnesses[key] = value
+            self.lamp_controller.set_some_brightness([value] * len(keys), [self.led_id_enum[key] for key in keys])
 
     def closeEvent(self, event):
-        self.close_event = event
-        # time.sleep(0.1)
         self.lamp_controller.close()
         print("LEDDriverUI: Closing threads and exiting")
-        super(LEDDriverUI, self).closeEvent(self.close_event)
+        super(LEDDriverUI, self).closeEvent(event)
         sys.exit()
 
 
