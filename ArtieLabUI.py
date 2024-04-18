@@ -62,6 +62,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_grabber.moveToThread(self.camera_thread)
         self.height, self.width = self.camera_grabber.get_data_dims()
 
+        self.frame_processor = FrameProcessor()
+        self.frame_processor_thread = QtCore.QThread()
+        self.frame_processor.moveToThread(self.frame_processor_thread)
+
         self.flickering = False
         self.averaging = False
 
@@ -595,16 +599,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             if len(self.raw_frame_stack) > self.averages:
                 self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
             self.frame_counter += 1
-            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_frame",
-                                            QtCore.Qt.ConnectionType.QueuedConnection,
-                                            QtCore.Q_ARG(np.ndarray,
-                                                         np.mean(self.raw_frame_stack, axis=0).astype(np.uint16))
-                                            )
+            self.frame_processor.process_frame(np.mean(self.raw_frame_stack, axis=0).astype(np.uint16))
         else:
-            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_frame",
-                                            QtCore.Qt.ConnectionType.QueuedConnection,
-                                            QtCore.Q_ARG(np.ndarray, raw_frame)
-                                            )
+            self.frame_processor.process_frame(raw_frame)
 
     def __on_new_diff_frame(self, frame_a, frame_b):
         new_frame_time = time.time()
@@ -627,21 +624,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
                 self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
             self.frame_counter += 1
-            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_diff",
-                                            QtCore.Qt.ConnectionType.QueuedConnection,
-                                            QtCore.Q_ARG(np.ndarray,
-                                                         np.mean(self.diff_frame_stack_a, axis=0, dtype=np.uint16)),
-                                            QtCore.Q_ARG(np.ndarray,
-                                                         np.mean(self.diff_frame_stack_b, axis=0, dtype=np.uint16))
-                                            )
+
+            self.frame_processor.process_diff(
+                np.mean(self.diff_frame_stack_a, axis=0, dtype=np.uint16),
+                np.mean(self.diff_frame_stack_b, axis=0, dtype=np.uint16)
+            )
         else:
             self.latest_diff_frame_a = frame_a
             self.latest_diff_frame_b = frame_b
-            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_diff",
-                                            QtCore.Qt.ConnectionType.QueuedConnection,
-                                            QtCore.Q_ARG(np.ndarray, frame_a),
-                                            QtCore.Q_ARG(np.ndarray, frame_b)
-                                            )
+            self.frame_processor.process_diff(frame_a, frame_b)
+
 
     def __on_processed_frame(self, processed_frame):
         self.latest_processed_frame = processed_frame
