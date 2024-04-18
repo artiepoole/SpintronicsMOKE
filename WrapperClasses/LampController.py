@@ -76,9 +76,9 @@ class LampController:
             self.disable_spi()
 
         send_byte = (pairs["left"] * self.__LEFT_CONST +
-                pairs["right"] * self.__RIGHT_CONST +
-                pairs["up"] * self.__UP_CONST +
-                pairs["down"] * self.__DOWN_CONST)
+                     pairs["right"] * self.__RIGHT_CONST +
+                     pairs["up"] * self.__UP_CONST +
+                     pairs["down"] * self.__DOWN_CONST)
         print("LampController: Enabling Pairs: ", send_byte)
         self.TTL_stream.write_one_sample_port_byte(send_byte)
 
