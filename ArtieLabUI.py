@@ -179,7 +179,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.intensity_ax.set(title="Raw frame average intensity", xlabel="Frame", ylabel="Average Intensity")
 
         self.hist_ax = self.plots_canvas.figure.add_subplot(312)
-        self.hist_line, = self.hist_ax.plot([], [], 'b-')
+        self.hist_bins = []
+        self.hist_data = []
+        self.hist_line, = self.hist_ax.plot(self.hist_bins, self.hist_data, 'b-')
         self.hist_ax.set(title="Histogram as Seen", xlabel="Brightness", ylabel="Counts")
 
         self.blank_ax = self.plots_canvas.figure.add_subplot(313)
@@ -197,9 +199,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.intensity_ax.relim()
         self.intensity_ax.autoscale_view()
 
-        hist_data, hist_bins = exposure.histogram(self.latest_processed_frame)
-        self.hist_line.set_xdata(hist_bins)
-        self.hist_line.set_ydata(hist_data)
+        self.hist_line.set_xdata(self.hist_bins)
+        self.hist_line.set_ydata(self.hist_data)
         self.hist_ax.relim()
         self.hist_ax.autoscale_view()
 
@@ -598,12 +599,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.lamp_controller.enable_leds(value)
 
     def __on_new_raw_frame(self, raw_frame):
-        new_frame_time = time.time()
-        self.frame_times.append(new_frame_time - self.old_frame_time)
-        self.old_frame_time = new_frame_time
 
         self.latest_raw_frame = raw_frame
-        self.intensity_y.append(np.mean(raw_frame, axis=(0, 1)))
 
         if self.averaging:
             if self.frame_counter % self.averages < len(self.raw_frame_stack):
@@ -612,12 +609,18 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.raw_frame_stack = np.append(self.raw_frame_stack, np.expand_dims(raw_frame, 0), axis=0)
             if len(self.raw_frame_stack) > self.averages:
                 self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
-            self.frame_counter += 1
-            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_frame",
+
+            QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_stack",
                                             QtCore.Qt.ConnectionType.QueuedConnection,
-                                            QtCore.Q_ARG(np.ndarray,
-                                                         np.mean(self.raw_frame_stack, axis=0).astype(np.uint16))
+                                            QtCore.Q_ARG(np.ndarray, self.raw_frame_stack),
+                                            QtCore.Q_ARG(int,
+                                                         min(
+                                                             self.frame_counter % self.averages,
+                                                             self.raw_frame_stack.shape[0]-1
+                                                         )
+                                                         )
                                             )
+            self.frame_counter += 1
         else:
             QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_frame",
                                             QtCore.Qt.ConnectionType.QueuedConnection,
@@ -625,14 +628,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                             )
 
     def __on_new_diff_frame(self, frame_a, frame_b):
-        new_frame_time = time.time()
-        self.frame_times.append(new_frame_time - self.old_frame_time)
-        self.old_frame_time = new_frame_time
-
-        intensity_a = np.mean(frame_a, axis=(0, 1))
-        intensity_b = np.mean(frame_b, axis=(0, 1))
-        self.intensity_y.append(intensity_a)
-        self.intensity_y.append(intensity_b)
 
         if self.averaging:
             if self.frame_counter % self.averages < len(self.diff_frame_stack_a):
@@ -646,29 +641,37 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
             self.frame_counter += 1
             QtCore.QMetaObject.invokeMethod(
-                self.frame_processor, "process_diff",
+                self.frame_processor, "process_diff_stack",
                 QtCore.Qt.ConnectionType.QueuedConnection,
-                QtCore.Q_ARG(np.ndarray, np.mean(self.diff_frame_stack_a, axis=0, dtype=np.uint16)),
-                QtCore.Q_ARG(np.ndarray, np.mean(self.diff_frame_stack_b, axis=0, dtype=np.uint16))
+                QtCore.Q_ARG(np.ndarray, self.diff_frame_stack_a),
+                QtCore.Q_ARG(np.ndarray, self.diff_frame_stack_b)
             )
         else:
             self.latest_diff_frame_a = frame_a
             self.latest_diff_frame_b = frame_b
             QtCore.QMetaObject.invokeMethod(
                 self.frame_processor,
-                "process_diff",
+                "process_single_diff",
                 QtCore.Qt.ConnectionType.QueuedConnection,
                 QtCore.Q_ARG(np.ndarray, frame_a),
                 QtCore.Q_ARG(np.ndarray, frame_b)
             )
 
-    def __on_processed_frame(self, processed_frame):
+    def __on_processed_frame(self, processed_frame, intensity, hist):
+        new_frame_time = time.time()
+        self.frame_times.append(new_frame_time - self.old_frame_time)
+        self.old_frame_time = new_frame_time
+
+        self.intensity_y.append(intensity)
+        self.hist_data, self.hist_bins = hist
         self.latest_processed_frame = processed_frame
+
         print("ArtieLabUI: Drawing frame...")
         cv2.imshow(self.stream_window, processed_frame)
         # self.__update_plots()
         cv2.waitKey(1)
         print("ArtieLabUI: Drawing frame... Done")
+
         if not self.paused:
             if not self.mode_changed:
                 QtCore.QMetaObject.invokeMethod(
@@ -704,14 +707,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.mode_changed = False
         self.__update_plots()
 
-        # QtCore.QCoreApplication.processEvents()
+    def __on_processed_diff(self, diff, diff_processed, intensity_a, intensity_b, hist):
 
-    def __on_processed_diff(self, diff, diff_processed):
+        new_frame_time = time.time()
+        self.frame_times.append(new_frame_time - self.old_frame_time)
+        self.old_frame_time = new_frame_time
+
+        self.intensity_y.append(intensity_a)
+        self.intensity_y.append(intensity_b)
+
+
+        self.hist_data, self.hist_bins = hist
+
         self.latest_diff_frame = diff
         self.latest_processed_frame = diff_processed
+
         cv2.imshow(self.stream_window, diff_processed)
         cv2.waitKey(1)
-        self.__update_plots()
+
         if not self.paused:
             if not self.mode_changed:
                 QtCore.QMetaObject.invokeMethod(
@@ -745,8 +758,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                         QtCore.Qt.ConnectionType.QueuedConnection
                     )
                 self.mode_changed = False
-
-        # QtCore.QCoreApplication.processEvents()
+        self.__update_plots()
 
     def __on_get_new_background(self, ignored_event):
         self.mutex.lock()

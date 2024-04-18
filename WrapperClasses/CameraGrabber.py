@@ -111,7 +111,7 @@ class CameraGrabber(QtCore.QObject):
         while frame is None:
             frame = self.cam.read_newest_image()
         new_time = time.time()
-        print(new_time - self.last_time)
+        print("CameraGrabber: frame time was ", new_time - self.last_time)
         self.last_time = new_time
         self.frame_ready_signal.emit(frame)
 
