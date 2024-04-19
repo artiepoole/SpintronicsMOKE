@@ -54,7 +54,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                   "down": False}
 
         # Create controller objects and threads
-        self.lamp_controller = LampController()
+        self.lamp_controller = LampController(True)
         self.lamp_controller.disable_all()
 
         self.camera_grabber = CameraGrabber()

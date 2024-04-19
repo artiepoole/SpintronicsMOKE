@@ -1,16 +1,19 @@
 import nidaqmx as nidaq
-from ctypes import *
 import numpy as np
 from nidaqmx.constants import LineGrouping, AcquisitionType, SampleTimingType
 from nidaqmx.stream_writers import DigitalSingleChannelWriter
 from itertools import chain
-import time
+
 
 flatten = chain.from_iterable
 
 
 class LampController:
-    def __init__(self):
+    def __init__(self, reset=False):
+        """
+        :param bool reset: Choose whether to reset the DAQ card or not. Because LampController and MagnetController are
+        both using the same DAQ device, this should only be true for the first of these two objects to be created.
+        """
         print("LampController: Initialising LampController")
         self.__UP_CONST = 4
         self.__DOWN_CONST = 8
@@ -23,8 +26,11 @@ class LampController:
         self.__MODE_CONST = 16
         self.__resting_state_noSPI = self.__DATA_CONST + self.__SS_CONST
         self.__resting_state_SPI = self.__DATA_CONST + self.__SS_CONST + self.__MODE_CONST
-        self.dev = nidaq.system.device.Device('Dev1')
-        self.dev.reset_device()
+
+        if reset:
+            print("LampController: Resetting DAQ card")
+            self.dev = nidaq.system.device.Device('Dev1')
+            self.dev.reset_device()
 
         self.TTL_output_task = nidaq.Task()
 
