@@ -39,8 +39,6 @@ class MagnetController:
         self.field_from_volts = field_from_volts
         self.currents = currents
         self.field_from_currents = field_from_currents
-        # TODO: Set limits of the amplitude.
-        # TODO: edit the labels of the spin boxes to represent the changed units.
         print("MagnetController: Calibration Updated")
 
     def interpolate_voltage(self, target_field):

@@ -120,7 +120,6 @@ class MagnetDriverUI(QtWidgets.QMainWindow):
                 print("Enabling AC mode")
                 self.spin_mag_offset.setEnabled(True)
                 self.spin_mag_freq.setEnabled(True)
-                # TODO: re-enable controls
             self.magnet_controller.mode = "AC"
             self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
             self.magnet_controller.set_frequency(self.spin_mag_freq.value())
