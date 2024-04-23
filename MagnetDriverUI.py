@@ -14,12 +14,16 @@ class MagnetDriverUI(QtWidgets.QMainWindow):
         uic.loadUi(r'res\Magnet_driver_UI.ui', self)  # Load the .ui file
         self.show()
         print("MagnetDriverUI: Finding calibration files")
+
+        self.timer_update_vals = QtCore.QTimer(self)
+        self.timer_update_vals.timeout.connect(self.update_measured_vals)
+
         if os.path.isfile('res/last_calibration_location.txt'):
             with open('res/last_calibration_location.txt', 'r') as file:
                 self.calib_file_dir = file.readline()
         elif os.path.isdir("Coil Calibrations\\"):
             self.calib_file_dir = "Coil Calibrations\\"
-            print('MagnetDriverUI:No calibration location found, trying: ', calib_file_dir)
+            print('MagnetDriverUI:No calibration location found, trying: ', self.calib_file_dir)
         else:
             print("MagnetDriverUI:Default calib file location not found. Asking for user input.")
             self.calib_file_dir = QtWidgets.QFileDialog.getExistingDirectory(
@@ -32,7 +36,16 @@ class MagnetDriverUI(QtWidgets.QMainWindow):
         self.__populate_calibration_combobox(self.calib_file_dir)
 
         self.combo_calib_file.currentIndexChanged.connect(self.__on_change_calibration)
+
+        self.spin_mag_amplitude.valueChanged.connect(self.__on_change_amplitude)
+        self.spin_mag_offset.valueChanged.connect(self.__on_change_offset)
+        self.spin_mag_freq.valueChanged.connect(self.__on_change_freq)
+
+        self.button_zero_field.clicked.connect(self.__on_zero_field)
+        self.button_DC.clicked.connect(self.__on_DC)
+        self.button_AC.clicked.connect(self.__on_AC)
         # self.button_calibration_directory.clicked.connect(self._on_calibration_directory)
+        self.timer_update_vals.start(1000)
 
     def __populate_calibration_combobox(self, dir):
         file_names = [f for f in listdir(dir) if isfile(join(dir, f)) and ".txt" in f]
@@ -58,7 +71,66 @@ class MagnetDriverUI(QtWidgets.QMainWindow):
             calibration_array[:, 2],
             calibration_array[:, 3]
         )
+        max_field = np.amax(calibration_array[:, 1])
+        self.label_amplitude.setText("Amplitude (mT)")
+        self.label_offset.setText("Offset (mT)")
+        self.label_measured_field.setText("Field (mT)")
+        self.spin_mag_amplitude.setValue(0.0)
+        self.spin_mag_amplitude.setRange(-max_field, max_field)
+        self.spin_mag_amplitude.setSingleStep(round(max_field / 50, 1))
+        self.spin_mag_offset.setValue(0.0)
+        self.spin_mag_offset.setRange(-max_field, max_field)
+        self.spin_mag_offset.setSingleStep(round(max_field / 50, 1))
 
+    def update_measured_vals(self):
+        field, current = self.magnet_controller.get_current_amplitude()
+        self.line_measured_field.setText("{:0.4f}".format(field))
+        self.line_measured_current.setText("{:0.4f}".format(current))
+
+    def __on_change_amplitude(self, value):
+        self.magnet_controller.set_target_field(value)
+
+    def __on_change_offset(self, value):
+        self.magnet_controller.set_target_offset(value)
+
+    def __on_zero_field(self):
+        self.magnet_controller.reset_field()
+
+    def __on_change_freq(self, value):
+        self.magnet_controller.set_frequency(value)
+
+    def __on_DC(self, enabled):
+        if enabled:
+            # self.button_DC.setChecked(True)
+            self.button_AC.setChecked(False)
+            if self.magnet_controller.mode == "AC":
+                print("Disabled AC mode")
+                self.spin_mag_offset.setEnabled(False)
+                self.spin_mag_offset.setValue(0)
+                self.spin_mag_freq.setEnabled(False)
+                self.spin_mag_freq.setValue(0)
+            self.magnet_controller.mode = "DC"
+            self.magnet_controller.update_output()
+
+    def __on_AC(self, enabled):
+        if enabled:
+            # self.button_AC.setChecked(True)
+            self.button_DC.setChecked(False)
+            if self.magnet_controller.mode == "DC":
+                print("Enabling AC mode")
+                self.spin_mag_offset.setEnabled(True)
+                self.spin_mag_freq.setEnabled(True)
+                # TODO: re-enable controls
+            self.magnet_controller.mode = "AC"
+            self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
+            self.magnet_controller.set_frequency(self.spin_mag_freq.value())
+            self.magnet_controller.update_output()
+
+    def closeEvent(self, event):
+        self.magnet_controller.close()
+        print("MagnetDriverUI: Closed DAQ tasks")
+        super(MagnetDriverUI, self).closeEvent(event)
+        sys.exit()
 
 
 if __name__ == '__main__':
