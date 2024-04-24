@@ -246,19 +246,6 @@
            </item>
           </layout>
          </item>
-         <item row="4" column="0">
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
          <item row="3" column="0">
           <layout class="QHBoxLayout" name="LEDSELECTORLAYOUT">
            <property name="leftMargin">
@@ -829,6 +816,9 @@ Pairs</string>
             <string>LED Control</string>
            </property>
           </widget>
+         </item>
+         <item row="4" column="0">
+          <layout class="QVBoxLayout" name="layout_logging"/>
          </item>
         </layout>
        </widget>
