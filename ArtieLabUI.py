@@ -13,6 +13,8 @@ from matplotlib.figure import Figure
 
 from WrapperClasses import *
 
+import logging
+
 plt.rcParams['axes.formatter.useoffset'] = False
 plt.rcParams['figure.autolayout'] = True
 
@@ -37,7 +39,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.plot_timer = QtCore.QTimer(self)
         self.close_event = None
-        self.background = None
+        self.get_background = False
         self.binning = 2
 
         self.enabled_leds_spi = {"left1": False,
@@ -83,7 +85,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.latest_diff_frame_a = None
         self.latest_diff_frame_b = None
         self.latest_processed_frame = None
-        self.background = None
 
         self.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
         self.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
@@ -91,11 +92,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.background_raw_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
         QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
-        QtCore.QMetaObject.invokeMethod(
-            self.camera_grabber,
-            "get_latest_single_frame",
-            QtCore.Qt.ConnectionType.QueuedConnection
-        )
+        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
         self.plot_timer.start(50)
 
     def __connect_signals(self):
@@ -135,8 +133,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_display_subtraction.clicked.connect(self.__on_show_subtraction)
 
         # Data Streams and Signals
-        self.frame_processor.frame_processed_signal.connect(self.__on_processed_frame)
-        self.frame_processor.diff_processed_signal.connect(self.__on_processed_diff)
+        self.camera_grabber.camera_ready.connect(self.__on_camera_ready)
         self.camera_grabber.quit_ready.connect(self.__on_quit_ready)
 
         # saving GUI
@@ -145,7 +142,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_dir_browse.clicked.connect(self.__on_browse)
 
         self.plot_timer.timeout.connect(self.__update_plots)
-        self.plot_timer.start(0)
+        self.plot_timer.start(10)
 
         # TODO: Add planar subtraction
         # TODO: Add ROI
@@ -165,7 +162,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # TODO: this layout_logging might be under FRAME_LOGGING.layout or similar because I morphed the layout into a frame.
         self.layout_logging.addWidget(self.log_text_box.widget)
 
-        fh = logging.FileHandler('SemaphoreUI.log')
+        fh = logging.FileHandler('ArtieLabUI.log')
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(
             logging.Formatter(
@@ -228,13 +225,20 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.blank_ax.relim()
         self.blank_ax.autoscale_view()
 
-        cv2.imshow(
-            self.stream_window,
-            cv2.resize(
-                self.frame_processor.latest_processed_frame,
-                (1024, 1024)
+        if self.frame_processor.latest_processed_frame.shape[0] != 1024:
+            print("Resizing")
+            cv2.imshow(
+                self.stream_window,
+                cv2.resize(
+                    self.frame_processor.latest_processed_frame,
+                    (1024, 1024)
+                )
             )
-        )
+        else:
+            cv2.imshow(
+                self.stream_window,
+                self.frame_processor.latest_processed_frame,
+            )
 
         cv2.waitKey(1)
         self.plots_canvas.draw()
@@ -317,7 +321,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 # this is Adaptive EQ and needs a clip limit
 
     def __disable_all_leds(self):
-        print("ArtieLabUI: Disabling all LEDs")
+        logging.info("Disabling all LEDs")
         self.__reset_led_spis()
         self.__reset_pairs()
         if self.flickering:
@@ -342,7 +346,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.__update_controller_pairs()
 
     def __on_individual_led(self, state):
-        print("ArtieLabUI: Individual LED being called")
+        logging.info("Individual LED being called")
         if not self.flickering:
             if self.__check_for_any_active_mode():
                 self.button_long_pol.setChecked(False)
@@ -577,19 +581,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         restarts the camera.
         :return:
         """
-        print("ArtielabUI: ready received")
+        logging.info("ready received")
+        if self.get_background:
+            self.get_background = False
+            frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
+            self.frame_processor.background_raw_stack = frames
+            self.frame_processor.background = np.mean(frames, axis=0).astype(np.uint16)
         if not self.paused:
             if self.flickering:
                 QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_difference_mode",
                                                 QtCore.Qt.ConnectionType.QueuedConnection)
-                print("ArtieLabUI: Camera grabber starting difference mode")
+                logging.info("Camera grabber starting difference mode")
             else:
                 QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
                                                 QtCore.Qt.ConnectionType.QueuedConnection)
-                print("ArtieLabUI: Camera grabber starting normal mode")
+                logging.info("Camera grabber starting normal mode")
 
     def __reset_after_flicker_mode(self):
-        print("ArtieLabUI: Resetting after flicker mode")
+        logging.info("Resetting after flicker mode")
         self.lamp_controller.stop_flicker()
         self.flickering = False
         self.camera_grabber.running = False
@@ -793,32 +802,27 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_get_new_background(self, ignored_event):
         # TODO: This doesn't call invokeMethod, nor does it wait for ready/closed from the camera.
+        logging.info("Getting background")
+        self.get_background = True
         self.mutex.lock()
         self.camera_grabber.running = False
         self.mutex.unlock()
-        frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
-        self.background_raw_stack = frames
-        self.background = np.mean(frames, axis=0).astype(np.uint16)
-        self.frame_processor.background = self.background
-        if self.flickering:
-            QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_difference_mode",
-                                            QtCore.Qt.ConnectionType.QueuedConnection)
-        else:
-            QtCore.QMetaObject.invokeMethod(
-                self.camera_grabber,
-                "start_live_single_frame",
-                QtCore.Qt.ConnectionType.QueuedConnection
-            )
-        print("ArtieLabUI: Background Measured")
 
     def __on_exposure_time_changed(self, exposure_time_idx):
+        logging.info("Attempting to set exposure time to")
         self.mutex.lock()
+        self.camera_grabber.waiting = True
         self.camera_grabber.running = False
         self.mutex.unlock()
-        self.camera_grabber.set_exposure_time(exposure_time_idx)
+        QtCore.QMetaObject.invokeMethod(
+            self.camera_grabber, "set_exposure_time",
+            QtCore.Qt.ConnectionType.QueuedConnection,
+            QtCore.Q_ARG(int, self.camera_grabber.set_exposure_time(exposure_time_idx))
+        )
+        self.__on_camera_ready()
 
     def __on_binning_mode_changed(self, binning_idx):
-        print("Binning mode changes not implemented yet.")
+        logging.info("Binning mode changes not implemented yet.")
         # TODO: Need to change the scale of the processed image to be super/subsampled to be 1024 square on screen
         pass
 
@@ -828,11 +832,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_averaging(self, enabled):
         if enabled:
             self.button_toggle_averaging.setText("Disable Averaging (F3)")
-            print("ArtieLabUI: Averaging enabled")
+            logging.info("Averaging enabled")
             self.mutex.lock()
-            self.frame_processor.averaging = True
-            self.camera_grabber.running = False
             self.frame_processor.averaging = self.spin_foreground_averages.value()
+            self.frame_processor.averaging = True
             self.frame_processor.frame_counter = 0
             self.frame_processor.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
             self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
@@ -840,13 +843,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.mutex.unlock()
         else:
             self.button_toggle_averaging.setText("Enable Averaging (F3)")
-            print("ArtieLabUI: Averaging disabled")
+            logging.info("Averaging disabled")
             self.mutex.lock()
             self.frame_processor.averaging = False
-            self.camera_grabber.running = False
             self.frame_processor.raw_frame_stack = None
             self.frame_processor.diff_frame_stack_a = None
-            self.dframe_processor.iff_frame_stack_b = None
+            self.frame_processor.diff_frame_stack_b = None
             self.mutex.unlock()
 
     def __on_show_subtraction(self, subtracting):
@@ -901,12 +903,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         file_path = Path(self.line_directory.text()).joinpath(
             datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
                                                                                                           '_') + '.h5')
-        print("ArtieLabUI: Saving to: " + str(file_path) + ' This takes time. Please be patient.')
+        logging.info("Saving to: " + str(file_path) + ' This takes time. Please be patient.')
         try:
             store = pd.HDFStore(str(file_path))
         except:
-            print(
-                "ArtieLabUI: Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
+            logging.info(
+                "Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
             return
 
         if self.button_toggle_averaging.isChecked():
@@ -921,9 +923,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     store[key] = pd.DataFrame(self.frame_processor.raw_frame_stack[i])
         else:
             if self.check_save_avg.isChecked():
-                print("ArtieLabUI: Average not saved: measuring in single frame mode")
+                logging.info("Average not saved: measuring in single frame mode")
             if self.check_save_stack.isChecked():
-                print("ArtieLabUI: Stack not saved: measuring in single frame mode")
+                logging.info("Stack not saved: measuring in single frame mode")
             key = 'frame'
             contents.append(key)
             store[key] = pd.DataFrame(self.frame_processor.latest_raw_frame)
@@ -949,7 +951,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 contents.append(key)
                 store[key] = pd.DataFrame(self.frame_processor.background)
             else:
-                print("ArtieLabUI: Background not saved: no background measured")
+                logging.info("Background not saved: no background measured")
         if self.check_save_bkg_stack.isChecked():
             if self.frame_processor.background is not None:
                 for i in range(len(self.frame_processor.background_raw_stack)):
@@ -957,11 +959,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     contents.append(key)
                     store[key] = pd.DataFrame(self.frame_processor.background_raw_stack[i])
             else:
-                print("ArtieLabUI: Background stack not saved: no background measured")
+                logging.info("Background stack not saved: no background measured")
         meta_data['contents'] = [contents]
         store['meta_data'] = pd.DataFrame(meta_data)
         store.close()
-        print("ArtieLabUI: Saving done.")
+        logging.info("Saving done.")
 
     def __on_save_single(self, event):
         # Assemble metadata
@@ -1001,7 +1003,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # file_path.mkdir(parents=True, exist_ok=True)
 
         tifffile.imwrite(str(file_path), self.latest_processed_frame, photometric='minisblack', metadata=meta_data)
-        print("ArtieLabUI: Saved file as " + str(file_path))
+        logging.info("Saved file as " + str(file_path))
 
     def __on_browse(self, event):
         starting_dir = str(Path(r'C:\Users\User\Desktop\USERS'))
@@ -1024,7 +1026,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         cv2.destroyAllWindows()
 
     def __on_quit_ready(self):
-        print("ArtieLabUI: Closing threads and exiting")
+        logging.info("Closing threads and exiting")
         self.camera_thread.quit()
         self.frame_processor_thread.quit()
         super(ArtieLabUI, self).closeEvent(self.close_event)

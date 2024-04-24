@@ -1,10 +1,11 @@
 import numpy as np
 from PyQt5 import QtCore
 from skimage import exposure
+import logging
 
 
 class FrameProcessor(QtCore.QObject):
-    print("FrameProcessor: Initializing FrameProcessor...")
+    logging.info("FrameProcessor: Initializing FrameProcessor...")
     IMAGE_PROCESSING_NONE = 0
     IMAGE_PROCESSING_PERCENTILE = 1
     IMAGE_PROCESSING_HISTEQ = 2
@@ -22,11 +23,13 @@ class FrameProcessor(QtCore.QObject):
     latest_raw_frame = None
     latest_diff_frame_a = None
     latest_diff_frame_b = None
-    latest_processed_frame = None
+    latest_processed_frame = np.zeros((1024, 1024), dtype=np.uint16)
     latest_hist_data = []
     latest_hist_bins = []
     intensities_y = []
     background = None
+    averaging = False
+    averages = 16
     running = False
 
     def __init__(self, parent):
@@ -44,19 +47,19 @@ class FrameProcessor(QtCore.QObject):
         if new_mode in [0, 1, 2, 3]:
             self.mode = new_mode
         else:
-            print("FrameProcessor: Invalid mode")
+            logging.info("FrameProcessor: Invalid mode")
 
     def set_percentile_lower(self, new_percentile):
         if new_percentile < self.p_high:
             self.p_low = new_percentile
         else:
-            print("FrameProcessor: Please raise % max to avoid overlap")
+            logging.info("FrameProcessor: Please raise % max to avoid overlap")
 
     def set_percentile_upper(self, new_percentile):
         if new_percentile > self.p_low:
             self.p_high = new_percentile
         else:
-            print("FrameProcessor: Please reduce lower % min to avoid overlap")
+            logging.info("FrameProcessor: Please reduce lower % min to avoid overlap")
 
     def set_clip_limit(self, new_clip_limit):
         self.clip = new_clip_limit
@@ -76,7 +79,7 @@ class FrameProcessor(QtCore.QObject):
             case self.IMAGE_PROCESSING_ADAPTEQ:
                 return (exposure.equalize_adapthist(frame_in / 65535, clip_limit=self.clip))
             case _:
-                print("FrameProcessor: Unrecognized image processing mode")
+                logging.info("FrameProcessor: Unrecognized image processing mode")
                 return frame_in
 
     @QtCore.pyqtSlot()
@@ -85,9 +88,11 @@ class FrameProcessor(QtCore.QObject):
         while self.running:
             got = self.parent.item_semaphore.tryAcquire(1, 1)
             if got:
+                logging.debug("Processing Frame")
                 item = self.parent.frame_buffer.popleft()
                 self.parent.spaces_semaphore.release()
                 if type(item) is tuple:
+                    logging.debug("Got difference frames")
                     # Diff mode
                     self.latest_diff_frame_a, self.latest_diff_frame_b = item
                     self.intensities_y.append(np.mean(self.latest_diff_frame_a, axis=(0, 1)))
@@ -107,8 +112,8 @@ class FrameProcessor(QtCore.QObject):
                             self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
                             self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
                         self.frame_counter += 1
-                        mean_a = np.mean(self.latest_diff_frame_a, axis=0)
-                        mean_b = np.mean(self.latest_diff_frame_b, axis=0)
+                        mean_a = np.mean(self.diff_frame_stack_a, axis=0)
+                        mean_b = np.mean(self.diff_frame_stack_b, axis=0)
                         meaned_diff = np.abs(mean_a.astype(np.int32) - mean_b.astype(np.int32)).astype(np.uint16)
                         self.latest_processed_frame = self.__process_frame(meaned_diff)
                     else:
@@ -116,6 +121,7 @@ class FrameProcessor(QtCore.QObject):
                             np.int32)).astype(np.uint16)
                         self.latest_processed_frame = self.__process_frame(diff_frame)
                 else:
+                    logging.debug("Got single frame")
                     # Single frame mode
                     self.latest_raw_frame = item
                     self.intensities_y.append(np.mean(self.latest_raw_frame, axis=(0, 1)))
@@ -133,4 +139,4 @@ class FrameProcessor(QtCore.QObject):
                     else:
                         self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
                 self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
-        print("Stopping Frame Processor")
+        logging.info("Stopping Frame Processor")
