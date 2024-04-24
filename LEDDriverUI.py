@@ -77,7 +77,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         self.scroll_blocker = QtCore.QSignalBlocker(self.scroll_LED_brightness)
         self.scroll_blocker.unblock()
 
-        self.lamp_controller = LampController(reset=True)
+        self.lamp_controller = LampController()
         self.lamp_controller.disable_all()
 
     def __reset_pairs(self):

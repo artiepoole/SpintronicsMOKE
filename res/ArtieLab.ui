@@ -65,6 +65,19 @@
          <property name="bottomMargin">
           <number>10</number>
          </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_15">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>LED Control</string>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="0">
           <layout class="QGridLayout" name="MODEGRID">
            <property name="leftMargin">
@@ -246,32 +259,6 @@
            </item>
           </layout>
          </item>
-         <item row="4" column="0">
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_15">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>LED Control</string>
-           </property>
-          </widget>
-         </item>
          <item row="3" column="0">
           <widget class="QFrame" name="BUTTONFRAME">
            <property name="styleSheet">
@@ -354,7 +341,7 @@
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0); 
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
                 </property>
                 <property name="text">
@@ -400,7 +387,7 @@ border:  none;</string>
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0); 
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
                 </property>
                 <property name="text">
@@ -440,7 +427,7 @@ border:  none;</string>
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0); 
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
                 </property>
                 <property name="text">
@@ -486,7 +473,7 @@ border:  none;</string>
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0); 
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
                 </property>
                 <property name="text">
@@ -532,7 +519,7 @@ border:  none;</string>
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0); 
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
                 </property>
                 <property name="text">
@@ -578,7 +565,7 @@ border:  none;</string>
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0); 
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
                 </property>
                 <property name="text">
@@ -624,7 +611,7 @@ border:  none;</string>
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0); 
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
                 </property>
                 <property name="text">
@@ -696,7 +683,7 @@ border:  none;</string>
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0); 
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
                 </property>
                 <property name="text">
@@ -844,6 +831,26 @@ Pairs</string>
            </layout>
           </widget>
          </item>
+         <item row="4" column="0">
+          <widget class="QFrame" name="FRAME_LOGGING">
+           <property name="autoFillBackground">
+            <bool>false</bool>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(255,255,255)</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::Panel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="lineWidth">
+            <number>2</number>
+           </property>
+           <layout class="QGridLayout" name="layout_logging"/>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
@@ -965,7 +972,7 @@ Pairs</string>
           </widget>
          </item>
          <item row="5" column="0">
-          <widget class="QFrame" name="">
+          <widget class="QFrame" name="frame">
            <property name="frameShape">
             <enum>QFrame::Panel</enum>
            </property>
