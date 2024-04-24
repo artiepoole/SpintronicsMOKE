@@ -1,22 +1,18 @@
-from WrapperClasses.CameraGrabber import CameraGrabber
-from WrapperClasses.LampController import LampController
-from WrapperClasses.FrameProcessor import FrameProcessor
-
-import cv2
-from PyQt5 import QtCore, QtWidgets, uic
 import sys
-import numpy as np
-import tifffile
-import pandas as pd
+import time
 from datetime import datetime
 from pathlib import Path
 
-import time
-
+import cv2
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import tifffile
+from PyQt5 import QtCore, QtWidgets, uic
 from matplotlib.backends.backend_qt5agg import *
 from matplotlib.figure import Figure
-from skimage import exposure
+
+from WrapperClasses import *
 
 plt.rcParams['axes.formatter.useoffset'] = False
 plt.rcParams['figure.autolayout'] = True
@@ -24,7 +20,6 @@ plt.rcParams['figure.autolayout'] = True
 
 class ArtieLabUI(QtWidgets.QMainWindow):
     def __init__(self):
-
         super(ArtieLabUI, self).__init__()  # Call the inherited classes __init__ method
         uic.loadUi('res/ArtieLab.ui', self)  # Load the .ui file
         right_monitor = QtWidgets.QDesktopWidget().screenGeometry(1)
@@ -32,8 +27,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.showMaximized()
         self.show()
         self.activateWindow()
-
-
 
         # define variables
         self.mutex = QtCore.QMutex()
@@ -79,6 +72,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.__connect_signals()
         self.__prepare_views()
+        self.__prepare_logging()
 
         self.frame_counter = 0
         self.latest_raw_frame = None
@@ -148,7 +142,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_save_single.clicked.connect(self.__on_save_single)
         self.button_dir_browse.clicked.connect(self.__on_browse)
 
-
         self.plot_timer.timeout.connect(self.__update_plots)
 
         # TODO: Add planar subtraction
@@ -159,6 +152,22 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # TODO: Add plot of intensity
         # TODO: Add change the number of frames
         # TODO: Add histogram plot
+
+    def __prepare_logging(self):
+        self.log_text_box = QTextEditLogger(self)
+        self.log_text_box.setFormatter(
+            logging.Formatter('%(asctime)s %(levelname)s %(module)s - %(message)s', "%H:%M:%S"))
+        logging.getLogger().addHandler(self.log_text_box)
+        logging.getLogger().setLevel(logging.INFO)
+        # TODO: this layout_logging might be under FRAME_LAYOUT.layout or similar because I morphed the layout into a frame.
+        self.layout_logging.addWidget(self.log_text_box.widget)
+
+        fh = logging.FileHandler('SemaphoreUI.log')
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(
+            logging.Formatter(
+                '%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s'))
+        logging.getLogger().addHandler(fh)
 
     def __prepare_views(self):
         self.stream_window = 'HamamatsuView'
@@ -625,7 +634,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                             QtCore.Q_ARG(int,
                                                          min(
                                                              self.frame_counter % self.averages,
-                                                             self.raw_frame_stack.shape[0]-1
+                                                             self.raw_frame_stack.shape[0] - 1
                                                          )
                                                          )
                                             )
@@ -681,7 +690,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.hist_data, self.hist_bins = hist
         self.latest_processed_frame = processed_frame
 
-
         if not self.paused:
             if not self.mode_changed:
                 QtCore.QMetaObject.invokeMethod(
@@ -716,7 +724,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     )
                 self.mode_changed = False
 
-
     def __on_processed_diff(self, diff, diff_processed, intensity_a, intensity_b, hist):
 
         new_frame_time = time.time()
@@ -726,13 +733,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.intensity_y.append(intensity_a)
         self.intensity_y.append(intensity_b)
 
-
         self.hist_data, self.hist_bins = hist
 
         self.latest_diff_frame = diff
         self.latest_processed_frame = diff_processed
-
-
 
         if not self.paused:
             if not self.mode_changed:
@@ -767,7 +771,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                         QtCore.Qt.ConnectionType.QueuedConnection
                     )
                 self.mode_changed = False
-
 
     def __on_get_new_background(self, ignored_event):
         self.mutex.lock()
