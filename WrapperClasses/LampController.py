@@ -3,7 +3,7 @@ import numpy as np
 from nidaqmx.constants import LineGrouping, AcquisitionType, SampleTimingType
 from nidaqmx.stream_writers import DigitalSingleChannelWriter
 from itertools import chain
-
+import time
 
 flatten = chain.from_iterable
 
