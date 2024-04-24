@@ -50,9 +50,9 @@
          <enum>QFrame::Sunken</enum>
         </property>
         <property name="lineWidth">
-         <number>3</number>
+         <number>2</number>
         </property>
-        <layout class="QGridLayout" name="LEDCONTROL" rowstretch="1,0,0,0,0">
+        <layout class="QGridLayout" name="layout_logging_4" rowstretch="1,0,0,0,0">
          <property name="leftMargin">
           <number>10</number>
          </property>
@@ -818,7 +818,34 @@ Pairs</string>
           </widget>
          </item>
          <item row="4" column="0">
-          <layout class="QVBoxLayout" name="layout_logging"/>
+          <widget class="QFrame" name="FRAME_LOGGING">
+           <property name="styleSheet">
+            <string notr="true">background-color:rgb(255,255,255)</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::Panel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="lineWidth">
+            <number>2</number>
+           </property>
+           <layout class="QVBoxLayout" name="layout_logging">
+            <property name="leftMargin">
+             <number>10</number>
+            </property>
+            <property name="topMargin">
+             <number>10</number>
+            </property>
+            <property name="rightMargin">
+             <number>10</number>
+            </property>
+            <property name="bottomMargin">
+             <number>10</number>
+            </property>
+           </layout>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -984,7 +1011,7 @@ Pairs</string>
         <property name="lineWidth">
          <number>3</number>
         </property>
-        <layout class="QGridLayout" name="CAMERAPARENTGRID">
+        <layout class="QGridLayout" name="layout_logging_3">
          <property name="leftMargin">
           <number>10</number>
          </property>
