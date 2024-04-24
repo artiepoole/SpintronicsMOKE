@@ -1,11 +1,12 @@
 import os.path
-from WrapperClasses.MagnetController import MagnetController
-from PyQt5 import QtCore, QtWidgets, uic
 import sys
-import time
 from os import listdir
 from os.path import isfile, join
+
 import numpy as np
+from PyQt5 import QtCore, QtWidgets, uic
+
+from WrapperClasses.MagnetController import MagnetController
 
 
 class MagnetDriverUI(QtWidgets.QMainWindow):
@@ -41,7 +42,7 @@ class MagnetDriverUI(QtWidgets.QMainWindow):
         self.spin_mag_offset.valueChanged.connect(self.__on_change_offset)
         self.spin_mag_freq.valueChanged.connect(self.__on_change_freq)
 
-        self.button_zero_field.clicked.connect(self.__on_zero_field)
+        self.button_zero_field.clicked.connect(self.__set_zero_field)
         self.button_DC.clicked.connect(self.__on_DC)
         self.button_AC.clicked.connect(self.__on_AC)
         # self.button_calibration_directory.clicked.connect(self._on_calibration_directory)
@@ -93,7 +94,11 @@ class MagnetDriverUI(QtWidgets.QMainWindow):
     def __on_change_offset(self, value):
         self.magnet_controller.set_target_offset(value)
 
-    def __on_zero_field(self):
+    def __set_zero_field(self):
+        self.spin_mag_offset.setEnabled(False)
+        self.spin_mag_offset.setValue(0)
+        self.spin_mag_freq.setEnabled(False)
+        self.spin_mag_freq.setValue(0)
         self.magnet_controller.reset_field()
 
     def __on_change_freq(self, value):
@@ -111,6 +116,11 @@ class MagnetDriverUI(QtWidgets.QMainWindow):
                 self.spin_mag_freq.setValue(0)
             self.magnet_controller.mode = "DC"
             self.magnet_controller.update_output()
+        else:
+            if not self.button_AC.isChecked():
+                print("MagnetDriverUI: There is no mode selected.")
+                self.__set_zero_field()
+                self.magnet_controller.mode = None
 
     def __on_AC(self, enabled):
         if enabled:
@@ -124,6 +134,12 @@ class MagnetDriverUI(QtWidgets.QMainWindow):
             self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
             self.magnet_controller.set_frequency(self.spin_mag_freq.value())
             self.magnet_controller.update_output()
+
+        else:
+            if not self.button_DC.isChecked():
+                print("MagnetDriverUI: There is no mode selected.")
+                self.__set_zero_field()
+                self.magnet_controller.mode = None
 
     def closeEvent(self, event):
         self.magnet_controller.close()

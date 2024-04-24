@@ -32,7 +32,7 @@ class MagnetController:
         self.field_from_volts = np.linspace(-10, 10, 100)
         self.currents = np.linspace(-10, 10, 100)
         self.field_from_currents = np.linspace(-10, 10, 100)
-        self.mode = "DC"
+        self.mode = None
 
     def set_calibration(self, voltages, field_from_volts, currents, field_from_currents):
         self.voltages = voltages
@@ -66,6 +66,8 @@ class MagnetController:
         )
 
     def update_output(self):
+        # If the mode is None then this simply doesn't ever start the task but allows the values to be updated so that
+        # when DC or AC is clicked, the output will happen.
         self.analogue_output_task.stop()
         if self.mode == "DC":
             n_samples = 100
@@ -100,6 +102,8 @@ class MagnetController:
             self.analogue_output_task.start()
 
             print(f"MagnetController: Outputting AC Waveform with Peak to Peak voltage of: {self.target_voltage}")
+
+
 
     def get_current_amplitude(self):
         current = self.analogue_input_task.read()
