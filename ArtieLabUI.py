@@ -159,7 +159,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             logging.Formatter('%(asctime)s %(levelname)s %(module)s - %(message)s', "%H:%M:%S"))
         logging.getLogger().addHandler(self.log_text_box)
         logging.getLogger().setLevel(logging.INFO)
-        # TODO: this layout_logging might be under FRAME_LAYOUT.layout or similar because I morphed the layout into a frame.
+        # TODO: this layout_logging might be under FRAME_LOGGING.layout or similar because I morphed the layout into a frame.
         self.layout_logging.addWidget(self.log_text_box.widget)
 
         fh = logging.FileHandler('SemaphoreUI.log')
