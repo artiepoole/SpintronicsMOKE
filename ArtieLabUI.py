@@ -33,8 +33,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.show()
         self.activateWindow()
 
+
+
         # define variables
         self.mutex = QtCore.QMutex()
+        self.plot_timer = QtCore.QTimer(self)
         self.close_event = None
         self.background = None
         self.binning = 2
@@ -76,7 +79,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.__connect_signals()
         self.__prepare_views()
-        time.sleep(1)
 
         self.frame_counter = 0
         self.latest_raw_frame = None
@@ -96,6 +98,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             "get_latest_single_frame",
             QtCore.Qt.ConnectionType.QueuedConnection
         )
+        self.plot_timer.start(50)
 
     def __connect_signals(self):
         # LED controls
@@ -144,6 +147,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_save_package.clicked.connect(self.__on_save)
         self.button_save_single.clicked.connect(self.__on_save_single)
         self.button_dir_browse.clicked.connect(self.__on_browse)
+
+
+        self.plot_timer.timeout.connect(self.__update_plots)
 
         # TODO: Add planar subtraction
         # TODO: Add ROI
@@ -210,6 +216,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.blank_ax.relim()
         self.blank_ax.autoscale_view()
 
+        cv2.imshow(self.stream_window, self.latest_processed_frame)
+
+        cv2.waitKey(1)
         self.plots_canvas.draw()
         self.plots_canvas.flush_events()
 
@@ -672,11 +681,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.hist_data, self.hist_bins = hist
         self.latest_processed_frame = processed_frame
 
-        print("ArtieLabUI: Drawing frame...")
-        cv2.imshow(self.stream_window, processed_frame)
-        # self.__update_plots()
-        cv2.waitKey(1)
-        print("ArtieLabUI: Drawing frame... Done")
 
         if not self.paused:
             if not self.mode_changed:
@@ -711,7 +715,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                         QtCore.Qt.ConnectionType.QueuedConnection
                     )
                 self.mode_changed = False
-        self.__update_plots()
+
 
     def __on_processed_diff(self, diff, diff_processed, intensity_a, intensity_b, hist):
 
@@ -728,8 +732,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.latest_diff_frame = diff
         self.latest_processed_frame = diff_processed
 
-        cv2.imshow(self.stream_window, diff_processed)
-        cv2.waitKey(1)
+
 
         if not self.paused:
             if not self.mode_changed:
@@ -764,7 +767,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                         QtCore.Qt.ConnectionType.QueuedConnection
                     )
                 self.mode_changed = False
-        self.__update_plots()
+
 
     def __on_get_new_background(self, ignored_event):
         self.mutex.lock()
