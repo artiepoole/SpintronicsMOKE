@@ -1752,10 +1752,10 @@ QWidget{background-color: rgb(255,255,255)}</string>
          <enum>QFrame::Panel</enum>
         </property>
         <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
+         <enum>QFrame::Sunken</enum>
         </property>
         <property name="lineWidth">
-         <number>2</number>
+         <number>3</number>
         </property>
         <layout class="QGridLayout" name="MAGNETICFIELDOUTERLAYOUT">
          <property name="leftMargin">
@@ -1778,69 +1778,66 @@ QWidget{background-color: rgb(255,255,255)}</string>
            <item>
             <layout class="QHBoxLayout" name="MAGBUTTONHORZ">
              <item>
-              <widget class="QToolButton" name="toolButton">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
+              <widget class="QToolButton" name="button_DC_field">
                <property name="text">
                 <string>DC
 (F8)</string>
                </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="checked">
+                <bool>false</bool>
+               </property>
+               <property name="autoExclusive">
+                <bool>false</bool>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="toolButton_2">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
+              <widget class="QToolButton" name="button_AC_field">
                <property name="text">
                 <string>AC
 (F9)</string>
                </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="autoExclusive">
+                <bool>false</bool>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="toolButton_3">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
+              <widget class="QToolButton" name="button_decay_field">
+               <property name="enabled">
+                <bool>false</bool>
                </property>
                <property name="text">
                 <string>Decay
 (F10)</string>
                </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="toolButton_5">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
+              <widget class="QToolButton" name="button_invert_field">
+               <property name="enabled">
+                <bool>false</bool>
                </property>
                <property name="text">
                 <string>Invert
 (F11)</string>
                </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="toolButton_4">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
+              <widget class="QToolButton" name="button_zero_field">
                <property name="text">
                 <string>Zero
 (F12)</string>
@@ -1853,8 +1850,11 @@ QWidget{background-color: rgb(255,255,255)}</string>
             <layout class="QGridLayout" name="MAGSPINFORM">
              <item row="1" column="0">
               <widget class="QDoubleSpinBox" name="spin_mag_offset">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QWidget{background-color: rgb(255,255,255)}</string>
+                <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
                <property name="decimals">
                 <number>4</number>
@@ -1868,25 +1868,34 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </widget>
              </item>
              <item row="1" column="2">
-              <widget class="QDoubleSpinBox" name="spin_mag_Freq">
+              <widget class="QDoubleSpinBox" name="spin_mag_freq">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QWidget{background-color: rgb(255,255,255)}</string>
+                <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
                <property name="decimals">
-                <number>2</number>
+                <number>3</number>
+               </property>
+               <property name="minimum">
+                <double>0.001000000000000</double>
                </property>
                <property name="maximum">
                 <double>100.000000000000000</double>
                </property>
                <property name="singleStep">
-                <double>0.100000000000000</double>
+                <double>0.010000000000000</double>
+               </property>
+               <property name="value">
+                <double>0.010000000000000</double>
                </property>
               </widget>
              </item>
              <item row="1" column="1">
               <widget class="QDoubleSpinBox" name="spin_mag_amplitude">
                <property name="styleSheet">
-                <string notr="true">QWidget{background-color: rgb(255,255,255)}</string>
+                <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
                <property name="decimals">
                 <number>4</number>
@@ -1899,17 +1908,13 @@ QWidget{background-color: rgb(255,255,255)}</string>
                </property>
               </widget>
              </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_3">
-               <property name="text">
-                <string>Offset (V)</string>
-               </property>
-              </widget>
-             </item>
              <item row="1" column="3">
               <widget class="QDoubleSpinBox" name="spin_mag_decay">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QWidget{background-color: rgb(255,255,255)}</string>
+                <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
                <property name="decimals">
                 <number>1</number>
@@ -1919,22 +1924,29 @@ QWidget{background-color: rgb(255,255,255)}</string>
                </property>
               </widget>
              </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_offset">
+               <property name="text">
+                <string>Offset (V)</string>
+               </property>
+              </widget>
+             </item>
              <item row="0" column="1">
-              <widget class="QLabel" name="label_4">
+              <widget class="QLabel" name="label_amplitude">
                <property name="text">
                 <string>Amplitude (V)</string>
                </property>
               </widget>
              </item>
              <item row="0" column="2">
-              <widget class="QLabel" name="label_5">
+              <widget class="QLabel" name="label_frequency">
                <property name="text">
                 <string>Freqency (Hz)</string>
                </property>
               </widget>
              </item>
              <item row="0" column="3">
-              <widget class="QLabel" name="label_6">
+              <widget class="QLabel" name="label_decay_time">
                <property name="text">
                 <string>Decay Time (s)</string>
                </property>
@@ -1989,65 +2001,21 @@ QWidget{background-color: rgb(255,255,255)}</string>
                <string>None</string>
               </property>
              </item>
-             <item>
-              <property name="text">
-               <string>Big perpendicular magnet - cone-shaped bolt</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Big perpendicular magnet - shallow bolt</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Perpendicular magnet - cone pole</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Perpendicular magnet - flat pole</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Rotatable magnet - high field pole shoes - big coil</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Rotatable magnet - no pole shoes - big coil</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Rotatable magnet - no pole shoes - small coil</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Rotatable magnet - split pole shoes - big coil</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Rotatable magnet - split pole shoes - small coil</string>
-              </property>
-             </item>
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+            <widget class="QToolButton" name="button_calibration_directory">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Choose Calibration Directory&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
+             <property name="text">
+              <string/>
              </property>
-            </spacer>
+             <property name="icon">
+              <iconset>
+               <normaloff>icons/Folder.png</normaloff>icons/Folder.png</iconset>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -2088,7 +2056,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
               <number>0</number>
              </property>
              <item>
-              <widget class="QLabel" name="label_8">
+              <widget class="QLabel" name="label_measured_field">
                <property name="maximumSize">
                 <size>
                  <width>50</width>
@@ -2096,22 +2064,16 @@ QWidget{background-color: rgb(255,255,255)}</string>
                 </size>
                </property>
                <property name="text">
-                <string>Field (mT)</string>
+                <string>Field (A)</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="lineEdit">
+              <widget class="QLineEdit" name="line_measured_field">
                <property name="maximumSize">
                 <size>
                  <width>50</width>
                  <height>16777215</height>
-                </size>
-               </property>
-               <property name="baseSize">
-                <size>
-                 <width>0</width>
-                 <height>5</height>
                 </size>
                </property>
                <property name="readOnly">
@@ -2120,7 +2082,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="label_10">
+              <widget class="QLabel" name="label_measured_voltage">
                <property name="maximumSize">
                 <size>
                  <width>80</width>
@@ -2133,17 +2095,11 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="lineEdit_3">
+              <widget class="QLineEdit" name="line_measured_voltage">
                <property name="maximumSize">
                 <size>
                  <width>50</width>
                  <height>16777215</height>
-                </size>
-               </property>
-               <property name="baseSize">
-                <size>
-                 <width>0</width>
-                 <height>5</height>
                 </size>
                </property>
                <property name="readOnly">
@@ -2152,7 +2108,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="label_9">
+              <widget class="QLabel" name="label_measured_current">
                <property name="maximumSize">
                 <size>
                  <width>80</width>
@@ -2165,36 +2121,17 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="lineEdit_2">
+              <widget class="QLineEdit" name="line_measured_current">
                <property name="maximumSize">
                 <size>
                  <width>50</width>
                  <height>16777215</height>
                 </size>
                </property>
-               <property name="baseSize">
-                <size>
-                 <width>0</width>
-                 <height>5</height>
-                </size>
-               </property>
                <property name="readOnly">
                 <bool>true</bool>
                </property>
               </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
              </item>
             </layout>
            </item>

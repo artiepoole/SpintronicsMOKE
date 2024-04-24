@@ -1,5 +1,6 @@
 import nidaqmx as nidaq
 import numpy as np
+import logging
 from nidaqmx.constants import AcquisitionType
 
 from math import log10, floor
@@ -128,6 +129,7 @@ class MagnetController:
         self.update_output()
 
     def close(self):
+        logging.info(f"Closing magnet controller")
         self.analogue_output_task.close()
         self.analogue_input_task.close()
 

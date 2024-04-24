@@ -1,3 +1,5 @@
+import logging
+
 import nidaqmx as nidaq
 import numpy as np
 from nidaqmx.constants import LineGrouping, AcquisitionType, SampleTimingType
@@ -89,6 +91,7 @@ class LampController:
         self.TTL_stream.write_one_sample_port_byte(send_byte)
 
     def close(self):
+        logging.info("Closing LampController")
         self.TTL_output_task.close()
         self.SPI_task.close()
         self.dev.reset_device()
