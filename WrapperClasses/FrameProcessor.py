@@ -1,6 +1,5 @@
 import numpy as np
-import cv2
-from PyQt5 import QtCore, QtWidgets, uic
+from PyQt5 import QtCore
 from skimage import exposure
 
 
@@ -18,6 +17,21 @@ class FrameProcessor(QtCore.QObject):
     clip = 0.03
     subtracting = True
     background = None
+    running = False
+    frame_counter = 0
+    latest_raw_frame = None
+    latest_diff_frame_a = None
+    latest_diff_frame_b = None
+    latest_processed_frame = None
+    latest_hist_data = []
+    latest_hist_bins = []
+    intensities_y = []
+    background = None
+    running = False
+
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
 
     def update_settings(self, settings):
         '''
@@ -65,48 +79,58 @@ class FrameProcessor(QtCore.QObject):
                 print("FrameProcessor: Unrecognized image processing mode")
                 return frame_in
 
-    @QtCore.pyqtSlot(np.ndarray)
-    def process_frame(self, raw_frame):
-        processed_frame = self.__process_frame(raw_frame)
-        self.frame_processed_signal.emit(
-            processed_frame,
-            np.mean(raw_frame, axis=(0, 1)),
-            exposure.histogram(processed_frame)
-        )
-
-    @QtCore.pyqtSlot(np.ndarray, int)
-    def process_stack(self, raw_stack, intensity_index):
-        mean_frame = np.mean(np.array(raw_stack), axis=0)
-        processed_frame = self.__process_frame(mean_frame)
-        self.frame_processed_signal.emit(
-            processed_frame,
-            np.mean(raw_stack[intensity_index], axis=(0, 1)),
-            exposure.histogram(processed_frame)
-        )
-
-    @QtCore.pyqtSlot(np.ndarray, np.ndarray)
-    def process_single_diff(self, frame_a, frame_b):
-        diff_frame = np.abs(frame_a.astype(np.int32) - frame_b.astype(np.int32)).astype(np.uint16)
-        processed_frame = self.__process_frame(diff_frame)
-        self.diff_processed_signal.emit(
-            diff_frame,
-            processed_frame,
-            np.mean(frame_a, axis=(0, 1)),
-            np.mean(frame_b, axis=(0, 1)),
-            exposure.histogram(processed_frame)
-
-        )
-
-    @QtCore.pyqtSlot(np.ndarray, np.ndarray, int)
-    def process_diff_stack(self, frames_a, frames_b, intensity_index):
-        mean_a = np.mean(np.array(frames_a), axis=0)
-        mean_b = np.mean(np.array(frames_b), axis=0)
-        meaned_diff = np.abs(mean_a.astype(np.int32) - mean_b.astype(np.int32)).astype(np.uint16)
-        processed_frame = self.__process_frame(meaned_diff)
-        self.diff_processed_signal.emit(
-            meaned_diff,
-            processed_frame,
-            np.mean(frames_a[intensity_index], axis=(0, 1)),
-            np.mean(frames_b[intensity_index], axis=(0, 1)),
-            exposure.histogram(processed_frame)
-        )
+    @QtCore.pyqtSlot()
+    def start_processing(self):
+        self.running = True
+        while self.running:
+            got = self.parent.item_semaphore.tryAcquire(1, 1)
+            if got:
+                item = self.parent.frame_buffer.popleft()
+                self.parent.spaces_semaphore.release()
+                if type(item) is tuple:
+                    # Diff mode
+                    self.latest_diff_frame_a, self.latest_diff_frame_b = item
+                    self.intensities_y.append(np.mean(self.latest_diff_frame_a, axis=(0, 1)))
+                    self.intensities_y.append(np.mean(self.latest_diff_frame_b, axis=(0, 1)))
+                    if self.averaging:
+                        if self.frame_counter % self.averages < len(self.diff_frame_stack_a):
+                            self.diff_frame_stack_a[self.frame_counter % self.averages] = self.latest_diff_frame_a
+                            self.diff_frame_stack_b[self.frame_counter % self.averages] = self.latest_diff_frame_b
+                        else:
+                            self.diff_frame_stack_a = np.append(self.diff_frame_stack_a,
+                                                                np.expand_dims(self.latest_diff_frame_a, 0),
+                                                                axis=0)
+                            self.diff_frame_stack_b = np.append(self.diff_frame_stack_b,
+                                                                np.expand_dims(self.latest_diff_frame_b, 0),
+                                                                axis=0)
+                        if len(self.diff_frame_stack_a) > self.averages:
+                            self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
+                            self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
+                        self.frame_counter += 1
+                        mean_a = np.mean(self.latest_diff_frame_a, axis=0)
+                        mean_b = np.mean(self.latest_diff_frame_b, axis=0)
+                        meaned_diff = np.abs(mean_a.astype(np.int32) - mean_b.astype(np.int32)).astype(np.uint16)
+                        self.latest_processed_frame = self.__process_frame(meaned_diff)
+                    else:
+                        diff_frame = np.abs(self.latest_diff_frame_a.astype(np.int32) - self.latest_diff_frame_b.astype(
+                            np.int32)).astype(np.uint16)
+                        self.latest_processed_frame = self.__process_frame(diff_frame)
+                else:
+                    # Single frame mode
+                    self.latest_raw_frame = item
+                    self.intensities_y.append(np.mean(self.latest_raw_frame, axis=(0, 1)))
+                    if self.averaging:
+                        if self.frame_counter % self.averages < len(self.raw_frame_stack):
+                            self.raw_frame_stack[self.frame_counter % self.averages] = self.latest_raw_frame
+                        else:
+                            self.raw_frame_stack = np.append(self.raw_frame_stack,
+                                                             np.expand_dims(self.latest_raw_frame, 0), axis=0)
+                        if len(self.raw_frame_stack) > self.averages:
+                            self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
+                        self.frame_counter += 1
+                        mean_frame = np.mean(self.raw_frame_stack, axis=0)
+                        self.latest_processed_frame = self.__process_frame(mean_frame)
+                    else:
+                        self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
+                self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
+        print("Stopping Frame Processor")

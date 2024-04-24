@@ -97,7 +97,7 @@ class SemaphoreUI(QtWidgets.QMainWindow):
             self.consumer.is_running = False
 
     def __update_plots(self):
-        cv2.imshow(self.stream_window, self.latest_frame)
+        cv2.imshow(self.stream_window, cv2.resize(self.latest_frame, (1024,1024)))
 
         cv2.waitKey(1)
 

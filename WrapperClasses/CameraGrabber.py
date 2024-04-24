@@ -1,8 +1,6 @@
-import time
-
-from pylablib.devices import DCAM
-from PyQt5 import QtCore, QtWidgets, uic
 import numpy as np
+from PyQt5 import QtCore
+from pylablib.devices import DCAM
 
 
 class CameraGrabber(QtCore.QObject):
@@ -26,6 +24,10 @@ class CameraGrabber(QtCore.QObject):
     closing = False
     difference_mode = False
     mutex = QtCore.QMutex()
+
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
 
     def set_exposure_time(self, exposure_time_idx):
         '''
@@ -88,12 +90,26 @@ class CameraGrabber(QtCore.QObject):
         self.__prepare_camera()
         self.cam.setup_acquisition()
         self.cam.start_acquisition()
-
         print("CameraGrabber: Camera started in normal mode")
+        while self.running:
+            got_space = self.parent.spaces_semaphore.tryAcquire(1, 1)
+            if got_space:
+                frame = None
+                while frame is None:
+                    frame = self.cam.read_newest_image()
+                    self.parent.frame_buffer.append(frame)
+                    self.parent.item_semaphore.release()
+        self.cam.stop_acquisition()
+        print("CameraGrabber: Camera stopped")
+        if self.closing:
+            print("CameraGrabber: Camera closing")
+            self.cam.close()
+            self.quit_ready.emit()
+        self.camera_ready.emit()
 
     @QtCore.pyqtSlot()
     def start_live_difference_mode(self):
-        # TODO: if this restructure works, then this and start single can be handled from main thread instead probably.
+
         self.mutex.lock()
         self.running = True
         self.difference_mode = True
@@ -103,53 +119,33 @@ class CameraGrabber(QtCore.QObject):
         self.cam.setup_acquisition()
         self.cam.start_acquisition()
         print("CameraGrabber: Camera started in live difference mode")
+        while self.running:
+            got_space = self.parent.spaces_semaphore.tryAcquire(1, 50)
+            if got_space:
+                frame_a = None
+                frame_b = None
+                while frame_a is None:
+                    frame_data = self.cam.read_newest_image(return_info=True)
+                    if frame_data is not None:
+                        if frame_data[1].frame_index // 2 == 1:
+                            frame_a = None
+                        else:
+                            frame_a = frame_data[0]
+                while frame_b is None:
+                    frame_b = self.cam.read_newest_image()
+                self.parent.frame_buffer.append((frame_a, frame_b))
+                self.parent.item_semaphore.release()
 
-    @QtCore.pyqtSlot()
-    def get_latest_single_frame(self):
-        self.last_time = time.time()
-        frame = None
-        while frame is None:
-            frame = self.cam.read_newest_image()
-        new_time = time.time()
-        print("CameraGrabber: frame time was ", new_time - self.last_time)
-        self.last_time = new_time
-        self.frame_ready_signal.emit(frame)
-
-    @QtCore.pyqtSlot()
-    def get_latest_diff_frame(self):
-        print("getting latest diff frame")
-        frame_a = None
-        frame_b = None
-
-        while frame_a is None:
-            frame_data = self.cam.read_newest_image(return_info=True)
-            if frame_data is not None:
-                if frame_data[1].frame_index//2 == 1:
-                    frame_a = None
-                else:
-                    frame_a = frame_data[0]
-        while frame_b is None:
-            frame_b = self.cam.read_newest_image()
-        self.difference_frame_ready.emit(frame_a, frame_b)
-
-
-    @QtCore.pyqtSlot(bool)
-    def stop_acquisition(self, closing: bool):
         self.cam.stop_acquisition()
         print("CameraGrabber: Camera stopped")
-        if closing:
-            print("CameraGrabber: Camera closing")
+        if self.closing:
+            print("Camera closing")
             self.cam.close()
             self.quit_ready.emit()
-
-
-
-
+        self.camera_ready.emit()
 
 
 if __name__ == "__main__":
-    import cv2
-    import skimage
     import numpy as np
 
     camera_grabber = CameraGrabber(None)
