@@ -2000,7 +2000,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
                 <double>0.010000000000000</double>
                </property>
                <property name="value">
-                <double>0.010000000000000</double>
+                <double>0.100000000000000</double>
                </property>
               </widget>
              </item>

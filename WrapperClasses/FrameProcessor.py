@@ -137,6 +137,6 @@ class FrameProcessor(QtCore.QObject):
                         mean_frame = np.mean(self.raw_frame_stack, axis=0)
                         self.latest_processed_frame = self.__process_frame(mean_frame)
                     else:
-                        self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
+                        self.latest_processed_frame = self.__process_frame(self.latest_raw_frame.astype(np.float64))
                 self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
         logging.info("Stopping Frame Processor")

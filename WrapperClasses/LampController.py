@@ -16,7 +16,7 @@ class LampController:
         :param bool reset: Choose whether to reset the DAQ card or not. Because LampController and MagnetController are
         both using the same DAQ device, this should only be true for the first of these two objects to be created.
         """
-        print("LampController: Initialising LampController")
+        logging.info("Initialising LampController")
         self.__UP_CONST = 4
         self.__DOWN_CONST = 8
         self.__LEFT_CONST = 1
@@ -30,7 +30,7 @@ class LampController:
         self.__resting_state_SPI = self.__DATA_CONST + self.__SS_CONST + self.__MODE_CONST
 
         if reset:
-            print("LampController: Resetting DAQ card")
+            logging.info("Resetting DAQ card")
             self.dev = nidaq.system.device.Device('Dev1')
             self.dev.reset_device()
 
@@ -45,7 +45,7 @@ class LampController:
         self.SPI_stream = DigitalSingleChannelWriter(self.SPI_task.out_stream, True)
         self.SPI_task.write(self.__resting_state_noSPI)
         self.__SPI_enabled = False
-        print("LampController: Setting all brightness to max")
+        logging.info("Setting all brightness to max")
         self.set_all_brightness(180)
 
     def disable_all(self):
@@ -87,7 +87,7 @@ class LampController:
                      pairs["right"] * self.__RIGHT_CONST +
                      pairs["up"] * self.__UP_CONST +
                      pairs["down"] * self.__DOWN_CONST)
-        print("LampController: Enabling Pairs: ", send_byte)
+        logging.info("Enabling Pairs: "+str(send_byte))
         self.TTL_stream.write_one_sample_port_byte(send_byte)
 
     def close(self):
@@ -97,13 +97,13 @@ class LampController:
         self.dev.reset_device()
 
     def enable_spi(self):
-        print("LampController: Enabling SPI")
+        logging.info("Enabling SPI")
         self.SPI_task.write(self.__resting_state_SPI)
         time.sleep(50e-3)
         self.__SPI_enabled = True
 
     def disable_spi(self):
-        print("LampController: Disabling SPI")
+        logging.info("Disabling SPI")
         self.SPI_task.write(self.__resting_state_noSPI)
         time.sleep(50e-3)
         self.__SPI_enabled = False
@@ -111,7 +111,7 @@ class LampController:
     def enable_leds(self, led_byte: int):
         if not self.__SPI_enabled:
             self.enable_spi()
-        print("LampController: Enabling SPI: ", led_byte)
+        logging.info("Enabling SPI: "+str(led_byte))
         self._write_spi(int('0xA0', 16), led_byte)
 
     def set_all_brightness(self, brightness: int):
@@ -123,7 +123,7 @@ class LampController:
         enabled = self.__SPI_enabled
         if not self.__SPI_enabled:
             self.enable_spi()
-        print("LampController: Setting all brightnesses to: ", brightness)
+        logging.info("Setting all brightnesses to: "+str( brightness))
         self._write_spi(int('0xA9', 16), brightness)
         if not enabled:
             self.disable_spi()
@@ -138,7 +138,7 @@ class LampController:
         enabled = self.__SPI_enabled
         if not self.__SPI_enabled:
             self.enable_spi()
-        print(f"LampController: Setting LED: {led} to Brightness: {brightness}")
+        logging.info(f" Setting LED: {led} to Brightness: {brightness}")
         self._write_spi(int('0xA0', 16) + led, brightness)
         if not enabled:
             self.disable_spi()
@@ -154,7 +154,7 @@ class LampController:
         if not self.__SPI_enabled:
             self.enable_spi()
         for i in range(len(brightnesses)):
-            print(f"LampController: Setting LED: {leds[i]} to Brightness: {brightnesses[i]}")
+            logging.info(f"Setting LED: {leds[i]} to Brightness: {brightnesses[i]}")
             self._write_spi(int('0xA0', 16) + leds[i], brightnesses[i])
         if not enabled:
             self.disable_spi()
@@ -213,7 +213,7 @@ class LampController:
     def continuous_flicker(self, mode):
         self.disable_spi()
         self.TTL_output_task.stop()
-        print("LampController: Enabling LED flicker mode with mode: ", mode)
+        logging.info("Enabling LED flicker mode with mode: "+str(mode))
         match mode:
             case 0:
                 # long trans pol
@@ -244,13 +244,13 @@ class LampController:
         self.TTL_stream.write_many_sample_port_byte(out_array.astype(np.uint8))
 
     def stop_flicker(self):
-        print("LampController: Stopping LED flicker mode")
+        logging.info("Stopping LED flicker mode")
         self.TTL_output_task.stop()
         self.TTL_output_task.timing.samp_timing_type = SampleTimingType.ON_DEMAND
         self.TTL_stream.write_one_sample_port_byte(0)
 
     def pause_flicker(self, paused):
-        print("LampController: Pausing LED flicker")
+        logging.info("Pausing LED flicker")
         if paused:
             self.enable_spi()
         else:

@@ -54,16 +54,16 @@ class MagnetController:
             self.voltages[right_idx - 1:right_idx + 1]
         )
 
-    def interpolate_current(self, measured_current):
+    def interpolate_field(self, measured_voltage):
         """
-        :param float measured_current: Current in volts given by the PSU.
+        :param float measured_voltage: Current in volts given by the PSU.
         :return float: the corresponding value in mT from the calibration.
         """
-        right_idx = np.clip(self.currents.searchsorted(measured_current), 1, len(self.currents) - 1)
+        right_idx = np.clip(self.voltages.searchsorted(measured_voltage), 1, len(self.voltages) - 1)
         return np.interp(
-            measured_current,
-            self.currents[right_idx - 1:right_idx + 1],
-            self.field_from_currents[right_idx - 1:right_idx + 1]
+            measured_voltage,
+            self.voltages[right_idx - 1:right_idx + 1],
+            self.field_from_volts[right_idx - 1:right_idx + 1]
         )
 
     def update_output(self):
@@ -106,7 +106,7 @@ class MagnetController:
 
     def get_current_amplitude(self):
         voltage = self.analogue_input_task.read()
-        field = self.interpolate_voltage(voltage)
+        field = self.interpolate_field(voltage)
         return field, voltage
 
     def set_target_field(self, new_value):

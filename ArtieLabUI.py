@@ -170,6 +170,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_zero_field.clicked.connect(self.__set_zero_field)
         self.button_DC_field.clicked.connect(self.__on_DC_field)
         self.button_AC_field.clicked.connect(self.__on_AC_field)
+        self.button_invert_field.clicked.connect(self.__on_invert_field)
+
 
         self.magnetic_field_timer.timeout.connect(self.__update_field_measurement)
         self.plot_timer.timeout.connect(self.__update_plots)
@@ -235,7 +237,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.blank_line, = self.blank_ax.plot(self.frame_times, 'r-')
         self.blank_ax.set(title="Unused Plot", xlabel="", ylabel="")
         self.plots_canvas.figure.tight_layout(pad=0.1)
-        self.layout_plot1.addWidget(self.plots_canvas)
+        self.layout_plots.addWidget(self.plots_canvas)
 
     def __populate_calibration_combobox(self, dir):
 
@@ -984,6 +986,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spin_mag_offset.setValue(0)
         self.spin_mag_freq.setEnabled(False)
         self.spin_mag_freq.setValue(0)
+        self.spin_mag_amplitude.setValue(0)
         self.magnet_controller.reset_field()
 
     def __on_DC_field(self, enabled):
@@ -1022,6 +1025,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 print("MagnetDriverUI: There is no mode selected.")
                 self.__set_zero_field()
                 self.magnet_controller.mode = None
+
+    def __on_invert_field(self, inverted):
+        if inverted:
+            logging.info("Inverting field")
+            self.magnet_controller.set_target_field(-self.spin_mag_amplitude.value())
+            self.magnet_controller.set_target_offset(-self.spin_mag_offset.value())
+        else:
+            logging.info("Un-inverting field")
+            self.magnet_controller.set_target_field(self.spin_mag_amplitude.value())
+            self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
 
     def __on_save(self, event):
         # TODO: Add the difference frame processing to this. Currently this only works for single light source modes
