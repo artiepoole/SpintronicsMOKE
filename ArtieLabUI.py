@@ -3,13 +3,12 @@ from collections import deque
 from datetime import datetime
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import pandas as pd
 import tifffile
 from PyQt5 import uic
 import cv2
-from matplotlib.backends.backend_qt5agg import *
-from matplotlib.figure import Figure
+
+import pyqtgraph as pg
 
 from WrapperClasses import *
 
@@ -23,8 +22,8 @@ from PyQt5 import QtCore, QtWidgets, uic
 
 import logging
 
-plt.rcParams['axes.formatter.useoffset'] = False
-plt.rcParams['figure.autolayout'] = True
+pg.setConfigOption('background', 'w')
+pg.setConfigOption('foreground', 'k')
 
 
 class ArtieLabUI(QtWidgets.QMainWindow):
@@ -44,6 +43,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spaces_semaphore = QtCore.QSemaphore(self.BUFFER_SIZE)
         self.plot_timer = QtCore.QTimer(self)
         self.magnetic_field_timer = QtCore.QTimer(self)
+        self.image_timer = QtCore.QTimer(self)
         self.enabled_leds_spi = {"left1": False,
                                  "left2": False,
                                  "right1": False,
@@ -112,8 +112,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                         QtCore.Qt.ConnectionType.QueuedConnection)
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
-        self.plot_timer.start(0)
-        self.magnetic_field_timer.start(250)
+        self.start_time = time.time()
+        self.image_timer.start(0)
+        self.plot_timer.start(100)
+        self.magnetic_field_timer.start(10)
 
     def __connect_signals(self):
         # LED controls
@@ -174,6 +176,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.magnetic_field_timer.timeout.connect(self.__update_field_measurement)
         self.plot_timer.timeout.connect(self.__update_plots)
+        self.image_timer.timeout.connect(self.__update_images)
 
         # TODO: Add planar subtraction
         # TODO: Add ROI
@@ -218,25 +221,83 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             0,
             0)
 
-        self.plots_canvas = FigureCanvasQTAgg(Figure())
-        self.intensity_ax = self.plots_canvas.figure.add_subplot(311)
-        self.intensity_y = []
-        self.intensity_line, = self.intensity_ax.plot(self.intensity_y, 'k+')
-        self.intensity_ax.set(title="Raw frame average intensity", xlabel="Frame", ylabel="Average Intensity")
-
-        self.hist_ax = self.plots_canvas.figure.add_subplot(312)
-        self.hist_bins = []
-        self.hist_data = []
-        self.hist_line, = self.hist_ax.plot(self.hist_bins, self.hist_data, 'b-')
-        self.hist_ax.set(title="Histogram as Seen", xlabel="Brightness", ylabel="Counts")
-
-        self.blank_ax = self.plots_canvas.figure.add_subplot(313)
-        self.frame_times = []
-        self.old_frame_time = time.time()
-        self.blank_line, = self.blank_ax.plot(self.frame_times, 'r-')
-        self.blank_ax.set(title="Unused Plot", xlabel="", ylabel="")
-        self.plots_canvas.figure.tight_layout(pad=0.1)
+        self.plots_canvas = pg.GraphicsLayoutWidget()
         self.layout_plots.addWidget(self.plots_canvas)
+
+        self.intensity_plot = self.plots_canvas.addPlot(
+            row=0,
+            col=0,
+            title="Intensity",
+            left="Intensity",
+            bottom="time (s)"
+        )
+        self.intensity_line = self.intensity_plot.plot(list(self.frame_processor.frame_times),
+                                                       list(self.frame_processor.intensities_y), pen="k")
+        self.hist_plot = self.plots_canvas.addPlot(
+            row=1,
+            col=0,
+            title="Histogram as seen",
+            left="counts",
+            bottom="intensity"
+        )
+        self.hist_line = self.hist_plot.plot(self.frame_processor.latest_hist_bins,
+                                             self.frame_processor.latest_hist_data, pen="k")
+        self.frame_time_plot = self.plots_canvas.addPlot(
+            row=2,
+            col=0,
+            title="FrameTimes",
+            left="frame time (ms)",
+            bottom="frame"
+        )
+        self.frame_time_line = self.frame_time_plot.plot(list(self.frame_processor.frame_times), pen="k")
+
+        self.mag_plot_canvas = pg.GraphicsLayoutWidget()
+        self.layout_mag_plot.addWidget(self.mag_plot_canvas)
+
+        self.mag_plot = self.mag_plot_canvas.addPlot(
+            row=0,
+            col=0,
+            title="Magnetic Field",
+            left="Field (mT)",
+            bottom="time (s)"
+        )
+        self.mag_y = deque(maxlen=100)
+        self.mag_t = deque(maxlen=100)
+        self.mag_line = self.mag_plot.plot(self.mag_t, self.mag_y, pen="k")
+
+        # self.intensity_line = self.intensity_plot.plot(pen='y')
+        # self.intensity_line, = self.intensity_ax.plot(self.frame_processor.intensities_y, 'k+')
+        # self.intensity_ax.set(title="Raw frame average intensity", xlabel="Frame", ylabel="Average Intensity")
+        #
+        #
+        #
+        #
+        #
+        # self.hist_ax = self.plots_canvas.figure.add_subplot(312)
+        # self.hist_bins = []
+        # self.hist_data = []
+        # self.hist_line, = self.hist_ax.plot(self.hist_bins, self.hist_data, 'b-')
+        # self.hist_ax.set(title="Histogram as Seen", xlabel="Brightness", ylabel="Counts")
+        #
+        #
+        #
+        # self.blank_ax = self.plots_canvas.figure.add_subplot(313)
+        # self.frame_times = deque(maxlen=100)
+        # self.old_frame_time = time.time()
+        # self.blank_line, = self.blank_ax.plot(self.frame_times, 'r-')
+        # self.blank_ax.set(title="Unused Plot", xlabel="", ylabel="")
+        # self.plots_canvas.figure.tight_layout(pad=0.1)
+        #
+        #
+        # self.mag_plot_canvas = FigureCanvasQTAgg(Figure())
+        # self.mag_ax = self.mag_plot_canvas.figure.add_subplot(111)
+        # self.mag_y = deque(maxlen=100)
+        # self.mag_t = deque(maxlen=100)
+        # self.mag_line, = self.mag_ax.plot(self.mag_t,self.mag_y, 'k-')
+        # self.mag_ax.set(title="Field", xlabel="Time (s)", ylabel="Field")
+        # self.start_time = time.time()
+        #
+        # self.layout_mag_plot.addWidget(self.mag_plot_canvas)
 
     def __populate_calibration_combobox(self, dir):
 
@@ -254,23 +315,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             print("MagnetDriverUI: No calibration files found.")
 
     def __update_plots(self):
-        length = len(self.frame_processor.intensities_y)
-        self.intensity_line.set_xdata(list(range(min(length, 100))))
-        self.intensity_line.set_ydata(self.frame_processor.intensities_y[-min(100, length):])
-        self.intensity_ax.relim()
-        self.intensity_ax.autoscale_view()
+        # Sometimes, the update can be called between the appending to frame times and to intensities
+        length = min([self.frame_processor.frame_times.__len__(), self.frame_processor.intensities_y.__len__()])
+        if length > 0:
+            self.intensity_line.setData(
+                list(self.frame_processor.frame_times)[0:length],
+                list(self.frame_processor.intensities_y)[0:length]
+            )
 
-        self.hist_line.set_xdata(self.frame_processor.latest_hist_bins)
-        self.hist_line.set_ydata(self.frame_processor.latest_hist_data)
-        self.hist_ax.relim()
-        self.hist_ax.autoscale_view()
+        self.hist_line.setData(
+            self.frame_processor.latest_hist_bins,
+            self.frame_processor.latest_hist_data
+        )
 
-        length = len(self.frame_times)
-        self.blank_line.set_xdata(list(range(min(length, 100))))
-        self.blank_line.set_ydata(self.frame_times[-min(100, length):])
-        self.blank_ax.relim()
-        self.blank_ax.autoscale_view()
+        self.frame_time_line.setData(np.diff(self.frame_processor.frame_times))
 
+        self.mag_line.setData(self.mag_t, self.mag_y)
+
+    def __update_images(self):
         if self.frame_processor.latest_processed_frame.shape[0] != 1024:
             logging.debug("Resizing frame to fit 1024 square")
             cv2.imshow(
@@ -287,13 +349,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             )
 
         cv2.waitKey(1)
-        self.plots_canvas.draw()
-        self.plots_canvas.flush_events()
 
     def __update_field_measurement(self):
         field, voltage = self.magnet_controller.get_current_amplitude()
         self.line_measured_field.setText("{:0.4f}".format(field))
         self.line_measured_voltage.setText("{:0.4f}".format(voltage))
+        self.mag_y.append(field)
+        self.mag_t.append(time.time() - self.start_time)
 
     def __reset_pairs(self):
         self.enabled_led_pairs.update(
@@ -634,7 +696,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         """
         logging.info("ready received")
         if self.get_background:
+            logging.info("Attempting to get background")
             self.get_background = False
+            # Can't invoke method because of
             frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
             self.frame_processor.background_raw_stack = frames
             self.frame_processor.background = np.mean(frames, axis=0).astype(np.uint16)
@@ -650,10 +714,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __reset_after_flicker_mode(self):
         logging.info("Resetting after flicker mode")
-        self.lamp_controller.stop_flicker()
+        self.item_semaphore = QtCore.QSemaphore(0)
+        self.spaces_semaphore = QtCore.QSemaphore(self.BUFFER_SIZE)
+        self.frame_buffer = deque(maxlen=self.BUFFER_SIZE)
+
+        self.mutex.lock()
         self.flickering = False
         self.camera_grabber.running = False
-
+        self.mutex.unlock()
         self.button_display_subtraction.setEnabled(True)
         self.frame_processor.subtracting = self.button_display_subtraction.isChecked()
         # TODO: hide the CV2 windows for the raw pos/neg
@@ -666,8 +734,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_left_led2.setEnabled(True)
         self.button_right_led1.setEnabled(True)
         self.button_right_led2.setEnabled(True)
-        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
-                                        QtCore.Qt.ConnectionType.QueuedConnection)
+        self.lamp_controller.stop_flicker()
 
     def __check_for_any_active_mode(self):
         return bool(
@@ -992,13 +1059,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_AC_field.setChecked(False)
             if self.magnet_controller.mode == "AC":
                 logging.info("Swapped from AC to DC field mode.")
-                self.spin_mag_offset.setEnabled(False)
-                self.spin_mag_offset.setValue(0)
-                self.spin_mag_freq.setEnabled(False)
-                self.spin_mag_freq.setValue(0)
+            else:
+                logging.info("Enabling DC field mode.")
+            self.spin_mag_offset.setValue(0)
+            self.spin_mag_freq.setValue(0)
             self.magnet_controller.mode = "DC"
             self.magnet_controller.update_output()
         else:
+
             if not self.button_AC_field.isChecked():
                 logging.warning("There is no field mode selected.")
                 self.__set_zero_field()
@@ -1006,12 +1074,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_AC_field(self, enabled):
         if enabled:
-            # self.button_AC_field.setChecked(True)
             self.button_DC_field.setChecked(False)
             if self.magnet_controller.mode == "DC":
                 logging.info("Swapped from DC to AC field mode.")
-                self.spin_mag_offset.setEnabled(True)
-                self.spin_mag_freq.setEnabled(True)
+            else:
+                logging.info("Enabling AC field mode.")
             self.magnet_controller.mode = "AC"
             self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
             self.magnet_controller.set_frequency(self.spin_mag_freq.value())
@@ -1166,9 +1233,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.close_event = event
+        self.image_timer.stop()
+        self.plot_timer.stop()
+        self.magnetic_field_timer.stop()
         # time.sleep(0.1)
-        self.lamp_controller.close()
-        self.magnet_controller.close()
+        self.lamp_controller.close(reset=False)
+        self.magnet_controller.close(reset=True)
         self.mutex.lock()
         self.camera_grabber.closing = True
         self.camera_grabber.running = False

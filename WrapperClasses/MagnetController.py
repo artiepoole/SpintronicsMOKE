@@ -17,9 +17,9 @@ class MagnetController:
         self.target_voltage = 0.0
         self.target_offset_voltage = 0.0
         print("MagnetController: Initialising MagnetController")
+        self.dev = nidaq.system.device.Device('Dev1')
         if reset:
             print("MagnetController: Resetting DAQ card")
-            self.dev = nidaq.system.device.Device('Dev1')
             self.dev.reset_device()
 
         self.analogue_input_task = nidaq.Task()
@@ -126,7 +126,9 @@ class MagnetController:
         self.target_offset_voltage = 0.0
         self.update_output()
 
-    def close(self):
+    def close(self, reset):
         logging.info(f"Closing magnet controller")
         self.analogue_output_task.close()
         self.analogue_input_task.close()
+        if reset:
+            self.dev.reset_device()

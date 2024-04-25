@@ -2,6 +2,8 @@ import numpy as np
 from PyQt5 import QtCore
 from skimage import exposure
 import logging
+from collections import deque
+import time
 
 
 class FrameProcessor(QtCore.QObject):
@@ -26,11 +28,13 @@ class FrameProcessor(QtCore.QObject):
     latest_processed_frame = np.zeros((1024, 1024), dtype=np.uint16)
     latest_hist_data = []
     latest_hist_bins = []
-    intensities_y = []
+    intensities_y = deque(maxlen=100)
+    frame_times = deque(maxlen=100)
     background = None
     averaging = False
     averages = 16
     running = False
+    mutex = QtCore.QMutex()
 
     def __init__(self, parent):
         super().__init__()
@@ -70,13 +74,16 @@ class FrameProcessor(QtCore.QObject):
             frame_in[frame_in < 0] = 0
         match self.mode:
             case self.IMAGE_PROCESSING_NONE:
-                return frame_in
+                return frame_in/np.amax(frame_in)
             case self.IMAGE_PROCESSING_PERCENTILE:
+                # Fast
                 px_low, px_high = np.percentile(frame_in, (self.p_low, self.p_high))
                 return exposure.rescale_intensity(frame_in, in_range=(px_low, px_high))
             case self.IMAGE_PROCESSING_HISTEQ:
+                # Okay performance
                 return (exposure.equalize_hist(frame_in))
             case self.IMAGE_PROCESSING_ADAPTEQ:
+                # Really slow
                 return (exposure.equalize_adapthist(frame_in / 65535, clip_limit=self.clip))
             case _:
                 logging.info("FrameProcessor: Unrecognized image processing mode")
@@ -84,6 +91,7 @@ class FrameProcessor(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def start_processing(self):
+        start_time = time.time()
         self.running = True
         while self.running:
             got = self.parent.item_semaphore.tryAcquire(1, 1)
@@ -97,6 +105,8 @@ class FrameProcessor(QtCore.QObject):
                     self.latest_diff_frame_a, self.latest_diff_frame_b = item
                     self.intensities_y.append(np.mean(self.latest_diff_frame_a, axis=(0, 1)))
                     self.intensities_y.append(np.mean(self.latest_diff_frame_b, axis=(0, 1)))
+                    self.frame_times.append(time.time() - start_time)
+                    self.frame_times.append(time.time() - start_time)
                     if self.averaging:
                         if self.frame_counter % self.averages < len(self.diff_frame_stack_a):
                             self.diff_frame_stack_a[self.frame_counter % self.averages] = self.latest_diff_frame_a
@@ -124,7 +134,10 @@ class FrameProcessor(QtCore.QObject):
                     logging.debug("Got single frame")
                     # Single frame mode
                     self.latest_raw_frame = item
+                    self.mutex.lock()
                     self.intensities_y.append(np.mean(self.latest_raw_frame, axis=(0, 1)))
+                    self.frame_times.append(time.time() - start_time)
+                    self.mutex.unlock()
                     if self.averaging:
                         if self.frame_counter % self.averages < len(self.raw_frame_stack):
                             self.raw_frame_stack[self.frame_counter % self.averages] = self.latest_raw_frame

@@ -28,10 +28,10 @@ class LampController:
         self.__MODE_CONST = 16
         self.__resting_state_noSPI = self.__DATA_CONST + self.__SS_CONST
         self.__resting_state_SPI = self.__DATA_CONST + self.__SS_CONST + self.__MODE_CONST
+        self.dev = nidaq.system.device.Device('Dev1')
 
         if reset:
             logging.info("Resetting DAQ card")
-            self.dev = nidaq.system.device.Device('Dev1')
             self.dev.reset_device()
 
         self.TTL_output_task = nidaq.Task()
@@ -90,11 +90,12 @@ class LampController:
         logging.info("Enabling Pairs: "+str(send_byte))
         self.TTL_stream.write_one_sample_port_byte(send_byte)
 
-    def close(self):
+    def close(self, reset):
         logging.info("Closing LampController")
         self.TTL_output_task.close()
         self.SPI_task.close()
-        self.dev.reset_device()
+        if reset:
+            self.dev.reset_device()
 
     def enable_spi(self):
         logging.info("Enabling SPI")

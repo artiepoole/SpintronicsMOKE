@@ -74,7 +74,11 @@ class CameraGrabber(QtCore.QObject):
         self.frame_ready_signal.emit(self.cam.snap())
 
     def grab_n_frames(self, n_frames):
+        prev_mode = self.difference_mode
+        self.difference_mode = False
+        self.__prepare_camera()
         frames = self.cam.grab(n_frames)
+        self.difference_mode = prev_mode
         return frames
 
     @QtCore.pyqtSlot()
@@ -111,7 +115,6 @@ class CameraGrabber(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def start_live_difference_mode(self):
-
         self.mutex.lock()
         self.running = True
         self.waiting = False
@@ -122,6 +125,23 @@ class CameraGrabber(QtCore.QObject):
         self.cam.setup_acquisition()
         self.cam.start_acquisition()
         logging.info("Camera started in live difference mode")
+        self.diff_mode_acq_loop()
+        self.cam.stop_acquisition()
+        logging.info("Camera stopped")
+        if self.closing:
+            logging.info("Camera closing")
+            self.cam.close()
+            self.quit_ready.emit()
+        if not self.waiting:
+            self.camera_ready.emit()
+
+    def diff_mode_acq_loop(self):
+        """
+        Acquisition loop necessary in order to return to break out of the loop and not emit bad data,
+        while also exiting when the trigger mode is external. Gets stuck waiting for frames otherwise and never sees
+        the "while running"
+        :return:
+        """
         while self.running:
             got_space = self.parent.spaces_semaphore.tryAcquire(1, 50)
             if got_space:
@@ -134,20 +154,19 @@ class CameraGrabber(QtCore.QObject):
                             frame_a = None
                         else:
                             frame_a = frame_data[0]
+                    if not self.running:
+                        logging.warn("stopping without frame_a")
+                        # self.parent.item_semaphore.release()
+                        return
                 while frame_b is None:
                     frame_b = self.cam.read_newest_image()
+                    if not self.running:
+                        logging.warn("stopping without frame_b")
+                        # self.parent.item_semaphore.release()
+                        return
                 self.parent.frame_buffer.append((frame_a, frame_b))
                 self.parent.item_semaphore.release()
-
-        self.cam.stop_acquisition()
-        logging.info("Camera stopped")
-        if self.closing:
-            logging.info("Camera closing")
-            self.cam.close()
-            self.quit_ready.emit()
-        if not self.waiting:
-            self.camera_ready.emit()
-
+                logging.debug("Got difference frames")
 
 if __name__ == "__main__":
     import numpy as np
