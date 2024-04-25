@@ -172,7 +172,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_AC_field.clicked.connect(self.__on_AC_field)
         self.button_invert_field.clicked.connect(self.__on_invert_field)
 
-
         self.magnetic_field_timer.timeout.connect(self.__update_field_measurement)
         self.plot_timer.timeout.connect(self.__update_plots)
 
@@ -982,10 +981,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.magnet_controller.set_frequency(value)
 
     def __set_zero_field(self):
-        self.spin_mag_offset.setEnabled(False)
+        logging.info("Setting field output to zero")
         self.spin_mag_offset.setValue(0)
-        self.spin_mag_freq.setEnabled(False)
-        self.spin_mag_freq.setValue(0)
         self.spin_mag_amplitude.setValue(0)
         self.magnet_controller.reset_field()
 
@@ -994,7 +991,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             # self.button_DC_field.setChecked(True)
             self.button_AC_field.setChecked(False)
             if self.magnet_controller.mode == "AC":
-                print("Disabled AC mode")
+                logging.info("Swapped from AC to DC field mode.")
                 self.spin_mag_offset.setEnabled(False)
                 self.spin_mag_offset.setValue(0)
                 self.spin_mag_freq.setEnabled(False)
@@ -1003,7 +1000,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.magnet_controller.update_output()
         else:
             if not self.button_AC_field.isChecked():
-                print("MagnetDriverUI: There is no mode selected.")
+                logging.warning("There is no field mode selected.")
                 self.__set_zero_field()
                 self.magnet_controller.mode = None
 
@@ -1012,7 +1009,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             # self.button_AC_field.setChecked(True)
             self.button_DC_field.setChecked(False)
             if self.magnet_controller.mode == "DC":
-                print("Enabling AC mode")
+                logging.info("Swapped from DC to AC field mode.")
                 self.spin_mag_offset.setEnabled(True)
                 self.spin_mag_freq.setEnabled(True)
             self.magnet_controller.mode = "AC"
@@ -1022,7 +1019,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         else:
             if not self.button_DC_field.isChecked():
-                print("MagnetDriverUI: There is no mode selected.")
+                logging.warning("There is no field mode selected.")
                 self.__set_zero_field()
                 self.magnet_controller.mode = None
 
