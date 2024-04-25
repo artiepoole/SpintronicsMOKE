@@ -1451,32 +1451,35 @@ QWidget{background-color: rgb(255,255,255)}</string>
              <property name="bottomMargin">
               <number>0</number>
              </property>
-             <item row="1" column="1">
-              <widget class="QComboBox" name="combo_magnification">
+             <item row="3" column="0">
+              <widget class="QComboBox" name="combo_binning">
                <property name="styleSheet">
                 <string notr="true">QComboBox{color: rgb(0,0,0)}
 
 QWidget{background-color: rgb(255,255,255)}</string>
                </property>
+               <property name="currentIndex">
+                <number>1</number>
+               </property>
                <item>
                 <property name="text">
-                 <string>1.6x</string>
+                 <string>None</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>2.5x</string>
+                 <string>2x2</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>4x</string>
+                 <string>4x4</string>
                 </property>
                </item>
               </widget>
              </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_lens">
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_binning">
                <property name="maximumSize">
                 <size>
                  <width>16777215</width>
@@ -1484,67 +1487,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
                 </size>
                </property>
                <property name="text">
-                <string>Lens</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLabel" name="label_magnification">
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Magnification</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QComboBox" name="combo_lens">
-               <property name="styleSheet">
-                <string notr="true">QComboBox{color: rgb(0,0,0)}
-
-QWidget{background-color: rgb(255,255,255)}</string>
-               </property>
-               <item>
-                <property name="text">
-                 <string>20x / 0.22</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>20x / 0.5</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>50x</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>60x</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>100x</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QLabel" name="label_correction">
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Correction</string>
+                <string>Binning</string>
                </property>
               </widget>
              </item>
@@ -1573,8 +1516,8 @@ QWidget{background-color: rgb(255,255,255)}</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_binning">
+             <item row="0" column="2">
+              <widget class="QLabel" name="label_correction">
                <property name="maximumSize">
                 <size>
                  <width>16777215</width>
@@ -1582,35 +1525,8 @@ QWidget{background-color: rgb(255,255,255)}</string>
                 </size>
                </property>
                <property name="text">
-                <string>Binning</string>
+                <string>Correction</string>
                </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QComboBox" name="combo_binning">
-               <property name="styleSheet">
-                <string notr="true">QComboBox{color: rgb(0,0,0)}
-
-QWidget{background-color: rgb(255,255,255)}</string>
-               </property>
-               <property name="currentIndex">
-                <number>1</number>
-               </property>
-               <item>
-                <property name="text">
-                 <string>None</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>2x2</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>4x4</string>
-                </property>
-               </item>
               </widget>
              </item>
              <item row="2" column="1">
@@ -1656,6 +1572,90 @@ QWidget{background-color: rgb(255,255,255)}</string>
                <property name="text">
                 <string>Real FPS</string>
                </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QComboBox" name="combo_lens">
+               <property name="styleSheet">
+                <string notr="true">QComboBox{color: rgb(0,0,0)}
+
+QWidget{background-color: rgb(255,255,255)}</string>
+               </property>
+               <item>
+                <property name="text">
+                 <string>20x / 0.22</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>20x / 0.5</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>50x</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>60x</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>100x</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_magnification">
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Magnification</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_lens">
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Lens</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QComboBox" name="combo_magnification">
+               <property name="styleSheet">
+                <string notr="true">QComboBox{color: rgb(0,0,0)}
+
+QWidget{background-color: rgb(255,255,255)}</string>
+               </property>
+               <item>
+                <property name="text">
+                 <string>1.6x</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>2.5x</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>4x</string>
+                </property>
+               </item>
               </widget>
              </item>
              <item row="3" column="2">
@@ -1770,6 +1770,118 @@ QWidget{background-color: rgb(255,255,255)}</string>
          <property name="bottomMargin">
           <number>10</number>
          </property>
+         <item row="3" column="0">
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Field Measurement</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <spacer name="horizontalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_measured_field">
+               <property name="maximumSize">
+                <size>
+                 <width>50</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Field (A)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="line_measured_field">
+               <property name="maximumSize">
+                <size>
+                 <width>50</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_measured_voltage">
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Votltage (V)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="line_measured_voltage">
+               <property name="maximumSize">
+                <size>
+                 <width>50</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_3">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
          <item row="2" column="0">
           <layout class="QVBoxLayout" name="MAGBUTTONSTACK">
            <property name="bottomMargin">
@@ -1825,7 +1937,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
              <item>
               <widget class="QToolButton" name="button_invert_field">
                <property name="enabled">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
                <property name="text">
                 <string>Invert
@@ -1956,6 +2068,25 @@ QWidget{background-color: rgb(255,255,255)}</string>
            </item>
           </layout>
          </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>15</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Magnetic Field Control</string>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="0">
           <layout class="QHBoxLayout" name="MAGCALLAYOUT">
            <property name="leftMargin">
@@ -2019,123 +2150,8 @@ QWidget{background-color: rgb(255,255,255)}</string>
            </item>
           </layout>
          </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>15</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Magnetic Field Control</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <layout class="QVBoxLayout" name="verticalLayout">
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Field Measurement</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_3">
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="label_measured_field">
-               <property name="maximumSize">
-                <size>
-                 <width>50</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Field (A)</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="line_measured_field">
-               <property name="maximumSize">
-                <size>
-                 <width>50</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_measured_voltage">
-               <property name="maximumSize">
-                <size>
-                 <width>80</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Votltage (V)</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="line_measured_voltage">
-               <property name="maximumSize">
-                <size>
-                 <width>50</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_measured_current">
-               <property name="maximumSize">
-                <size>
-                 <width>80</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Current (A)</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="line_measured_current">
-               <property name="maximumSize">
-                <size>
-                 <width>50</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-          </layout>
+         <item row="4" column="0">
+          <layout class="QGridLayout" name="layout_mag_plot"/>
          </item>
         </layout>
        </widget>
@@ -2202,8 +2218,11 @@ QWidget{background-color: rgb(255,255,255)}</string>
          <property name="verticalSpacing">
           <number>15</number>
          </property>
-         <item row="1" column="0">
-          <layout class="QVBoxLayout" name="layout_plot1">
+         <item row="2" column="0">
+          <layout class="QVBoxLayout" name="layout_plots">
+           <property name="sizeConstraint">
+            <enum>QLayout::SetDefaultConstraint</enum>
+           </property>
            <property name="leftMargin">
             <number>2</number>
            </property>
@@ -2219,17 +2238,70 @@ QWidget{background-color: rgb(255,255,255)}</string>
           </layout>
          </item>
          <item row="0" column="0">
-          <widget class="QLabel" name="label_11">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>20</height>
-            </size>
+          <layout class="QHBoxLayout" name="layout_plot_header">
+           <property name="sizeConstraint">
+            <enum>QLayout::SetDefaultConstraint</enum>
            </property>
-           <property name="text">
-            <string>Live Plots</string>
-           </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="label_plots">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Live Plots</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_n_points">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Number
+of Points</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spin_number_of_points">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>1000</number>
+             </property>
+             <property name="singleStep">
+              <number>10</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>

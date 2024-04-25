@@ -237,7 +237,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.plots_canvas.figure.tight_layout(pad=0.1)
         self.layout_plot1.addWidget(self.plots_canvas)
 
-
     def __populate_calibration_combobox(self, dir):
 
         file_names = [f for f in listdir(dir) if isfile(join(dir, f)) and ".txt" in f]
@@ -291,10 +290,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.plots_canvas.flush_events()
 
     def __update_field_measurement(self):
-        field, current = self.magnet_controller.get_current_amplitude()
+        field, voltage = self.magnet_controller.get_current_amplitude()
         self.line_measured_field.setText("{:0.4f}".format(field))
-        self.line_measured_current.setText("{:0.4f}".format(current))
-
+        self.line_measured_voltage.setText("{:0.4f}".format(voltage))
 
     def __reset_pairs(self):
         self.enabled_led_pairs.update(
@@ -935,34 +933,48 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     "start_live_single_frame",
                     QtCore.Qt.ConnectionType.QueuedConnection
                 )
+
     def __on_change_calibration(self, index):
-        file_name = self.calibration_dictionary[index]
-        calibration_array = np.loadtxt(os.path.join(self.calib_file_dir, file_name), delimiter=',', skiprows=1)
-        print("MagnetDriverUI: Setting calibration using file: ", file_name)
-        self.magnet_controller.set_calibration(
-            calibration_array[:, 0],
-            calibration_array[:, 1],
-            calibration_array[:, 2],
-            calibration_array[:, 3]
-        )
-        max_field = np.amax(calibration_array[:, 1])
-        self.label_amplitude.setText("Amplitude (mT)")
-        self.label_offset.setText("Offset (mT)")
-        self.label_measured_field.setText("Field (mT)")
-        self.spin_mag_amplitude.setValue(0.0)
-        self.spin_mag_amplitude.setRange(-max_field, max_field)
-        self.spin_mag_amplitude.setSingleStep(round(max_field / 50, 1))
-        self.spin_mag_offset.setValue(0.0)
-        self.spin_mag_offset.setRange(-max_field, max_field)
-        self.spin_mag_offset.setSingleStep(round(max_field / 50, 1))
-
-
+        if index > 0:
+            file_name = self.calibration_dictionary[index]
+            calibration_array = np.loadtxt(os.path.join(self.calib_file_dir, file_name), delimiter=',', skiprows=1)
+            print("MagnetDriverUI: Setting calibration using file: ", file_name)
+            self.magnet_controller.set_calibration(
+                calibration_array[:, 0],
+                calibration_array[:, 1],
+                calibration_array[:, 2],
+                calibration_array[:, 3]
+            )
+            max_field = np.amax(calibration_array[:, 1])
+            self.label_amplitude.setText("Amplitude (mT)")
+            self.label_offset.setText("Offset (mT)")
+            self.label_measured_field.setText("Field (mT)")
+            self.spin_mag_amplitude.setValue(0.0)
+            self.spin_mag_amplitude.setRange(-max_field, max_field)
+            self.spin_mag_amplitude.setSingleStep(round(max_field / 50, 1))
+            self.spin_mag_offset.setValue(0.0)
+            self.spin_mag_offset.setRange(-max_field, max_field)
+            self.spin_mag_offset.setSingleStep(round(max_field / 50, 1))
+        else:
+            defaults = np.linspace(-10, 10, 100)
+            self.magnet_controller.set_calibration(
+                defaults,
+                defaults,
+                defaults,
+                defaults
+            )
 
     def __on_change_field_amplitude(self, value):
-        self.magnet_controller.set_target_field(value)
+        if self.button_invert_field.isChecked():
+            self.magnet_controller.set_target_field(-value)
+        else:
+            self.magnet_controller.set_target_field(value)
 
     def __on_change_field_offset(self, value):
-        self.magnet_controller.set_target_offset(value)
+        if self.button_invert_field.isChecked():
+            self.magnet_controller.set_target_offset(-value)
+        else:
+            self.magnet_controller.set_target_offset(value)
 
     def __on_change_mag_freq(self, value):
         self.magnet_controller.set_frequency(value)

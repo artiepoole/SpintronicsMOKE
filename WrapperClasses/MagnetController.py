@@ -104,12 +104,10 @@ class MagnetController:
 
             print(f"MagnetController: Outputting AC Waveform with Peak to Peak voltage of: {self.target_voltage}")
 
-
-
     def get_current_amplitude(self):
-        current = self.analogue_input_task.read()
-        field = self.interpolate_current(current)
-        return field, current
+        voltage = self.analogue_input_task.read()
+        field = self.interpolate_voltage(voltage)
+        return field, voltage
 
     def set_target_field(self, new_value):
         self.target_voltage = self.interpolate_voltage(new_value)
@@ -132,5 +130,3 @@ class MagnetController:
         logging.info(f"Closing magnet controller")
         self.analogue_output_task.close()
         self.analogue_input_task.close()
-
-
