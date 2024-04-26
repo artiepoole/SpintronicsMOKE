@@ -74,6 +74,8 @@ class FrameProcessor(QtCore.QObject):
             frame_in[frame_in < 0] = 0
         match self.mode:
             case self.IMAGE_PROCESSING_NONE:
+                return frame_in
+            case self.IMAGE_PROCESSING_BASIC:
                 return frame_in / np.amax(frame_in)
             case self.IMAGE_PROCESSING_PERCENTILE:
                 # Fast
@@ -81,10 +83,10 @@ class FrameProcessor(QtCore.QObject):
                 return exposure.rescale_intensity(frame_in, in_range=(px_low, px_high))
             case self.IMAGE_PROCESSING_HISTEQ:
                 # Okay performance
-                return (exposure.equalize_hist(frame_in))
+                return exposure.equalize_hist(frame_in)
             case self.IMAGE_PROCESSING_ADAPTEQ:
                 # Really slow
-                return (exposure.equalize_adapthist(frame_in / 65535, clip_limit=self.clip))
+                return exposure.equalize_adapthist(frame_in / np.amax(frame_in), clip_limit=self.clip)
             case _:
                 logging.info("FrameProcessor: Unrecognized image processing mode")
                 return frame_in
