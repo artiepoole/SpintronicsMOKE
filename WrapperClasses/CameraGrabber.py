@@ -151,23 +151,24 @@ class CameraGrabber(QtCore.QObject):
                 while frame_a is None:
                     frame_data = self.cam.read_newest_image(return_info=True)
                     if frame_data is not None:
-                        if frame_data[1].frame_index // 2 == 1:
-                            frame_a = None
-                        else:
+                        if frame_data[1].frame_index % 2 == 0:
                             frame_a = frame_data
+                            logging.debug("Got frame_a")
                     if not self.running:
-                        logging.warn("stopping without frame_a")
-                        # self.parent.item_semaphore.release()
+                        logging.warning("stopping without frame_a")
                         return
                 while frame_b is None:
-                    frame_b = self.cam.read_newest_image(return_info=True)
+                    frame_data = self.cam.read_newest_image(return_info=True)
+                    if frame_data is not None:
+                        if frame_data[1].frame_index % 2 == 1:
+                            frame_b = frame_data
+                            logging.debug("Got frame_b")
                     if not self.running:
-                        logging.warn("stopping without frame_b")
-                        # self.parent.item_semaphore.release()
+                        logging.warning("stopping without frame_b")
                         return
                 self.parent.frame_buffer.append(frame_a + frame_b)
                 self.parent.item_semaphore.release()
-                logging.debug("Got difference frames")
+                logging.info("Got difference frames")
 
 if __name__ == "__main__":
     import numpy as np

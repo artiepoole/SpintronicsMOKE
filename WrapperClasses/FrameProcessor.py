@@ -98,6 +98,7 @@ class FrameProcessor(QtCore.QObject):
                 logging.debug("Processing Frame")
                 item = self.parent.frame_buffer.popleft()
                 self.parent.spaces_semaphore.release()
+
                 if len(item) == 4:
                     logging.debug("Got difference frames")
                     # Diff mode
