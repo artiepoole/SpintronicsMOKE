@@ -227,6 +227,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.image_timer.timeout.connect(self.__update_images)
         self.spin_number_of_points.valueChanged.connect(self.__on_change_plot_count)
         self.spin_mag_point_count.valueChanged.connect(self.__on_change_mag_plot_count)
+        self.button_reset_plots.clicked.connect(self.__on_reset_plots)
         # TODO: Add planar subtraction
         # TODO: Add ROI
         # TODO: Add Draw Line feature
@@ -334,7 +335,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         length = min([self.frame_processor.frame_times.__len__(), self.frame_processor.intensities_y.__len__()])
         if length > 0:
             self.intensity_line.setData(
-                list(self.frame_processor.frame_times)[0:length],
+                np.array(self.frame_processor.frame_times)[0:length] - np.min(self.frame_processor.frame_times),
                 list(self.frame_processor.intensities_y)[0:length]
             )
 
@@ -375,6 +376,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_change_mag_plot_count(self, value):
         self.mag_y = deque(self.mag_y, maxlen=value)
         self.mag_t = deque(self.mag_t, maxlen=value)
+
+    def __on_reset_plots(self):
+        self.mutex.lock()
+        self.frame_processor.frame_times = deque(maxlen=self.spin_number_of_points.value())
+        self.frame_processor.intensities_y = deque(maxlen=self.spin_number_of_points.value())
+        self.mutex.unlock()
 
     def __on_change_plot_count(self, value):
         self.mutex.lock()
@@ -848,7 +855,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.mutex.unlock()
 
     def __on_exposure_time_changed(self, exposure_time_idx):
-        logging.info("Attempting to set exposure time to")
+        logging.info("Attempting to set exposure time to: %s", exposure_time_idx)
         self.mutex.lock()
         self.camera_grabber.waiting = True
         self.camera_grabber.running = False
@@ -856,9 +863,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         QtCore.QMetaObject.invokeMethod(
             self.camera_grabber, "set_exposure_time",
             QtCore.Qt.ConnectionType.QueuedConnection,
-            QtCore.Q_ARG(int, self.camera_grabber.set_exposure_time(exposure_time_idx))
+            QtCore.Q_ARG(int, exposure_time_idx)
         )
-        self.__on_camera_ready()
 
     def __on_binning_mode_changed(self, binning_idx):
         logging.info("Binning mode changes not implemented yet.")

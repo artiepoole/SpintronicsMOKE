@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1423</width>
+    <width>1466</width>
     <height>826</height>
    </rect>
   </property>
@@ -1040,16 +1040,34 @@ All</string>
          </item>
          <item row="5" column="0">
           <widget class="QFrame" name="frame">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>40</height>
+            </size>
+           </property>
            <property name="frameShape">
             <enum>QFrame::Panel</enum>
            </property>
            <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
+            <enum>QFrame::Sunken</enum>
            </property>
            <property name="lineWidth">
-            <number>1</number>
+            <number>2</number>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <property name="leftMargin">
+             <number>6</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>6</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
             <item>
              <widget class="QCheckBox" name="check_save_avg">
               <property name="text">
@@ -2195,6 +2213,12 @@ of Points</string>
            </item>
            <item>
             <widget class="QComboBox" name="combo_calib_file">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
@@ -2377,6 +2401,13 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </property>
               <property name="text">
                <string>Live Plots</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="button_reset_plots">
+              <property name="text">
+               <string>Reset plots</string>
               </property>
              </widget>
             </item>
