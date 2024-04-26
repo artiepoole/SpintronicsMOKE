@@ -9,9 +9,10 @@ import time
 class FrameProcessor(QtCore.QObject):
     logging.info("FrameProcessor: Initializing FrameProcessor...")
     IMAGE_PROCESSING_NONE = 0
-    IMAGE_PROCESSING_PERCENTILE = 1
-    IMAGE_PROCESSING_HISTEQ = 2
-    IMAGE_PROCESSING_ADAPTEQ = 3
+    IMAGE_PROCESSING_BASIC = 1
+    IMAGE_PROCESSING_PERCENTILE = 2
+    IMAGE_PROCESSING_HISTEQ = 3
+    IMAGE_PROCESSING_ADAPTEQ = 4
     frame_processed_signal = QtCore.pyqtSignal(np.ndarray, np.float64, tuple)
     diff_processed_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.float64, np.float64, tuple)
     mode = 0
