@@ -81,16 +81,16 @@
          <item row="1" column="0">
           <layout class="QGridLayout" name="MODEGRID">
            <property name="leftMargin">
-            <number>10</number>
+            <number>0</number>
            </property>
            <property name="topMargin">
-            <number>10</number>
+            <number>0</number>
            </property>
            <property name="rightMargin">
-            <number>10</number>
+            <number>0</number>
            </property>
            <property name="bottomMargin">
-            <number>10</number>
+            <number>0</number>
            </property>
            <item row="0" column="0">
             <widget class="QToolButton" name="button_long_pol">
@@ -263,7 +263,7 @@
           <widget class="QFrame" name="BUTTONFRAME">
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>400</width>
              <height>300</height>
             </size>
            </property>
@@ -696,6 +696,19 @@ border:  none;</string>
                <number>0</number>
               </property>
               <item>
+               <spacer name="verticalSpacer">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
                <widget class="QPushButton" name="button_eq_vertical">
                 <property name="enabled">
                  <bool>false</bool>
@@ -706,9 +719,15 @@ border:  none;</string>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string>Equalise
-Vertical</string>
+Vert</string>
                 </property>
                </widget>
               </item>
@@ -723,9 +742,15 @@ Vertical</string>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string>Equalise
-Horizontal</string>
+Horz</string>
                 </property>
                </widget>
               </item>
@@ -739,6 +764,12 @@ Horizontal</string>
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>16777215</height>
+                 </size>
                 </property>
                 <property name="text">
                  <string>Equalise
@@ -757,6 +788,12 @@ Selected</string>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string>Equalise
 Pairs</string>
@@ -764,14 +801,48 @@ Pairs</string>
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="check_use_equalised">
-                <property name="enabled">
-                 <bool>false</bool>
+               <widget class="QPushButton" name="button_LED_control_all">
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>40</height>
+                 </size>
                 </property>
                 <property name="text">
-                 <string>Use Equalised?</string>
+                 <string>Control
+All</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
                 </property>
                </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="button_LED_reset_all">
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>40</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Reset 
+ All</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="verticalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
               </item>
              </layout>
             </item>
@@ -813,37 +884,6 @@ Pairs</string>
                 </property>
                 <property name="invertedControls">
                  <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="button_LED_control_all">
-                <property name="maximumSize">
-                 <size>
-                  <width>40</width>
-                  <height>40</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Control
-All</string>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="button_LED_reset_all">
-                <property name="maximumSize">
-                 <size>
-                  <width>40</width>
-                  <height>40</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Reset 
- All</string>
                 </property>
                </widget>
               </item>

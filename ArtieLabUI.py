@@ -221,10 +221,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_AC_field.clicked.connect(self.__on_AC_field)
         self.button_invert_field.clicked.connect(self.__on_invert_field)
 
+        # Plot controls
         self.magnetic_field_timer.timeout.connect(self.__update_field_measurement)
         self.plot_timer.timeout.connect(self.__update_plots)
         self.image_timer.timeout.connect(self.__update_images)
-
+        self.spin_number_of_points.valueChanged.connect(self.__on_change_plot_count)
+        self.spin_mag_point_count.valueChanged.connect(self.__on_change_mag_plot_count)
         # TODO: Add planar subtraction
         # TODO: Add ROI
         # TODO: Add Draw Line feature
@@ -312,40 +314,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.mag_t = deque(maxlen=100)
         self.mag_line = self.mag_plot.plot(self.mag_t, self.mag_y, pen="k")
 
-        # self.intensity_line = self.intensity_plot.plot(pen='y')
-        # self.intensity_line, = self.intensity_ax.plot(self.frame_processor.intensities_y, 'k+')
-        # self.intensity_ax.set(title="Raw frame average intensity", xlabel="Frame", ylabel="Average Intensity")
-        #
-        #
-        #
-        #
-        #
-        # self.hist_ax = self.plots_canvas.figure.add_subplot(312)
-        # self.hist_bins = []
-        # self.hist_data = []
-        # self.hist_line, = self.hist_ax.plot(self.hist_bins, self.hist_data, 'b-')
-        # self.hist_ax.set(title="Histogram as Seen", xlabel="Brightness", ylabel="Counts")
-        #
-        #
-        #
-        # self.blank_ax = self.plots_canvas.figure.add_subplot(313)
-        # self.frame_times = deque(maxlen=100)
-        # self.old_frame_time = time.time()
-        # self.blank_line, = self.blank_ax.plot(self.frame_times, 'r-')
-        # self.blank_ax.set(title="Unused Plot", xlabel="", ylabel="")
-        # self.plots_canvas.figure.tight_layout(pad=0.1)
-        #
-        #
-        # self.mag_plot_canvas = FigureCanvasQTAgg(Figure())
-        # self.mag_ax = self.mag_plot_canvas.figure.add_subplot(111)
-        # self.mag_y = deque(maxlen=100)
-        # self.mag_t = deque(maxlen=100)
-        # self.mag_line, = self.mag_ax.plot(self.mag_t,self.mag_y, 'k-')
-        # self.mag_ax.set(title="Field", xlabel="Time (s)", ylabel="Field")
-        # self.start_time = time.time()
-        #
-        # self.layout_mag_plot.addWidget(self.mag_plot_canvas)
-
     def __populate_calibration_combobox(self, dir):
 
         file_names = [f for f in listdir(dir) if isfile(join(dir, f)) and ".txt" in f]
@@ -403,6 +371,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.line_measured_voltage.setText("{:0.4f}".format(voltage))
         self.mag_y.append(field)
         self.mag_t.append(time.time() - self.start_time)
+
+    def __on_change_mag_plot_count(self, value):
+        self.mag_y = deque(self.mag_y, maxlen=value)
+        self.mag_t = deque(self.mag_t, maxlen=value)
+
+    def __on_change_plot_count(self, value):
+        self.mutex.lock()
+        self.frame_processor.frame_times = deque(self.frame_processor.frame_times, maxlen=value)
+        self.frame_processor.intensities_y = deque(self.frame_processor.intensities_y, maxlen=value)
+        self.mutex.unlock()
 
     def __reset_pairs(self):
         self.enabled_led_pairs.update(
@@ -861,163 +839,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.LED_brightnesses[key] = value
             self.lamp_controller.set_some_brightness([value] * len(keys), [self.led_id_enum[key] for key in keys])
 
-    # def __on_new_raw_frame(self, raw_frame):
-    #
-    #     self.latest_raw_frame = raw_frame
-    #
-    #     if self.averaging:
-    #         if self.frame_counter % self.averages < len(self.raw_frame_stack):
-    #             self.raw_frame_stack[self.frame_counter % self.averages] = raw_frame
-    #         else:
-    #             self.raw_frame_stack = np.append(self.raw_frame_stack, np.expand_dims(raw_frame, 0), axis=0)
-    #         if len(self.raw_frame_stack) > self.averages:
-    #             self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
-    #
-    #         QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_stack",
-    #                                         QtCore.Qt.ConnectionType.QueuedConnection,
-    #                                         QtCore.Q_ARG(np.ndarray, self.raw_frame_stack),
-    #                                         QtCore.Q_ARG(int,
-    #                                                      min(
-    #                                                          self.frame_counter % self.averages,
-    #                                                          self.raw_frame_stack.shape[0] - 1
-    #                                                      )
-    #                                                      )
-    #                                         )
-    #         self.frame_counter += 1
-    #     else:
-    #         QtCore.QMetaObject.invokeMethod(self.frame_processor, "process_frame",
-    #                                         QtCore.Qt.ConnectionType.QueuedConnection,
-    #                                         QtCore.Q_ARG(np.ndarray, raw_frame),
-    #                                         )
-
-    #
-    # def __on_new_diff_frame(self, frame_a, frame_b):
-    #
-    #     if self.averaging:
-    #         if self.frame_counter % self.averages < len(self.diff_frame_stack_a):
-    #             self.diff_frame_stack_a[self.frame_counter % self.averages] = frame_a
-    #             self.diff_frame_stack_b[self.frame_counter % self.averages] = frame_b
-    #         else:
-    #             self.diff_frame_stack_a = np.append(self.diff_frame_stack_a, np.expand_dims(frame_a, 0), axis=0)
-    #             self.diff_frame_stack_b = np.append(self.diff_frame_stack_b, np.expand_dims(frame_b, 0), axis=0)
-    #         if len(self.diff_frame_stack_a) > self.averages:
-    #             self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
-    #             self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
-    #         self.frame_counter += 1
-    #         QtCore.QMetaObject.invokeMethod(
-    #             self.frame_processor, "process_diff_stack",
-    #             QtCore.Qt.ConnectionType.QueuedConnection,
-    #             QtCore.Q_ARG(np.ndarray, self.diff_frame_stack_a),
-    #             QtCore.Q_ARG(np.ndarray, self.diff_frame_stack_b),
-    #             QtCore.Q_ARG(int,
-    #                          min(
-    #                              self.frame_counter % self.averages,
-    #                              self.diff_frame_stack_a.shape[0] - 1
-    #                          )
-    #                          )
-    #         )
-    #     else:
-    #         self.latest_diff_frame_a = frame_a
-    #         self.latest_diff_frame_b = frame_b
-    #         QtCore.QMetaObject.invokeMethod(
-    #             self.frame_processor,
-    #             "process_single_diff",
-    #             QtCore.Qt.ConnectionType.QueuedConnection,
-    #             QtCore.Q_ARG(np.ndarray, frame_a),
-    #             QtCore.Q_ARG(np.ndarray, frame_b)
-    #         )
-    #
-    # def __on_processed_frame(self, processed_frame, intensity, hist):
-    #     new_frame_time = time.time()
-    #     self.frame_times.append(new_frame_time - self.old_frame_time)
-    #     self.old_frame_time = new_frame_time
-    #
-    #     self.intensity_y.append(intensity)
-    #     self.hist_data, self.hist_bins = hist
-    #     self.latest_processed_frame = processed_frame
-    #
-    #     if not self.paused:
-    #         if not self.mode_changed:
-    #             QtCore.QMetaObject.invokeMethod(
-    #                 self.camera_grabber,
-    #                 "get_latest_single_frame",
-    #                 QtCore.Qt.ConnectionType.QueuedConnection
-    #             )
-    #         else:
-    #             if self.flickering:
-    #                 self.lamp_controller.stop_flicker()
-    #                 QtCore.QMetaObject.invokeMethod(
-    #                     self.camera_grabber,
-    #                     "stop_acquisition",
-    #                     QtCore.Qt.ConnectionType.QueuedConnection,
-    #                     QtCore.Q_ARG(bool, False)
-    #                 )
-    #                 QtCore.QMetaObject.invokeMethod(
-    #                     self.camera_grabber,
-    #                     "start_live_difference_mode",
-    #                     QtCore.Qt.ConnectionType.QueuedConnection
-    #                 )
-    #                 QtCore.QMetaObject.invokeMethod(
-    #                     self.camera_grabber,
-    #                     "get_latest_diff_frame",
-    #                     QtCore.Qt.ConnectionType.QueuedConnection
-    #                 )
-    #             else:
-    #                 QtCore.QMetaObject.invokeMethod(
-    #                     self.camera_grabber,
-    #                     "get_latest_single_frame",
-    #                     QtCore.Qt.ConnectionType.QueuedConnection
-    #                 )
-    #             self.mode_changed = False
-    #
-    # def __on_processed_diff(self, diff, diff_processed, intensity_a, intensity_b, hist):
-    #
-    #     new_frame_time = time.time()
-    #     self.frame_times.append(new_frame_time - self.old_frame_time)
-    #     self.old_frame_time = new_frame_time
-    #
-    #     self.intensity_y.append(intensity_a)
-    #     self.intensity_y.append(intensity_b)
-    #
-    #     self.hist_data, self.hist_bins = hist
-    #
-    #     self.latest_diff_frame = diff
-    #     self.latest_processed_frame = diff_processed
-    #
-    #     if not self.paused:
-    #         if not self.mode_changed:
-    #             QtCore.QMetaObject.invokeMethod(
-    #                 self.camera_grabber,
-    #                 "get_latest_diff_frame",
-    #                 QtCore.Qt.ConnectionType.QueuedConnection
-    #             )
-    #         else:
-    #             if not self.flickering:
-    #                 self.__reset_after_flicker_mode()
-    #                 QtCore.QMetaObject.invokeMethod(
-    #                     self.camera_grabber,
-    #                     "stop_acquisition",
-    #                     QtCore.Qt.ConnectionType.QueuedConnection,
-    #                     QtCore.Q_ARG(bool, False)
-    #                 )
-    #                 QtCore.QMetaObject.invokeMethod(
-    #                     self.camera_grabber,
-    #                     "start_live_single_frame",
-    #                     QtCore.Qt.ConnectionType.QueuedConnection
-    #                 )
-    #                 QtCore.QMetaObject.invokeMethod(
-    #                     self.camera_grabber,
-    #                     "get_latest_single_frame",
-    #                     QtCore.Qt.ConnectionType.QueuedConnection
-    #                 )
-    #             else:
-    #                 QtCore.QMetaObject.invokeMethod(
-    #                     self.camera_grabber,
-    #                     "get_latest_diff_frame",
-    #                     QtCore.Qt.ConnectionType.QueuedConnection
-    #                 )
-    #             self.mode_changed = False
-
     def __on_get_new_background(self, ignored_event):
         # TODO: This doesn't call invokeMethod, nor does it wait for ready/closed from the camera.
         logging.info("Getting background")
@@ -1161,16 +982,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 logging.info("Swapped from AC to DC field mode.")
             else:
                 logging.info("Enabling DC field mode.")
-            self.spin_mag_offset.setValue(0)
-            self.spin_mag_freq.setValue(0)
-            self.magnet_controller.mode = "DC"
-            self.magnet_controller.update_output()
-        else:
 
+            self.magnet_controller.mode = "DC"
+        else:
             if not self.button_AC_field.isChecked():
                 logging.warning("There is no field mode selected.")
                 self.__set_zero_field()
                 self.magnet_controller.mode = None
+        self.magnet_controller.update_output()
 
     def __on_AC_field(self, enabled):
         if enabled:
@@ -1182,13 +1001,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.magnet_controller.mode = "AC"
             self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
             self.magnet_controller.set_frequency(self.spin_mag_freq.value())
-            self.magnet_controller.update_output()
-
         else:
             if not self.button_DC_field.isChecked():
                 logging.warning("There is no field mode selected.")
-                self.__set_zero_field()
                 self.magnet_controller.mode = None
+        self.magnet_controller.update_output()
 
     def __on_invert_field(self, inverted):
         if inverted:
