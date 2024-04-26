@@ -74,7 +74,7 @@ class FrameProcessor(QtCore.QObject):
             frame_in[frame_in < 0] = 0
         match self.mode:
             case self.IMAGE_PROCESSING_NONE:
-                return frame_in/np.amax(frame_in)
+                return frame_in / np.amax(frame_in)
             case self.IMAGE_PROCESSING_PERCENTILE:
                 # Fast
                 px_low, px_high = np.percentile(frame_in, (self.p_low, self.p_high))
@@ -91,7 +91,6 @@ class FrameProcessor(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def start_processing(self):
-        start_time = time.time()
         self.running = True
         while self.running:
             got = self.parent.item_semaphore.tryAcquire(1, 1)
@@ -99,14 +98,14 @@ class FrameProcessor(QtCore.QObject):
                 logging.debug("Processing Frame")
                 item = self.parent.frame_buffer.popleft()
                 self.parent.spaces_semaphore.release()
-                if type(item) is tuple:
+                if len(item) == 4:
                     logging.debug("Got difference frames")
                     # Diff mode
-                    self.latest_diff_frame_a, self.latest_diff_frame_b = item
+                    self.latest_diff_frame_a, latest_diff_frame_data_a, self.latest_diff_frame_b, latest_diff_frame_data_b = item
                     self.intensities_y.append(np.mean(self.latest_diff_frame_a, axis=(0, 1)))
                     self.intensities_y.append(np.mean(self.latest_diff_frame_b, axis=(0, 1)))
-                    self.frame_times.append(time.time() - start_time)
-                    self.frame_times.append(time.time() - start_time)
+                    self.frame_times.append(latest_diff_frame_data_a.timestamp_us * 1e-6)
+                    self.frame_times.append(latest_diff_frame_data_b.timestamp_us * 1e-6)
                     if self.averaging:
                         if self.frame_counter % self.averages < len(self.diff_frame_stack_a):
                             self.diff_frame_stack_a[self.frame_counter % self.averages] = self.latest_diff_frame_a
@@ -124,19 +123,20 @@ class FrameProcessor(QtCore.QObject):
                         self.frame_counter += 1
                         mean_a = np.mean(self.diff_frame_stack_a, axis=0)
                         mean_b = np.mean(self.diff_frame_stack_b, axis=0)
-                        meaned_diff = np.abs(mean_a.astype(np.int32) - mean_b.astype(np.int32)).astype(np.uint16)
+                        meaned_diff = np.abs(mean_a - mean_b)
                         self.latest_processed_frame = self.__process_frame(meaned_diff)
                     else:
-                        diff_frame = np.abs(self.latest_diff_frame_a.astype(np.int32) - self.latest_diff_frame_b.astype(
-                            np.int32)).astype(np.uint16)
+                        diff_frame = np.abs(
+                            self.latest_diff_frame_a.astype(np.float64) - self.latest_diff_frame_b.astype(
+                                np.float64))
                         self.latest_processed_frame = self.__process_frame(diff_frame)
                 else:
                     logging.debug("Got single frame")
                     # Single frame mode
-                    self.latest_raw_frame = item
+                    self.latest_raw_frame, latest_frame_data = item
                     self.mutex.lock()
                     self.intensities_y.append(np.mean(self.latest_raw_frame, axis=(0, 1)))
-                    self.frame_times.append(time.time() - start_time)
+                    self.frame_times.append(latest_frame_data.timestamp_us * 1e-6)
                     self.mutex.unlock()
                     if self.averaging:
                         if self.frame_counter % self.averages < len(self.raw_frame_stack):

@@ -38,6 +38,7 @@ class CameraGrabber(QtCore.QObject):
         :param int exposure_time_idx:
         :return:
         '''
+        logging.info("Received exposure time:  %s", exposure_time_idx)
         match exposure_time_idx:
             case self.EXPOSURE_TWENTY_FPS:
                 self.cam.set_attribute_value("EXPOSURE TIME", 1 / 20)
@@ -46,9 +47,9 @@ class CameraGrabber(QtCore.QObject):
                 self.cam.set_attribute_value("EXPOSURE TIME", 1 / 30)
                 logging.info(f"setting exposure time to {1 / 30}")
             case _:
-                logging.info(f"Unexpected exposure time setting")
+                logging.warning(f"Unexpected exposure time setting")
 
-    def __prepare_camera(self):
+    def _prepare_camera(self):
         '''
         Does not resume because is only used internally.
         :return:
@@ -76,7 +77,7 @@ class CameraGrabber(QtCore.QObject):
     def grab_n_frames(self, n_frames):
         prev_mode = self.difference_mode
         self.difference_mode = False
-        self.__prepare_camera()
+        self._prepare_camera()
         frames = self.cam.grab(n_frames)
         self.difference_mode = prev_mode
         return frames
@@ -90,7 +91,7 @@ class CameraGrabber(QtCore.QObject):
         self.difference_mode = False
         self.mutex.unlock()
 
-        self.__prepare_camera()
+        self._prepare_camera()
         self.cam.setup_acquisition()
         self.cam.start_acquisition()
         logging.info("Camera started in normal mode")
@@ -99,7 +100,7 @@ class CameraGrabber(QtCore.QObject):
             if got_space:
                 frame = None
                 while frame is None:
-                    frame = self.cam.read_newest_image()
+                    frame = self.cam.read_newest_image(return_info=True)
                     if frame is not None:
                         self.parent.frame_buffer.append(frame)
                         self.parent.item_semaphore.release()
@@ -121,7 +122,7 @@ class CameraGrabber(QtCore.QObject):
         self.difference_mode = True
         self.mutex.unlock()
 
-        self.__prepare_camera()
+        self._prepare_camera()
         self.cam.setup_acquisition()
         self.cam.start_acquisition()
         logging.info("Camera started in live difference mode")
@@ -153,18 +154,18 @@ class CameraGrabber(QtCore.QObject):
                         if frame_data[1].frame_index // 2 == 1:
                             frame_a = None
                         else:
-                            frame_a = frame_data[0]
+                            frame_a = frame_data
                     if not self.running:
                         logging.warn("stopping without frame_a")
                         # self.parent.item_semaphore.release()
                         return
                 while frame_b is None:
-                    frame_b = self.cam.read_newest_image()
+                    frame_b = self.cam.read_newest_image(return_info=True)
                     if not self.running:
                         logging.warn("stopping without frame_b")
                         # self.parent.item_semaphore.release()
                         return
-                self.parent.frame_buffer.append((frame_a, frame_b))
+                self.parent.frame_buffer.append(frame_a + frame_b)
                 self.parent.item_semaphore.release()
                 logging.debug("Got difference frames")
 
