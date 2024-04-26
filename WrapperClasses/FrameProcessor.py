@@ -15,7 +15,7 @@ class FrameProcessor(QtCore.QObject):
     IMAGE_PROCESSING_ADAPTEQ = 4
     frame_processed_signal = QtCore.pyqtSignal(np.ndarray, np.float64, tuple)
     diff_processed_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.float64, np.float64, tuple)
-    mode = 0
+    mode = 1
     p_low = 0
     p_high = 100
     clip = 0.03
@@ -134,7 +134,7 @@ class FrameProcessor(QtCore.QObject):
                             self.latest_diff_frame_a.astype(np.float64) - self.latest_diff_frame_b.astype(
                                 np.float64))
                         self.latest_processed_frame = self.__process_frame(diff_frame)
-                else:
+                elif len(item) == 2:
                     logging.debug("Got single frame")
                     # Single frame mode
                     self.latest_raw_frame, latest_frame_data = item
@@ -154,6 +154,6 @@ class FrameProcessor(QtCore.QObject):
                         mean_frame = np.mean(self.raw_frame_stack, axis=0)
                         self.latest_processed_frame = self.__process_frame(mean_frame)
                     else:
-                        self.latest_processed_frame = self.__process_frame(self.latest_raw_frame.astype(np.float64))
+                        self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
                 self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
         logging.info("Stopping Frame Processor")

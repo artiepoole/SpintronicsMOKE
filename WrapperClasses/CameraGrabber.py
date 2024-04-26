@@ -48,6 +48,8 @@ class CameraGrabber(QtCore.QObject):
                 logging.info(f"setting exposure time to {1 / 30}")
             case _:
                 logging.warning(f"Unexpected exposure time setting")
+        logging.info("Camera ready")
+        self.camera_ready.emit()
 
     def _prepare_camera(self):
         '''
@@ -112,6 +114,7 @@ class CameraGrabber(QtCore.QObject):
             self.cam.close()
             self.quit_ready.emit()
         if not self.waiting:
+            logging.info("Camera ready")
             self.camera_ready.emit()
 
     @QtCore.pyqtSlot()
@@ -156,6 +159,8 @@ class CameraGrabber(QtCore.QObject):
                             logging.debug("Got frame_a")
                     if not self.running:
                         logging.warning("stopping without frame_a")
+                        self.parent.frame_buffer.append([])
+                        self.parent.item_semaphore.release()
                         return
                 while frame_b is None:
                     frame_data = self.cam.read_newest_image(return_info=True)
@@ -165,10 +170,12 @@ class CameraGrabber(QtCore.QObject):
                             logging.debug("Got frame_b")
                     if not self.running:
                         logging.warning("stopping without frame_b")
+                        self.parent.frame_buffer.append([])
+                        self.parent.item_semaphore.release()
                         return
                 self.parent.frame_buffer.append(frame_a + frame_b)
                 self.parent.item_semaphore.release()
-                logging.info("Got difference frames")
+                logging.debug("Got difference frames")
 
 if __name__ == "__main__":
     import numpy as np

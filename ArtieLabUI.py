@@ -242,7 +242,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.log_text_box.setFormatter(
             logging.Formatter('%(asctime)s %(levelname)s %(module)s - %(message)s', "%H:%M:%S"))
         logging.getLogger().addHandler(self.log_text_box)
-        logging.getLogger().setLevel(logging.INFO)
+        logging.getLogger().setLevel(logging.info)
         # TODO: this layout_logging might be under FRAME_LOGGING.layout or similar because I morphed the layout into a frame.
         self.layout_logging.addWidget(self.log_text_box.widget)
 
@@ -454,11 +454,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         match mode:
             case -1:
                 pass
-            case 0:
+            case 0: # None
                 self.spin_percentile_lower.setEnabled(False)
                 self.spin_percentile_upper.setEnabled(False)
                 self.spin_clip.setEnabled(False)
-            case 1:
+            case 1:  # Basic
+                self.spin_percentile_lower.setEnabled(False)
+                self.spin_percentile_upper.setEnabled(False)
+                self.spin_clip.setEnabled(False)
+            case 2: # Contrast stretching
                 self.spin_percentile_lower.setEnabled(True)
                 self.spin_percentile_upper.setEnabled(True)
                 self.spin_clip.setEnabled(False)
@@ -466,12 +470,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.frame_processor.set_percentile_lower(self.spin_percentile_lower.value())
                 self.frame_processor.set_percentile_upper(self.spin_percentile_upper.value())
                 # This is contrast stretching and needs min and max percentiles
-            case 2:
+            case 3: # Histrogram eq
                 self.spin_percentile_lower.setEnabled(False)
                 self.spin_percentile_upper.setEnabled(False)
                 self.spin_clip.setEnabled(False)
                 # this is auto hist and so no other settings are needed
-            case 3:
+            case 4: # Adaptive eq
                 self.spin_percentile_lower.setEnabled(False)
                 self.spin_percentile_upper.setEnabled(False)
                 self.spin_clip.setEnabled(True)
