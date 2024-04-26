@@ -261,6 +261,12 @@
          </item>
          <item row="3" column="0">
           <widget class="QFrame" name="BUTTONFRAME">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>300</height>
+            </size>
+           </property>
            <property name="styleSheet">
             <string notr="true">background-color: rgb(245,245,245)</string>
            </property>
@@ -300,159 +306,7 @@
               <property name="bottomMargin">
                <number>0</number>
               </property>
-              <item row="0" column="2">
-               <spacer name="verticalSpacer_4">
-                <property name="orientation">
-                 <enum>Qt::Vertical</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>40</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="6" column="2">
-               <spacer name="verticalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Vertical</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>40</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="5" column="2">
-               <widget class="QPushButton" name="button_down_led2">
-                <property name="minimumSize">
-                 <size>
-                  <width>50</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>50</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0);
-border:  none;</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="icon">
-                 <iconset>
-                  <normaloff>icons/radio_unchecked.png</normaloff>
-                  <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>50</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-                <property name="autoExclusive">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QPushButton" name="button_left_led1">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>50</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>50</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0);
-border:  none;</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="icon">
-                 <iconset>
-                  <normaloff>icons/radio_unchecked.png</normaloff>
-                  <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>50</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-                <property name="autoExclusive">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="4">
-               <widget class="QPushButton" name="button_right_led2">
-                <property name="minimumSize">
-                 <size>
-                  <width>50</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>50</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">background-color: rgba(255, 255, 255, 0);
-border:  none;</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="icon">
-                 <iconset>
-                  <normaloff>icons/radio_unchecked.png</normaloff>
-                  <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>50</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-                <property name="autoExclusive">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="3">
+              <item row="2" column="3">
                <widget class="QPushButton" name="button_right_led1">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -498,7 +352,7 @@ border:  none;</string>
                 </property>
                </widget>
               </item>
-              <item row="1" column="2">
+              <item row="0" column="2">
                <widget class="QPushButton" name="button_up_led2">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -544,7 +398,7 @@ border:  none;</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="2">
+              <item row="1" column="2">
                <widget class="QPushButton" name="button_up_led1">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -590,7 +444,7 @@ border:  none;</string>
                 </property>
                </widget>
               </item>
-              <item row="4" column="2">
+              <item row="3" column="2">
                <widget class="QPushButton" name="button_down_led1">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -636,7 +490,47 @@ border:  none;</string>
                 </property>
                </widget>
               </item>
-              <item row="3" column="2">
+              <item row="2" column="0">
+               <widget class="QPushButton" name="button_left_led2">
+                <property name="minimumSize">
+                 <size>
+                  <width>50</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
+border:  none;</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>icons/radio_unchecked.png</normaloff>
+                  <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>50</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
                <widget class="QToolButton" name="button_leds_off">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -668,8 +562,94 @@ border:  none;</string>
                 </property>
                </widget>
               </item>
-              <item row="3" column="0">
-               <widget class="QPushButton" name="button_left_led2">
+              <item row="4" column="2">
+               <widget class="QPushButton" name="button_down_led2">
+                <property name="minimumSize">
+                 <size>
+                  <width>50</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
+border:  none;</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>icons/radio_unchecked.png</normaloff>
+                  <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>50</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QPushButton" name="button_left_led1">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>50</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">background-color: rgba(255, 255, 255, 0);
+border:  none;</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>icons/radio_unchecked.png</normaloff>
+                  <normalon>icons/radio_checked.png</normalon>icons/radio_unchecked.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>50</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="4">
+               <widget class="QPushButton" name="button_right_led2">
                 <property name="minimumSize">
                  <size>
                   <width>50</width>
@@ -796,37 +776,78 @@ Pairs</string>
              </layout>
             </item>
             <item>
-             <widget class="QScrollBar" name="scroll_LED_brightness">
-              <property name="enabled">
-               <bool>false</bool>
+             <layout class="QVBoxLayout" name="verticalLayout_2">
+              <property name="rightMargin">
+               <number>0</number>
               </property>
-              <property name="minimumSize">
-               <size>
-                <width>30</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>12</pointsize>
-               </font>
-              </property>
-              <property name="autoFillBackground">
-               <bool>false</bool>
-              </property>
-              <property name="maximum">
-               <number>180</number>
-              </property>
-              <property name="value">
-               <number>180</number>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="invertedAppearance">
-               <bool>true</bool>
-              </property>
-             </widget>
+              <item>
+               <widget class="QScrollBar" name="scroll_LED_brightness">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>40</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>12</pointsize>
+                 </font>
+                </property>
+                <property name="autoFillBackground">
+                 <bool>false</bool>
+                </property>
+                <property name="maximum">
+                 <number>180</number>
+                </property>
+                <property name="value">
+                 <number>0</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="invertedAppearance">
+                 <bool>false</bool>
+                </property>
+                <property name="invertedControls">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="button_LED_control_all">
+                <property name="maximumSize">
+                 <size>
+                  <width>40</width>
+                  <height>40</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Control
+All</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="button_LED_reset_all">
+                <property name="maximumSize">
+                 <size>
+                  <width>40</width>
+                  <height>40</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Reset 
+ All</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </widget>
@@ -872,6 +893,12 @@ Pairs</string>
       </property>
       <item>
        <widget class="QFrame" name="FRAME_SAVING">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>175</height>
+         </size>
+        </property>
         <property name="styleSheet">
          <string notr="true">background-color: rgba(239,239,239,1)</string>
         </property>
@@ -1029,6 +1056,12 @@ Pairs</string>
       </item>
       <item>
        <widget class="QFrame" name="FRAME_CAMERA">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>200</height>
+         </size>
+        </property>
         <property name="styleSheet">
          <string notr="true">background-color: rgba(239,239,239,1)</string>
         </property>
@@ -1079,7 +1112,7 @@ Pairs</string>
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>80</height>
+               <height>40</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -1107,7 +1140,7 @@ Pairs</string>
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>80</height>
+               <height>40</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -1141,7 +1174,7 @@ Pairs</string>
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>80</height>
+               <height>40</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -1172,7 +1205,7 @@ Pairs</string>
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>80</height>
+               <height>40</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -1697,7 +1730,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>40</height>
+               <height>20</height>
               </size>
              </property>
              <property name="text">
@@ -1710,7 +1743,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>40</height>
+               <height>20</height>
               </size>
              </property>
              <property name="text">
@@ -1723,7 +1756,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>40</height>
+               <height>20</height>
               </size>
              </property>
              <property name="text">
@@ -1788,19 +1821,6 @@ QWidget{background-color: rgb(255,255,255)}</string>
               <number>0</number>
              </property>
              <item>
-              <spacer name="horizontalSpacer_4">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
               <widget class="QLabel" name="label_measured_field">
                <property name="maximumSize">
                 <size>
@@ -1825,19 +1845,6 @@ QWidget{background-color: rgb(255,255,255)}</string>
                 <bool>true</bool>
                </property>
               </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
              </item>
              <item>
               <widget class="QLabel" name="label_measured_voltage">
@@ -1912,6 +1919,12 @@ of Points</string>
             <layout class="QHBoxLayout" name="MAGBUTTONHORZ">
              <item>
               <widget class="QToolButton" name="button_DC_field">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="text">
                 <string>DC
 (F8)</string>
@@ -1929,6 +1942,12 @@ of Points</string>
              </item>
              <item>
               <widget class="QToolButton" name="button_AC_field">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="text">
                 <string>AC
 (F9)</string>
@@ -1946,6 +1965,12 @@ of Points</string>
                <property name="enabled">
                 <bool>false</bool>
                </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="text">
                 <string>Decay
 (F10)</string>
@@ -1960,6 +1985,12 @@ of Points</string>
                <property name="enabled">
                 <bool>true</bool>
                </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="text">
                 <string>Invert
 (F11)</string>
@@ -1971,6 +2002,12 @@ of Points</string>
              </item>
              <item>
               <widget class="QToolButton" name="button_zero_field">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="text">
                 <string>Zero
 (F12)</string>
@@ -1984,7 +2021,7 @@ of Points</string>
              <item row="1" column="0">
               <widget class="QDoubleSpinBox" name="spin_mag_offset">
                <property name="enabled">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
@@ -2003,7 +2040,7 @@ of Points</string>
              <item row="1" column="2">
               <widget class="QDoubleSpinBox" name="spin_mag_freq">
                <property name="enabled">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
@@ -2279,73 +2316,81 @@ QWidget{background-color: rgb(255,255,255)}</string>
           </layout>
          </item>
          <item row="0" column="0">
-          <layout class="QHBoxLayout" name="layout_plot_header">
-           <property name="sizeConstraint">
-            <enum>QLayout::SetDefaultConstraint</enum>
+          <widget class="QFrame" name="horizontalFrame">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>40</height>
+            </size>
            </property>
-           <item>
-            <widget class="QLabel" name="label_plots">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Live Plots</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_n_points">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Number
+           <layout class="QHBoxLayout" name="layout_plot_header">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetDefaultConstraint</enum>
+            </property>
+            <item>
+             <widget class="QLabel" name="label_plots">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>30</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Live Plots</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_n_points">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>30</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Number
 of Points</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="spin_number_of_points">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="minimum">
-              <number>10</number>
-             </property>
-             <property name="maximum">
-              <number>1000</number>
-             </property>
-             <property name="singleStep">
-              <number>10</number>
-             </property>
-             <property name="value">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="spin_number_of_points">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>30</height>
+               </size>
+              </property>
+              <property name="minimum">
+               <number>10</number>
+              </property>
+              <property name="maximum">
+               <number>1000</number>
+              </property>
+              <property name="singleStep">
+               <number>10</number>
+              </property>
+              <property name="value">
+               <number>100</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </item>
         </layout>
        </widget>

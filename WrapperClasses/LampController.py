@@ -280,7 +280,7 @@ if __name__ == '__main__':
     time.sleep(1)
     controller.enable_left_pair()
     time.sleep(2)
-    controller.close()
+    controller.close(True)
 
     # for i in range(100):
     #     controller.enable_left()

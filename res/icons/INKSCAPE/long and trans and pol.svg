@@ -9,7 +9,7 @@
    id="svg1"
    inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
    sodipodi:docname="long and trans and pol.svg"
-   inkscape:export-filename="..\long_and_trans_and_pol_off.png"
+   inkscape:export-filename="..\long_and_trans_and_pol_on.png"
    inkscape:export-xdpi="300"
    inkscape:export-ydpi="300"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
@@ -27,8 +27,8 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      inkscape:zoom="4.155"
-     inkscape:cx="40.192539"
-     inkscape:cy="47.051745"
+     inkscape:cx="40.312876"
+     inkscape:cy="47.292419"
      inkscape:window-width="1920"
      inkscape:window-height="1027"
      inkscape:window-x="-8"
@@ -85,25 +85,25 @@
     <g
        id="g1"
        transform="matrix(0.77977985,0,0,0.77977985,0.07394651,1.7562452)"
-       style="stroke:#808080;stroke-opacity:1">
+       style="stroke:#000000;stroke-opacity:1">
       <path
-         style="fill:none;stroke:#808080;stroke-width:1.24319;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Triangle);marker-end:url(#Triangle)"
+         style="fill:none;stroke:#000000;stroke-width:1.24319;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Triangle);marker-end:url(#Triangle)"
          d="M 8.727105,16.215852 V 6.2737314"
          id="path3" />
       <path
-         style="fill:none;stroke:#808080;stroke-width:1.24319;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Triangle-2);marker-end:url(#Triangle-2)"
+         style="fill:none;stroke:#000000;stroke-width:1.24319;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Triangle-2);marker-end:url(#Triangle-2)"
          d="M 3.7560448,11.244791 H 13.698165"
          id="path2-1" />
     </g>
     <ellipse
-       style="fill:none;stroke:#808080;stroke-width:1.15656;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:none;stroke:#000000;stroke-width:1.15656;stroke-dasharray:none;stroke-opacity:1"
        id="ellipse3"
        cx="19.446878"
        cy="10.524712"
        rx="5.3748488"
        ry="5.3748465" />
     <ellipse
-       style="fill:#808080;fill-opacity:1;stroke:#808080;stroke-width:1.15118;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.15118;stroke-dasharray:none;stroke-opacity:1"
        id="path4"
        cx="19.446878"
        cy="10.524712"
@@ -111,22 +111,22 @@
        ry="1.97447" />
     <text
        xml:space="preserve"
-       style="font-size:4.23333px;fill:#808080;fill-opacity:1;stroke:none;stroke-width:1.5;stroke-dasharray:none;stroke-opacity:1"
+       style="font-size:4.23333px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5;stroke-dasharray:none;stroke-opacity:1"
        x="13.63741"
        y="20.105537"
        id="text4"><tspan
          sodipodi:role="line"
          id="tspan4"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:System-ui;-inkscape-font-specification:System-ui;text-align:center;text-anchor:middle;fill:#808080;fill-opacity:1;stroke:none;stroke-width:1.5"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:System-ui;-inkscape-font-specification:System-ui;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5"
          x="13.63741"
          y="20.105537">long &amp; trans </tspan><tspan
          sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:System-ui;-inkscape-font-specification:System-ui;text-align:center;text-anchor:middle;fill:#808080;fill-opacity:1;stroke:none;stroke-width:1.5"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:System-ui;-inkscape-font-specification:System-ui;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5"
          x="13.63741"
          y="25.446205"
          id="tspan2" /></text>
     <rect
-       style="fill:none;fill-opacity:1;stroke:#808080;stroke-width:0.518791;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.518791;stroke-dasharray:none;stroke-opacity:1"
        id="rect4"
        width="25.939541"
        height="25.939541"
@@ -134,13 +134,13 @@
        y="0.25939605" />
     <text
        xml:space="preserve"
-       style="font-size:4.23333px;font-family:System-ui;-inkscape-font-specification:System-ui;text-align:center;text-anchor:middle;fill:#808080;stroke:none;stroke-width:0.529167"
+       style="font-size:4.23333px;font-family:System-ui;-inkscape-font-specification:System-ui;text-align:center;text-anchor:middle;fill:#000000;stroke:none;stroke-width:0.529167"
        x="13.277742"
        y="24.582897"
        id="text3"><tspan
          sodipodi:role="line"
          id="tspan3"
-         style="stroke:none;stroke-width:0.529167;fill:#808080"
+         style="stroke:none;stroke-width:0.529167;fill:#000000"
          x="13.277742"
          y="24.582897">&amp; pol</tspan></text>
   </g>

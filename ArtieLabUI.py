@@ -44,18 +44,57 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.plot_timer = QtCore.QTimer(self)
         self.magnetic_field_timer = QtCore.QTimer(self)
         self.image_timer = QtCore.QTimer(self)
-        self.enabled_leds_spi = {"left1": False,
-                                 "left2": False,
-                                 "right1": False,
-                                 "right2": False,
-                                 "up1": False,
-                                 "up2": False,
-                                 "down1": False,
-                                 "down2": False}
-        self.enabled_led_pairs = {"left": False,
-                                  "right": False,
-                                  "up": False,
-                                  "down": False}
+
+        self.enabled_leds_spi = {
+            "left1": False,
+            "left2": False,
+            "right1": False,
+            "right2": False,
+            "up1": False,
+            "up2": False,
+            "down1": False,
+            "down2": False
+        }
+
+        self.LED_brightnesses = {
+            "left1": 180,
+            "left2": 180,
+            "right1": 180,
+            "right2": 180,
+            "up1": 180,
+            "up2": 180,
+            "down1": 180,
+            "down2": 180
+        }
+
+        self.enabled_led_pairs = {
+            "left": False,
+            "right": False,
+            "up": False,
+            "down": False
+        }
+
+        self.led_binary_enum = {
+            "left1": 2,
+            "left2": 1,
+            "right1": 8,
+            "right2": 4,
+            "up1": 32,
+            "up2": 16,
+            "down1": 128,
+            "down2": 64
+        }
+
+        self.led_id_enum = {
+            "left1": 2,
+            "left2": 1,
+            "right1": 4,
+            "right2": 3,
+            "up1": 6,
+            "up2": 5,
+            "down1": 8,
+            "down2": 7
+        }
 
         # Create controller objects and threads
         self.lamp_controller = LampController(reset=True)
@@ -80,16 +119,18 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.paused = False
         self.close_event = None
         self.get_background = False
+        self.LED_control_all = False
 
         # Magnetic field calibration stuff
         if os.path.isfile('res/last_calibration_location.txt'):
             with open('res/last_calibration_location.txt', 'r') as file:
                 self.calib_file_dir = file.readline()
+                logging.info("Previous calibration file directory found.")
         elif os.path.isdir("Coil Calibrations\\"):
             self.calib_file_dir = "Coil Calibrations\\"
-            print('MagnetDriverUI:No calibration location found, trying: ', self.calib_file_dir)
+            logging.warning("No calibration location found, trying: " + str(self.calib_file_dir))
         else:
-            print("MagnetDriverUI:Default calib file location not found. Asking for user input.")
+            logging.warning("Default calib file location not found. Asking for user input.")
             self.calib_file_dir = QtWidgets.QFileDialog.getExistingDirectory(
                 None,
                 'Choose Calibration File Directory',
@@ -128,13 +169,19 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_up_led2.clicked.connect(self.__on_individual_led)
         self.button_down_led2.clicked.connect(self.__on_individual_led)
         self.button_leds_off.clicked.connect(self.__disable_all_leds)
-
+        # LED Modes
         self.button_long_pol.clicked.connect(self.__on_long_pol)
         self.button_trans_pol.clicked.connect(self.__on_trans_pol)
         self.button_polar.clicked.connect(self.__on_polar)
         self.button_long_trans.clicked.connect(self.__on_long_trans)
         self.button_pure_long.clicked.connect(self.__on_pure_long)
         self.button_pure_trans.clicked.connect(self.__on_pure_trans)
+        # LED Brightness
+        self.button_LED_control_all.clicked.connect(self.__on_control_change)
+        self.button_LED_reset_all.clicked.connect(self.__reset_brightness)
+        self.scroll_LED_brightness.valueChanged.connect(self.__on_brightness_slider)
+        self.scroll_blocker = QtCore.QSignalBlocker(self.scroll_LED_brightness)
+        self.scroll_blocker.unblock()
 
         # Image Processing Controls
         self.combo_normalisation_selector.currentIndexChanged.connect(self.__on_image_processing_mode_change)
@@ -312,7 +359,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.combo_calib_file.addItem("None")
             self.combo_calib_file.addItems(strings)
         else:
-            print("MagnetDriverUI: No calibration files found.")
+            logging.warning(" No magnet calibration files found.")
 
     def __update_plots(self):
         # Sometimes, the update can be called between the appending to frame times and to intensities
@@ -375,6 +422,19 @@ class ArtieLabUI(QtWidgets.QMainWindow):
              "down1": False,
              "down2": False}
         )
+
+    def __reset_brightness(self):
+        self.LED_brightnesses.update(
+            {"left1": 180,
+             "left2": 180,
+             "right1": 180,
+             "right2": 180,
+             "up1": 180,
+             "up2": 180,
+             "down1": 180,
+             "down2": 180}
+        )
+        self.lamp_controller.set_all_brightness(180)
 
     def __get_lighting_configuration(self):
         if self.button_long_pol.isChecked():
@@ -761,6 +821,46 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 + self.enabled_leds_spi["down2"] * 64
         self.lamp_controller.enable_leds(value)
 
+    def __on_control_change(self, control_all):
+        self.LED_control_all = control_all
+        if self.LED_control_all:
+            self.button_LED_control_all.setText("Control\nSelected")
+        else:
+            self.button_LED_control_all.setText("Control\nAll")
+        self.__update_brightness(180 - self.scroll_LED_brightness.value())
+
+    def __on_brightness_slider(self, value):
+        value = 180 - value
+        logging.info(f"Slider Value Changed to: {value}")
+        self.__update_brightness(value)
+
+    def __update_brightness_slider(self):
+        if self.LED_control_all:
+            keys = self.LED_brightnesses.keys()
+        else:
+            keys = [key for key, value in self.enabled_leds_spi.items() if value is True]
+        if keys:
+            logging.debug("active LED keys: " + str(keys))
+            brightest_val = max([self.LED_brightnesses[key] for key in keys])
+            logging.debug(f"Brightest val: {brightest_val}")
+            self.scroll_blocker.reblock()
+            self.scroll_LED_brightness.setValue(180 - brightest_val)
+            self.scroll_blocker.unblock()
+            self.__update_brightness(brightest_val)
+
+    def __update_brightness(self, value):
+        if self.LED_control_all:
+            keys = self.LED_brightnesses.keys()
+        else:
+            keys = [key for key, value in self.enabled_leds_spi.items() if value is True]
+        if self.LED_control_all:
+            self.LED_brightnesses = {key: value for key in self.LED_brightnesses}
+            self.lamp_controller.set_all_brightness(value)
+        else:
+            for key in keys:
+                self.LED_brightnesses[key] = value
+            self.lamp_controller.set_some_brightness([value] * len(keys), [self.led_id_enum[key] for key in keys])
+
     # def __on_new_raw_frame(self, raw_frame):
     #
     #     self.latest_raw_frame = raw_frame
@@ -1006,7 +1106,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         if index > 0:
             file_name = self.calibration_dictionary[index]
             calibration_array = np.loadtxt(os.path.join(self.calib_file_dir, file_name), delimiter=',', skiprows=1)
-            print("MagnetDriverUI: Setting calibration using file: ", file_name)
+            logging.info("Setting calibration using file: " + str(file_name))
             self.magnet_controller.set_calibration(
                 calibration_array[:, 0],
                 calibration_array[:, 1],
