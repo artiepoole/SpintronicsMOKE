@@ -6,6 +6,7 @@ from nidaqmx.constants import LineGrouping, AcquisitionType, SampleTimingType
 from nidaqmx.stream_writers import DigitalSingleChannelWriter
 from itertools import chain
 import math
+import time
 
 flatten = chain.from_iterable
 
