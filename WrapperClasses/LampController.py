@@ -232,14 +232,14 @@ class LampController:
                 pairs_pos = 1
                 pairs_neg = 2
         # TODO: Implement checking of exposure time to change this trigger rate
-        n_samples = 2 * math.ceil((1 / self.frame_rate) * 1e3) + 12  # 6ms for lights to change.
+        n_samples = 2 * math.ceil((1 / self.frame_rate) * 1e3) + 24  # 12 ms for lights to change.
         pulse_width_in_samples = 1
-        delay_in_samples = 5
+        delay_in_samples = 6
         out_array = np.zeros(shape=[
             n_samples])  # 120 sample is 120 ms. This means that the on off rate is 50ms per light. Exposure time is 50ms so this is too short
 
         out_array[0:n_samples // 2] = pairs_pos
-        out_array[delay_in_samples:2 * pulse_width_in_samples] = pairs_pos + 16
+        out_array[delay_in_samples:delay_in_samples+pulse_width_in_samples] = pairs_pos + 16
         out_array[n_samples // 2:] = pairs_neg
         out_array[
         n_samples // 2 + delay_in_samples:n_samples // 2 + delay_in_samples + pulse_width_in_samples] = pairs_neg + 16

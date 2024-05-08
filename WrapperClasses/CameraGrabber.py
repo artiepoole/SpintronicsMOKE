@@ -144,15 +144,12 @@ class CameraGrabber(QtCore.QObject):
             if got_space:
                 frame_a = None
                 frame_b = None
-                start_time = time.time()
                 while frame_a is None:
                     frame_data = self.cam.read_newest_image(return_info=True)
                     if frame_data is not None:
-                        print("Time at framea: ", time.time() - start_time)
                         if frame_data[1].frame_index % 2 == 0:
                             frame_a = (frame_data[0].astype(np.int32), frame_data[1])
                             logging.debug("Got frame_a")
-                            print("Time at framea: ", time.time() - start_time)
                     if not self.running:
                         logging.warning("stopping without frame_a")
                         self.parent.frame_buffer.append([])
@@ -161,11 +158,9 @@ class CameraGrabber(QtCore.QObject):
                 while frame_b is None:
                     frame_data = self.cam.read_newest_image(return_info=True)
                     if frame_data is not None:
-                        print("Time at frame_b: ", time.time() - start_time)
                         if frame_data[1].frame_index % 2 == 1:
                             frame_b = (frame_data[0].astype(np.int32), frame_data[1])
                             logging.debug("Got frame_b")
-                            print("Time at frameb: ", time.time() - start_time)
                     if not self.running:
                         logging.warning("stopping without frame_b")
                         self.parent.frame_buffer.append([])
