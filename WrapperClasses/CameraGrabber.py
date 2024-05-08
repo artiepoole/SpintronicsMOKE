@@ -73,9 +73,9 @@ class CameraGrabber(QtCore.QObject):
         prev_mode = self.difference_mode
         self.difference_mode = False
         self._prepare_camera()
-        frames = self.cam.grab(n_frames)
+        frames = np.array(self.cam.grab(n_frames), dtype='int32')
         self.difference_mode = prev_mode
-        return frames.astype(np.int32)
+        return frames
 
     @QtCore.pyqtSlot()
     def start_live_single_frame(self):
@@ -181,3 +181,5 @@ if __name__ == "__main__":
     # camera_grabber.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
     # camera_grabber.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
     print(camera_grabber.cam.get_data_dimensions())
+
+    frames = camera_grabber.grab_n_frames(16)
