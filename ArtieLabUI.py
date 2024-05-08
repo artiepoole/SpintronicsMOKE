@@ -908,9 +908,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             logging.info("Averaging disabled")
             self.mutex.lock()
             self.frame_processor.averaging = False
-            self.frame_processor.raw_frame_stack = None
-            self.frame_processor.diff_frame_stack_a = None
-            self.frame_processor.diff_frame_stack_b = None
             self.mutex.unlock()
 
     def __on_show_subtraction(self, subtracting):
