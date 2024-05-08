@@ -6,6 +6,24 @@ from collections import deque
 import time
 
 
+def int_mean(image_stack, axis=0):
+    return np.sum(image_stack, axis=axis)//image_stack.shape[0]
+
+def numpy_rescale(image, low, high):
+    px_low, px_high = np.percentile(image, (low, high))
+    px_low = np.int32(px_low)
+    px_high = np.int32(px_high)
+    image[image < px_low] = px_low
+    image[image > px_high] = px_high
+    return (image - px_low) * 63355 // (px_high-px_low)
+
+# Cast to int32 is twice as fast as cast to float64
+
+def numpy_equ(image):
+    img_cdf, bin_centers = exposure.cumulative_distribution(image)
+    return np.interp(image, bin_centers, img_cdf).astype(np.int32) * 63355
+
+
 class FrameProcessor(QtCore.QObject):
     logging.info("FrameProcessor: Initializing FrameProcessor...")
     IMAGE_PROCESSING_NONE = 0
@@ -27,14 +45,14 @@ class FrameProcessor(QtCore.QObject):
     latest_diff_frame_a = None
     latest_diff_frame_b = None
     latest_processed_frame = np.zeros((1024, 1024), dtype=np.uint16)
+    diff_frame_stack_a = None
+    diff_frame_stack_b = None
     latest_hist_data = []
     latest_hist_bins = []
     intensities_y = deque(maxlen=100)
     frame_times = deque(maxlen=100)
-    background = None
     averaging = False
     averages = 16
-    running = False
     mutex = QtCore.QMutex()
 
     def __init__(self, parent):
@@ -80,11 +98,10 @@ class FrameProcessor(QtCore.QObject):
                 return frame_in / np.amax(frame_in)
             case self.IMAGE_PROCESSING_PERCENTILE:
                 # Fast
-                px_low, px_high = np.percentile(frame_in, (self.p_low, self.p_high))
-                return exposure.rescale_intensity(frame_in, in_range=(px_low, px_high))
+                return numpy_rescale(frame_in, self.p_low, self.p_high)
             case self.IMAGE_PROCESSING_HISTEQ:
                 # Okay performance
-                return exposure.equalize_hist(frame_in)
+                return numpy_equ(frame_in)
             case self.IMAGE_PROCESSING_ADAPTEQ:
                 # Really slow
                 return exposure.equalize_adapthist(frame_in / np.amax(frame_in), clip_limit=self.clip)
@@ -125,14 +142,13 @@ class FrameProcessor(QtCore.QObject):
                             self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
                             self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
                         self.frame_counter += 1
-                        mean_a = np.mean(self.diff_frame_stack_a, axis=0)
-                        mean_b = np.mean(self.diff_frame_stack_b, axis=0)
+                        mean_a = int_mean(self.diff_frame_stack_a, axis=0)
+                        mean_b = int_mean(self.diff_frame_stack_b, axis=0)
                         meaned_diff = np.abs(mean_a - mean_b)
                         self.latest_processed_frame = self.__process_frame(meaned_diff)
                     else:
                         diff_frame = np.abs(
-                            self.latest_diff_frame_a.astype(np.float64) - self.latest_diff_frame_b.astype(
-                                np.float64))
+                            self.latest_diff_frame_a - self.latest_diff_frame_b)
                         self.latest_processed_frame = self.__process_frame(diff_frame)
                 elif len(item) == 2:
                     logging.debug("Got single frame")
@@ -151,7 +167,7 @@ class FrameProcessor(QtCore.QObject):
                         if len(self.raw_frame_stack) > self.averages:
                             self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
                         self.frame_counter += 1
-                        mean_frame = np.mean(self.raw_frame_stack, axis=0)
+                        mean_frame = int_mean(self.raw_frame_stack, axis=0)
                         self.latest_processed_frame = self.__process_frame(mean_frame)
                     else:
                         self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)

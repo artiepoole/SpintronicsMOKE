@@ -5,7 +5,7 @@ import numpy as np
 from nidaqmx.constants import LineGrouping, AcquisitionType, SampleTimingType
 from nidaqmx.stream_writers import DigitalSingleChannelWriter
 from itertools import chain
-import time
+import math
 
 flatten = chain.from_iterable
 
@@ -29,6 +29,8 @@ class LampController:
         self.__resting_state_noSPI = self.__DATA_CONST + self.__SS_CONST
         self.__resting_state_SPI = self.__DATA_CONST + self.__SS_CONST + self.__MODE_CONST
         self.dev = nidaq.system.device.Device('Dev1')
+
+        self.frame_rate = 20
 
         if reset:
             logging.info("Resetting DAQ card")
@@ -87,7 +89,7 @@ class LampController:
                      pairs["right"] * self.__RIGHT_CONST +
                      pairs["up"] * self.__UP_CONST +
                      pairs["down"] * self.__DOWN_CONST)
-        logging.info("Enabling Pairs: "+str(send_byte))
+        logging.info("Enabling Pairs: " + str(send_byte))
         self.TTL_stream.write_one_sample_port_byte(send_byte)
 
     def close(self, reset):
@@ -112,7 +114,7 @@ class LampController:
     def enable_leds(self, led_byte: int):
         if not self.__SPI_enabled:
             self.enable_spi()
-        logging.info("Enabling SPI: "+str(led_byte))
+        logging.info("Enabling SPI: " + str(led_byte))
         self._write_spi(int('0xA0', 16), led_byte)
 
     def set_all_brightness(self, brightness: int):
@@ -124,7 +126,7 @@ class LampController:
         enabled = self.__SPI_enabled
         if not self.__SPI_enabled:
             self.enable_spi()
-        logging.info("Setting all brightnesses to: "+str( brightness))
+        logging.info("Setting all brightnesses to: " + str(brightness))
         self._write_spi(int('0xA9', 16), brightness)
         if not enabled:
             self.disable_spi()
@@ -214,7 +216,7 @@ class LampController:
     def continuous_flicker(self, mode):
         self.disable_spi()
         self.TTL_output_task.stop()
-        logging.info("Enabling LED flicker mode with mode: "+str(mode))
+        logging.info("Enabling LED flicker mode with mode: " + str(mode))
         match mode:
             case 0:
                 # long trans pol
@@ -229,16 +231,18 @@ class LampController:
                 pairs_pos = 1
                 pairs_neg = 2
         # TODO: Implement checking of exposure time to change this trigger rate
-        n_samples = 120
-        pulse_width_in_samples = 5
+        n_samples = 2 * math.ceil((1 / self.frame_rate) * 1e3) + 12  # 6ms for lights to change.
+        pulse_width_in_samples = 1
+        delay_in_samples = 5
         out_array = np.zeros(shape=[
-            120])  # 120 sample is 120 ms. This means that the on off rate is 50ms per light. Exposure time is 50ms so this is too short
+            n_samples])  # 120 sample is 120 ms. This means that the on off rate is 50ms per light. Exposure time is 50ms so this is too short
 
         out_array[0:n_samples // 2] = pairs_pos
-        out_array[0:pulse_width_in_samples] = out_array[0:pulse_width_in_samples] + 16
+        out_array[delay_in_samples:2 * pulse_width_in_samples] = pairs_pos + 16
         out_array[n_samples // 2:] = pairs_neg
-        out_array[n_samples // 2:n_samples // 2 + pulse_width_in_samples] = out_array[
-                                                                            n_samples // 2:n_samples // 2 + pulse_width_in_samples] + 16
+        out_array[
+        n_samples // 2 + delay_in_samples:n_samples // 2 + delay_in_samples + pulse_width_in_samples] = pairs_neg + 16
+
         self.TTL_output_task.stop()
         self.TTL_output_task.timing.cfg_samp_clk_timing(1000, sample_mode=AcquisitionType.CONTINUOUS,
                                                         samps_per_chan=n_samples)
@@ -271,7 +275,7 @@ if __name__ == '__main__':
     time.sleep(2)
     controller.continuous_flicker(1)
 
-    time.sleep(2)
+    time.sleep(200)
     controller.continuous_flicker(2)
 
     time.sleep(2)

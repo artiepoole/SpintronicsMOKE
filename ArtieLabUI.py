@@ -242,7 +242,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.log_text_box.setFormatter(
             logging.Formatter('%(asctime)s %(levelname)s %(module)s - %(message)s', "%H:%M:%S"))
         logging.getLogger().addHandler(self.log_text_box)
-        logging.getLogger().setLevel(logging.info)
+        logging.getLogger().setLevel(logging.INFO)
         # TODO: this layout_logging might be under FRAME_LOGGING.layout or similar because I morphed the layout into a frame.
         self.layout_logging.addWidget(self.log_text_box.widget)
 
@@ -354,14 +354,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             cv2.imshow(
                 self.stream_window,
                 cv2.resize(
-                    self.frame_processor.latest_processed_frame,
+                    self.frame_processor.latest_processed_frame.astype(np.uint16),
                     (1024, 1024)
                 )
             )
         else:
             cv2.imshow(
                 self.stream_window,
-                self.frame_processor.latest_processed_frame,
+                self.frame_processor.latest_processed_frame.astype(np.uint16),
             )
 
         cv2.waitKey(1)
@@ -454,7 +454,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         match mode:
             case -1:
                 pass
-            case 0: # None
+            case 0:  # None
                 self.spin_percentile_lower.setEnabled(False)
                 self.spin_percentile_upper.setEnabled(False)
                 self.spin_clip.setEnabled(False)
@@ -462,7 +462,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.spin_percentile_lower.setEnabled(False)
                 self.spin_percentile_upper.setEnabled(False)
                 self.spin_clip.setEnabled(False)
-            case 2: # Contrast stretching
+            case 2:  # Contrast stretching
                 self.spin_percentile_lower.setEnabled(True)
                 self.spin_percentile_upper.setEnabled(True)
                 self.spin_clip.setEnabled(False)
@@ -470,12 +470,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.frame_processor.set_percentile_lower(self.spin_percentile_lower.value())
                 self.frame_processor.set_percentile_upper(self.spin_percentile_upper.value())
                 # This is contrast stretching and needs min and max percentiles
-            case 3: # Histrogram eq
+            case 3:  # Histrogram eq
                 self.spin_percentile_lower.setEnabled(False)
                 self.spin_percentile_upper.setEnabled(False)
                 self.spin_clip.setEnabled(False)
                 # this is auto hist and so no other settings are needed
-            case 4: # Adaptive eq
+            case 4:  # Adaptive eq
                 self.spin_percentile_lower.setEnabled(False)
                 self.spin_percentile_upper.setEnabled(False)
                 self.spin_clip.setEnabled(True)
@@ -650,7 +650,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_right_led1.setChecked(False)
             self.button_right_led2.setChecked(False)
 
-            self.lamp_controller.continuous_flicker(0)
+            self.lamp_controller.continuous_flicker(0, )
         else:
             if not self.__check_for_any_active_mode():
                 self.__disable_all_leds()
@@ -750,7 +750,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             # Can't invoke method because of
             frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
             self.frame_processor.background_raw_stack = frames
-            self.frame_processor.background = np.mean(frames, axis=0).astype(np.uint16)
+            self.frame_processor.background = int_mean(frames, axis=0)
         if not self.paused:
             if self.flickering:
                 QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_difference_mode",
@@ -864,11 +864,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_grabber.waiting = True
         self.camera_grabber.running = False
         self.mutex.unlock()
-        QtCore.QMetaObject.invokeMethod(
-            self.camera_grabber, "set_exposure_time",
-            QtCore.Qt.ConnectionType.QueuedConnection,
-            QtCore.Q_ARG(int, exposure_time_idx)
-        )
+
+        match exposure_time_idx:
+            case 0:  # 20fps
+                QtCore.QMetaObject.invokeMethod(
+                    self.camera_grabber, "set_exposure_time",
+                    QtCore.Qt.ConnectionType.QueuedConnection,
+                    QtCore.Q_ARG(int, 1 / 20)
+                )
+                self.lamp_controller.frame_rate = 20
+            case 1:  # 30fps
+                QtCore.QMetaObject.invokeMethod(
+                    self.camera_grabber, "set_exposure_time",
+                    QtCore.Qt.ConnectionType.QueuedConnection,
+                    QtCore.Q_ARG(int, 1 / 30)
+                )
+                self.lamp_controller.frame_rate = 30
+            case _:
+                logging.warning(f"Unexpected exposure time setting")
 
     def __on_binning_mode_changed(self, binning_idx):
         logging.info("Binning mode changes not implemented yet.")

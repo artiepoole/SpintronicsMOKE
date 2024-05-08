@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from PyQt5 import QtCore
 from pylablib.devices import DCAM
@@ -6,8 +8,6 @@ import logging
 
 class CameraGrabber(QtCore.QObject):
     logging.info("CameraGrabber: Initializing CameraGrabber...")
-    EXPOSURE_TWENTY_FPS = 0
-    EXPOSURE_THIRTY_FPS = 1
     frame_ready_signal = QtCore.pyqtSignal(np.ndarray)
     difference_frame_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     # difference_frame_stack_ready = QtCore.pyqtSignal(tuple, int)
@@ -32,22 +32,15 @@ class CameraGrabber(QtCore.QObject):
         self.parent = parent
 
     @QtCore.pyqtSlot(int)
-    def set_exposure_time(self, exposure_time_idx):
+    def set_exposure_time(self, exposure_time):
         '''
         Resumes because is usually set via GUI
-        :param int exposure_time_idx:
+        :param float exposure_time:
         :return:
         '''
-        logging.info("Received exposure time:  %s", exposure_time_idx)
-        match exposure_time_idx:
-            case self.EXPOSURE_TWENTY_FPS:
-                self.cam.set_attribute_value("EXPOSURE TIME", 1 / 20)
-                logging.info(f"setting exposure time to {1 / 20}")
-            case self.EXPOSURE_THIRTY_FPS:
-                self.cam.set_attribute_value("EXPOSURE TIME", 1 / 30)
-                logging.info(f"setting exposure time to {1 / 30}")
-            case _:
-                logging.warning(f"Unexpected exposure time setting")
+        logging.info("Received exposure time:  %s", exposure_time)
+        self.cam.set_attribute_value("EXPOSURE TIME", exposure_time)
+        logging.info(f"setting exposure time to {exposure_time}")
         logging.info("Camera ready")
         self.camera_ready.emit()
 
@@ -60,7 +53,7 @@ class CameraGrabber(QtCore.QObject):
             logging.info("CameraGrabber: Setting camera trigger mode to external")
             self.cam.set_attribute_value('TRIGGER SOURCE', 2)  # External
             self.cam.set_attribute_value('TRIGGER MODE', 1)  # Normal (as opposed to "start")
-            self.cam.set_attribute_value('TRIGGER ACTIVE', 1)  # Edge
+            self.cam.set_attribute_value('TRIGGER ACTIVE', 3)  # SyncReadOut - Apparently this works but edge doesn't
             self.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
             self.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
         else:
@@ -82,7 +75,7 @@ class CameraGrabber(QtCore.QObject):
         self._prepare_camera()
         frames = self.cam.grab(n_frames)
         self.difference_mode = prev_mode
-        return frames
+        return frames.astype(np.int32)
 
     @QtCore.pyqtSlot()
     def start_live_single_frame(self):
@@ -104,7 +97,7 @@ class CameraGrabber(QtCore.QObject):
                 while frame is None:
                     frame = self.cam.read_newest_image(return_info=True)
                     if frame is not None:
-                        self.parent.frame_buffer.append(frame)
+                        self.parent.frame_buffer.append((frame[0].astype(np.int32), frame[1]))
                         self.parent.item_semaphore.release()
                         logging.debug("Got frame")
         self.cam.stop_acquisition()
@@ -151,12 +144,15 @@ class CameraGrabber(QtCore.QObject):
             if got_space:
                 frame_a = None
                 frame_b = None
+                start_time = time.time()
                 while frame_a is None:
                     frame_data = self.cam.read_newest_image(return_info=True)
                     if frame_data is not None:
+                        print("Time at framea: ", time.time() - start_time)
                         if frame_data[1].frame_index % 2 == 0:
-                            frame_a = frame_data
+                            frame_a = (frame_data[0].astype(np.int32), frame_data[1])
                             logging.debug("Got frame_a")
+                            print("Time at framea: ", time.time() - start_time)
                     if not self.running:
                         logging.warning("stopping without frame_a")
                         self.parent.frame_buffer.append([])
@@ -165,9 +161,11 @@ class CameraGrabber(QtCore.QObject):
                 while frame_b is None:
                     frame_data = self.cam.read_newest_image(return_info=True)
                     if frame_data is not None:
+                        print("Time at frame_b: ", time.time() - start_time)
                         if frame_data[1].frame_index % 2 == 1:
-                            frame_b = frame_data
+                            frame_b = (frame_data[0].astype(np.int32), frame_data[1])
                             logging.debug("Got frame_b")
+                            print("Time at frameb: ", time.time() - start_time)
                     if not self.running:
                         logging.warning("stopping without frame_b")
                         self.parent.frame_buffer.append([])
