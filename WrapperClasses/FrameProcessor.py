@@ -7,7 +7,8 @@ import time
 
 
 def int_mean(image_stack, axis=0):
-    return np.sum(image_stack, axis=axis)//image_stack.shape[0]
+    return np.sum(image_stack, axis=axis) // image_stack.shape[0]
+
 
 def numpy_rescale(image, low, high):
     px_low, px_high = np.percentile(image, (low, high))
@@ -15,13 +16,18 @@ def numpy_rescale(image, low, high):
     px_high = np.int32(px_high)
     image[image < px_low] = px_low
     image[image > px_high] = px_high
-    return (image - px_low) * 63355 // (px_high-px_low)
+    return (image - px_low) * 63355 // (px_high - px_low)
+
 
 # Cast to int32 is twice as fast as cast to float64
 
 def numpy_equ(image):
-    img_cdf, bin_centers = exposure.cumulative_distribution(image)
-    return np.interp(image, bin_centers, img_cdf).astype(np.int32) * 63355
+    img_cdf, bin_centers = exposure.cumulative_distribution(image, nbins=100)
+    return (np.interp(image, bin_centers, img_cdf)*63355).astype(np.int32)
+
+
+def basic_exposure(image):
+    return image * (63355 // np.amax(image))
 
 
 class FrameProcessor(QtCore.QObject):
@@ -95,7 +101,7 @@ class FrameProcessor(QtCore.QObject):
             case self.IMAGE_PROCESSING_NONE:
                 return frame_in
             case self.IMAGE_PROCESSING_BASIC:
-                return frame_in / np.amax(frame_in)
+                return basic_exposure(frame_in)
             case self.IMAGE_PROCESSING_PERCENTILE:
                 # Fast
                 return numpy_rescale(frame_in, self.p_low, self.p_high)
@@ -173,3 +179,15 @@ class FrameProcessor(QtCore.QObject):
                         self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
                 self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
         logging.info("Stopping Frame Processor")
+
+
+if __name__ == "__main__":
+    import cv2
+
+    frames = np.loadtxt("../TestScripts/test_stack.dat", delimiter="\t").astype(np.int32).reshape(16, 1024, 1024)
+
+    frame = frames[0]
+    cv2.imshow('Raw', basic_exposure(frame).astype(np.uint16))
+    cv2.imshow('Processed Frame', numpy_equ(frame).astype(np.uint16))
+    cv2.waitKey(0)
+    print(frame.shape)
