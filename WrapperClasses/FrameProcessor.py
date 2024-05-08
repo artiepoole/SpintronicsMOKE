@@ -45,11 +45,16 @@ class FrameProcessor(QtCore.QObject):
     clip = 0.03
     subtracting = True
     background = None
+    background_raw_stack = None
     running = False
     frame_counter = 0
     latest_raw_frame = None
+    latest_mean_frame = None
+    raw_frame_stack = None
+    latest_diff_frame = None
     latest_diff_frame_a = None
     latest_diff_frame_b = None
+    latest_mean_diff = None
     latest_processed_frame = np.zeros((1024, 1024), dtype=np.uint16)
     diff_frame_stack_a = None
     diff_frame_stack_b = None
@@ -150,12 +155,13 @@ class FrameProcessor(QtCore.QObject):
                         self.frame_counter += 1
                         mean_a = int_mean(self.diff_frame_stack_a, axis=0)
                         mean_b = int_mean(self.diff_frame_stack_b, axis=0)
-                        meaned_diff = np.abs(mean_a - mean_b)
-                        self.latest_processed_frame = self.__process_frame(meaned_diff)
+                        self.latest_mean_diff = np.abs(mean_a - mean_b)
+                        self.latest_processed_frame = self.__process_frame(self.latest_mean_diff)
                     else:
-                        diff_frame = np.abs(
+                        self.latest_diff_frame = np.abs(
                             self.latest_diff_frame_a - self.latest_diff_frame_b)
-                        self.latest_processed_frame = self.__process_frame(diff_frame)
+                        self.latest_processed_frame = self.__process_frame(self.latest_diff_frame)
+                    self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
                 elif len(item) == 2:
                     logging.debug("Got single frame")
                     # Single frame mode
@@ -173,11 +179,13 @@ class FrameProcessor(QtCore.QObject):
                         if len(self.raw_frame_stack) > self.averages:
                             self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
                         self.frame_counter += 1
-                        mean_frame = int_mean(self.raw_frame_stack, axis=0)
-                        self.latest_processed_frame = self.__process_frame(mean_frame)
+                        self.latest_mean_frame = int_mean(self.raw_frame_stack, axis=0)
+                        self.latest_processed_frame = self.__process_frame(self.latest_mean_frame)
                     else:
                         self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
-                self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
+                    self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
+                else:
+                    logging.warning('Frame processor received neither single frame nor difference frame')
         logging.info("Stopping Frame Processor")
 
 

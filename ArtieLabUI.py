@@ -510,7 +510,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_individual_led(self, state):
         logging.info("Individual LED being called")
         if not self.flickering:
-            if self.__check_for_any_active_mode():
+            if self.__check_for_any_active_LED_mode():
                 self.button_long_pol.setChecked(False)
                 self.button_trans_pol.setChecked(False)
                 self.button_polar.setChecked(False)
@@ -556,7 +556,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_pairs()
         else:
-            if not self.__check_for_any_active_mode():
+            if not self.__check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_trans_pol(self, checked):
@@ -589,7 +589,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_pairs()
         else:
-            if not self.__check_for_any_active_mode():
+            if not self.__check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_polar(self, checked):
@@ -625,7 +625,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_spi()
         else:
-            if not self.__check_for_any_active_mode():
+            if not self.__check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_long_trans(self, checked):
@@ -652,7 +652,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.lamp_controller.continuous_flicker(0, )
         else:
-            if not self.__check_for_any_active_mode():
+            if not self.__check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_pure_long(self, checked):
@@ -679,7 +679,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_left_led1.setChecked(False)
             self.button_left_led2.setChecked(False)
         else:
-            if not self.__check_for_any_active_mode():
+            if not self.__check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_pure_trans(self, checked):
@@ -706,7 +706,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_left_led1.setChecked(False)
             self.button_left_led2.setChecked(False)
         else:
-            if not self.__check_for_any_active_mode():
+            if not self.__check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __prepare_for_flicker_mode(self):
@@ -785,7 +785,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_right_led2.setEnabled(True)
         self.lamp_controller.stop_flicker()
 
-    def __check_for_any_active_mode(self):
+    def __check_for_any_active_LED_mode(self):
         return bool(
             self.button_long_pol.isChecked() +
             self.button_trans_pol.isChecked() +
@@ -794,6 +794,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_pure_long.isChecked() +
             self.button_pure_trans.isChecked()
         )
+
+    def __get_magnet_mode(self):
+        return (self.button_DC_field.isChecked() * 1 +
+                self.button_AC_field.isChecked() * 2 +
+                self.button_decay_field.isChecked() * 4)
 
     def __update_controller_pairs(self):
         self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
@@ -851,7 +856,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.lamp_controller.set_some_brightness([value] * len(keys), [self.led_id_enum[key] for key in keys])
 
     def __on_get_new_background(self, ignored_event):
-        # TODO: This doesn't call invokeMethod, nor does it wait for ready/closed from the camera.
         logging.info("Getting background")
         self.get_background = True
         self.mutex.lock()
@@ -1038,8 +1042,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
 
     def __on_save(self, event):
-        # TODO: Add the difference frame processing to this. Currently this only works for single light source modes
-        # TODO: Add magnetic field information as well.
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
@@ -1053,6 +1055,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'correction': self.line_correction.text(),
             'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
+        match self.__get_magnet_mode():
+            case 0:
+                meta_data['magnet_mode'] = None
+            case 1:  # DC
+                meta_data['magnet_mode'] = 'DC'
+                meta_data['mag_field'] = self.mag_y[-1]
+                meta_data['coil_calib'] = self.combo_calib_file.currentText()
+            case 2:  # AC
+                meta_data['magnet_mode'] = 'AC'
+                meta_data['mag_field'] = self.mag_y[-1]
+                meta_data['mag_field_amp'] = self.spin_mag_amplitude.value()
+                meta_data['mag_field_freq'] = self.spin_mag_freq.value()
+                meta_data['mag_field_offset'] = self.spin_mag_offset.value()
+                meta_data['coil_calib'] = self.combo_calib_file.currentText()
+
         contents = []
         file_path = Path(self.line_directory.text()).joinpath(
             datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
@@ -1065,40 +1082,71 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 "Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
             return
 
-        if self.button_toggle_averaging.isChecked():
-            if self.check_save_avg.isChecked():
-                key = 'frame_avg'
+        if self.flickering:
+            if self.button_toggle_averaging.isChecked():
+                if self.check_save_avg.isChecked():
+                    key = 'mean_diff_frame'
+                    contents.append(key)
+                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_diff)
+                if self.check_save_stack.isChecked():
+                    for i in range(self.frame_processor.diff_frame_stack_a.shape[0]):
+                        key_a = 'raw_stack_a_' + str(i)
+                        key_b = 'raw_stack_b_' + str(i)
+                        contents.append(key_a)
+                        contents.append(key_b)
+                        store[key_a] = pd.DataFrame(self.frame_processor.diff_frame_stack_a[i])
+                        store[key_b] = pd.DataFrame(self.frame_processor.diff_frame_stack_b[i])
+            else:
+                if self.check_save_avg.isChecked():
+                    logging.info("Average not saved: measuring in single frame mode")
+                if self.check_save_stack.isChecked():
+                    logging.info("Stack not saved: measuring in single frame mode")
+                key = 'raw_diff_frame'
+                contents.append(key)
+                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame)
+                key = 'raw_frame_a'
+                contents.append(key)
+                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_a)
+                key = 'raw_frame_b'
+                contents.append(key)
+                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_b)
+        else:
+            if self.button_toggle_averaging.isChecked():
+                if self.check_save_avg.isChecked():
+                    key = 'mean_frame'
+                    contents.append(key)
+                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_frame)
+                if self.check_save_stack.isChecked():
+                    for i in range(self.frame_processor.raw_frame_stack.shape[0]):
+                        key = 'raw_stack_' + str(i)
+                        contents.append(key)
+                        store[key] = pd.DataFrame(self.frame_processor.raw_frame_stack[i])
+            else:
+                if self.check_save_avg.isChecked():
+                    logging.info("Average not saved: measuring in single frame mode")
+                if self.check_save_stack.isChecked():
+                    logging.info("Stack not saved: measuring in single frame mode")
+                key = 'raw_frame'
                 contents.append(key)
                 store[key] = pd.DataFrame(self.frame_processor.latest_raw_frame)
-            if self.check_save_stack.isChecked():
-                for i in range(self.frame_processor.raw_frame_stack.shape[0]):
-                    key = 'stack_' + str(i)
-                    contents.append(key)
-                    store[key] = pd.DataFrame(self.frame_processor.raw_frame_stack[i])
-        else:
-            if self.check_save_avg.isChecked():
-                logging.info("Average not saved: measuring in single frame mode")
-            if self.check_save_stack.isChecked():
-                logging.info("Stack not saved: measuring in single frame mode")
-            key = 'frame'
-            contents.append(key)
-            store[key] = pd.DataFrame(self.frame_processor.latest_raw_frame)
+
         if self.check_save_as_seen.isChecked():
+            key = 'as seen:'
             if self.button_toggle_averaging.isChecked():
-                if self.button_display_subtraction.isChecked():
-                    key = f'averaged({self.spin_foreground_averages.value()}) and subtracted'
-                else:
-                    key = f'averaged({self.spin_foreground_averages.value()})'
-            elif self.button_display_subtraction.isChecked():
-                key = 'subtracted'
-            else:
-                key = 'single'
+                key += f' averaged({self.spin_foreground_averages.value()}) '
+            if self.button_display_subtraction.isChecked() and not self.flickering:
+                key += ' subtracted'
+            if self.flickering:
+                key += ' difference image'
+            if key == 'as seen:':
+                key += ' single frame'
             meta_data['normalisation'] = f'type: {self.combo_normalisation_selector.currentText()} ' + \
                                          f'lower: {self.spin_percentile_lower.value()} ' + \
                                          f'upper: {self.spin_percentile_upper.value()} ' + \
                                          f'clip: {self.spin_clip.value()}'
             contents.append(key)
             store[key] = pd.DataFrame(self.frame_processor.latest_processed_frame)
+
         if self.check_save_background.isChecked():
             if self.frame_processor.background is not None:
                 key = 'background_avg'
@@ -1117,7 +1165,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         meta_data['contents'] = [contents]
         store['meta_data'] = pd.DataFrame(meta_data)
         store.close()
-        logging.info("Saving done.")
+        logging.info("Saving done. Contents: " + str(contents))
 
     def __on_save_single(self, event):
         # Assemble metadata
@@ -1136,7 +1184,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                              f'lower: {self.spin_percentile_lower.value()} ' +
                              f'upper: {self.spin_percentile_upper.value()} ' +
                              f'clip: {self.spin_clip.value()}',
-            'contents': 'frame_0'
+            'contents': 'frame_0',
         }
         if self.button_toggle_averaging.isChecked():
             if self.button_display_subtraction.isChecked():
@@ -1151,12 +1199,34 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         else:
             meta_data['type'] = 'single'
             meta_data['averages'] = 1
-        file_path = Path(self.line_directory.text()).joinpath(
-            datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
-                                                                                                          '_') + '.tiff')
+        match self.__get_magnet_mode():
+            case 0:
+                meta_data['magnet_mode'] = None
+            case 1:  # DC
+                meta_data['magnet_mode'] = 'DC'
+                meta_data['mag_field'] = self.mag_y[-1]
+                meta_data['coil_calib'] = self.combo_calib_file.currentText()
+            case 2:  # AC
+                meta_data['magnet_mode'] = 'AC'
+                meta_data['mag_field'] = self.mag_y[-1]
+                meta_data['mag_field_amp'] = self.spin_mag_amplitude.value()
+                meta_data['mag_field_freq'] = self.spin_mag_freq.value()
+                meta_data['mag_field_offset'] = self.spin_mag_offset.value()
+                meta_data['coil_calib'] = self.combo_calib_file.currentText()
+
+        file_path = Path(
+            self.line_directory.text()).joinpath(
+            datetime.now().strftime("%Y-%m-%d--%H-%M-%S") +
+            '_' +
+            self.line_prefix.text().strip().replace(' ', '_') +
+            '.tiff')
         # file_path.mkdir(parents=True, exist_ok=True)
 
-        tifffile.imwrite(str(file_path), self.latest_processed_frame, photometric='minisblack', metadata=meta_data)
+        tifffile.imwrite(
+            str(file_path),
+            self.frame_processor.latest_processed_frame.astype(np.uint16),
+            photometric='minisblack',
+            metadata=meta_data)
         logging.info("Saved file as " + str(file_path))
 
     def __on_browse(self, event):
