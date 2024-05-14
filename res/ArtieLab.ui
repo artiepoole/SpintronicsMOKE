@@ -1222,35 +1222,73 @@ All</string>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="button_toggle_averaging">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
+            <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <property name="spacing">
+              <number>0</number>
              </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>40</height>
-              </size>
+             <property name="rightMargin">
+              <number>0</number>
              </property>
-             <property name="maximumSize">
-              <size>
-               <width>200</width>
-               <height>120</height>
-              </size>
+             <property name="bottomMargin">
+              <number>0</number>
              </property>
-             <property name="text">
-              <string>Enable Averaging (F3)</string>
-             </property>
-             <property name="shortcut">
-              <string>F3</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-            </widget>
+             <item>
+              <widget class="QPushButton" name="button_toggle_averaging">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>200</width>
+                 <height>120</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Enable Averaging (F3)</string>
+               </property>
+               <property name="shortcut">
+                <string>F3</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QProgressBar" name="bar_averaging">
+               <property name="maximumSize">
+                <size>
+                 <width>10</width>
+                 <height>50</height>
+                </size>
+               </property>
+               <property name="value">
+                <number>100</number>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+               </property>
+               <property name="textVisible">
+                <bool>false</bool>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="format">
+                <string/>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
            <item>
             <widget class="QPushButton" name="button_pause_camera">

@@ -115,12 +115,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         # Program flow control
         self.flickering = False
-        self.averaging = False
         self.paused = False
         self.close_event = None
         self.get_background = False
         self.LED_control_all = False
         self.exposure_time = 0.05
+        self.roi = (0, 0, 0, 0)
 
         # Magnetic field calibration stuff
         if os.path.isfile('res/last_calibration_location.txt'):
@@ -156,7 +156,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                         QtCore.Qt.ConnectionType.QueuedConnection)
         self.start_time = time.time()
         self.image_timer.start(0)
-        self.plot_timer.start(100)
+        self.plot_timer.start(50)
         self.magnetic_field_timer.start(10)
 
     def __connect_signals(self):
@@ -285,7 +285,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             row=0,
             col=0,
             title="Intensity",
-            left="Intensity",
+            left="mean intensity",
             bottom="time (s)"
         )
         self.intensity_line = self.intensity_plot.plot(list(self.frame_processor.frame_times),
@@ -299,14 +299,25 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         )
         self.hist_line = self.hist_plot.plot(self.frame_processor.latest_hist_bins,
                                              self.frame_processor.latest_hist_data, pen="k")
-        self.frame_time_plot = self.plots_canvas.addPlot(
+        self.roi_plot = self.plots_canvas.addPlot(
             row=2,
             col=0,
-            title="FrameTimes",
-            left="frame time (ms)",
-            bottom="frame"
+            title="ROI Intensity",
+            left="mean intensity",
+            bottom="time (s)"
         )
-        self.frame_time_line = self.frame_time_plot.plot(list(self.frame_processor.frame_times), pen="k")
+        self.roi_line = self.roi_plot.plot([], [], pen="k")
+        self.roi_plot.hide()
+
+        self.line_profile_plot = self.plots_canvas.addPlot(
+            row=3,
+            col=0,
+            title="Line Profile",
+            left="intensity",
+            bottom="pixel index"
+        )
+        self.line_profile_line = self.line_profile_plot.plot([], [], pen="k")
+        self.line_profile_plot.hide()
 
         self.mag_plot_canvas = pg.GraphicsLayoutWidget()
         self.layout_mag_plot.addWidget(self.mag_plot_canvas)
@@ -353,26 +364,49 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         # self.frame_time_line.setData(np.diff(self.frame_processor.frame_times))
         if len(self.frame_processor.frame_times) > 1:
-            self.line_FPSdisplay.setText("%.3f" % np.mean(np.diff(self.frame_processor.frame_times)))
+            n_to_avg = min(10, self.frame_processor.frame_times.__len__())
+            self.line_FPSdisplay.setText(
+                "%.3f" % (1 / (np.mean(np.diff(np.array(self.frame_processor.frame_times)[-n_to_avg:]))))
+            )
+
+        length = min([self.frame_processor.frame_times.__len__(), self.frame_processor.roi_int_y.__len__()])
+        if sum(self.frame_processor.roi) > 0 and length > 0:
+            self.roi_line.setData(
+                np.array(self.frame_processor.frame_times)[-length:] - np.min(self.frame_processor.frame_times),
+                list(self.frame_processor.roi_int_y)[-length:]
+            )
 
         self.mag_line.setData(self.mag_t, self.mag_y)
 
-    def __update_images(self):
-        if self.frame_processor.latest_processed_frame.shape[0] != 1024:
-            logging.debug("Resizing frame to fit 1024 square")
-            cv2.imshow(
-                self.stream_window,
-                cv2.resize(
-                    self.frame_processor.latest_processed_frame.astype(np.uint16),
-                    (1024, 1024)
-                )
-            )
+        if self.frame_processor.averaging:
+            if self.flickering:
+                progress = (self.frame_processor.diff_frame_stack_a.shape[0] /
+                            self.spin_foreground_averages.value() * 100)
+            else:
+                progress = (self.frame_processor.raw_frame_stack.shape[0] /
+                            self.spin_foreground_averages.value() * 100)
+            self.bar_averaging.setValue(int(progress))
         else:
-            cv2.imshow(
-                self.stream_window,
-                self.frame_processor.latest_processed_frame.astype(np.uint16),
+            self.bar_averaging.setValue(0)
+
+    def __update_images(self):
+        frame = self.frame_processor.latest_processed_frame.astype(np.uint16)
+        if sum(self.frame_processor.roi) > 0:
+            x, y, w, h = self.frame_processor.roi
+            frame = cv2.rectangle(
+                frame,
+                (x, y),
+                (x + w, y + h),
+                color=(0,0,0),
+                thickness=1
             )
 
+        if frame.shape[0] != 1024:
+            frame = cv2.resize(
+                self.frame_processor.latest_processed_frame.astype(np.uint16),
+                (1024, 1024)
+            )
+        cv2.imshow(self.stream_window, frame)
         cv2.waitKey(1)
 
     def __update_field_measurement(self):
@@ -388,14 +422,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_reset_plots(self):
         self.mutex.lock()
-        self.frame_processor.frame_times = deque(maxlen=11)
+        self.frame_processor.frame_times = deque(maxlen=self.spin_number_of_points.value())
         self.frame_processor.intensities_y = deque(maxlen=self.spin_number_of_points.value())
+        self.frame_processor.roi_int_y = deque(maxlen=self.spin_number_of_points.value())
         self.mutex.unlock()
 
     def __on_change_plot_count(self, value):
         self.mutex.lock()
         self.frame_processor.frame_times = deque(self.frame_processor.frame_times, maxlen=value)
         self.frame_processor.intensities_y = deque(self.frame_processor.intensities_y, maxlen=value)
+        self.frame_processor.roi_int_y = deque(self.frame_processor.roi_int_y, maxlen=value)
         self.mutex.unlock()
 
     def __reset_pairs(self):
@@ -492,19 +528,35 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 # this is Adaptive EQ and needs a clip limit
 
     def __select_roi(self):
-        logging.warning("ROI plotting not implemented")
-        self.button_clear_roi.setEnabled(True)
-        pass
+        logging.info(
+            "Select a ROI and then press SPACE or ENTER button! \n Cancel the selection process by pressing c button")
+        self.image_timer.stop()
+
+        roi = cv2.selectROI(self.stream_window, self.frame_processor.latest_processed_frame.astype(np.uint16),
+                            showCrosshair=True)
+        print(roi)
+        if sum(roi) > 0:
+            self.frame_processor.roi = tuple([int(value * (2 / self.binning)) for value in roi])
+            self.roi_plot.show()
+            logging.info("ROI set to " + str(roi))
+            self.button_clear_roi.setEnabled(True)
+        self.image_timer.start(0)
 
     def __draw_line(self):
         logging.warning("Line profile not implemented")
         self.button_clear_line.setEnabled(True)
+        self.line_profile_plot.show()
+        # cv2.line
 
     def __on_clear_roi(self):
         self.button_clear_line.setEnabled(False)
+        self.frame_processor.roi = (0, 0, 0, 0)
+        self.frame_processor.roi_int_y = deque(maxlen=self.spin_number_of_points.value())
+        self.roi_plot.hide()
 
     def __on_clear_line(self):
         self.button_clear_line.setEnabled(False)
+        self.line_profile_plot.hide()
 
     def __disable_all_leds(self):
         logging.info("Disabling all LEDs")
@@ -794,6 +846,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
         self.frame_processor.background = None
         self.frame_processor.background_raw_stack = None
+        if sum(self.frame_processor.roi) > 0:
+            self.frame_processor.roi = tuple([int(value * (2 / self.binning)) for value in self.frame_processor.roi])
         self.mutex.unlock()
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
@@ -948,6 +1002,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.mutex.lock()
             self.frame_processor.averaging = self.spin_foreground_averages.value()
             self.frame_processor.averaging = True
+
             self.frame_processor.frame_counter = 0
             self.frame_processor.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
             self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
@@ -1325,7 +1380,7 @@ if __name__ == '__main__':
     sys.excepthook = my_exception_hook
 
     app = QtWidgets.QApplication(sys.argv)
-    app.setStyle('fusion')
+    app.setStyle('plastique')
     window = ArtieLabUI()
     try:
         sys.exit(app.exec_())

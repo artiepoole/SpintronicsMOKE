@@ -16,18 +16,18 @@ def numpy_rescale(image, low, high):
     px_high = np.int32(px_high)
     image[image < px_low] = px_low
     image[image > px_high] = px_high
-    return (image - px_low) * 63355 // (px_high - px_low)
+    return (image - px_low) * 65535 // (px_high - px_low)
 
 
 # Cast to int32 is twice as fast as cast to float64
 
 def numpy_equ(image):
     img_cdf, bin_centers = exposure.cumulative_distribution(image, nbins=100)
-    return (np.interp(image, bin_centers, img_cdf) * 63355).astype(np.int32)
+    return (np.interp(image, bin_centers, img_cdf) * 65535).astype(np.int32)
 
 
 def basic_exposure(image):
-    return image * (63355 // np.amax(image))
+    return (image * (65535 // np.amax(image))).astype(np.int32)
 
 
 class FrameProcessor(QtCore.QObject):
@@ -63,10 +63,13 @@ class FrameProcessor(QtCore.QObject):
     latest_hist_data = []
     latest_hist_bins = []
     intensities_y = deque(maxlen=100)
-    frame_times = deque(maxlen=11)
+    frame_times = deque(maxlen=100)
+    roi_int_y = deque(maxlen=100)
+
     averaging = False
     averages = 16
     mutex = QtCore.QMutex()
+    roi = (0, 0, 0, 0)
 
     def __init__(self, parent):
         super().__init__()
@@ -138,6 +141,10 @@ class FrameProcessor(QtCore.QObject):
                     self.latest_diff_frame_a, latest_diff_frame_data_a, self.latest_diff_frame_b, latest_diff_frame_data_b = item
                     self.intensities_y.append(np.mean(self.latest_diff_frame_a, axis=(0, 1)))
                     self.intensities_y.append(np.mean(self.latest_diff_frame_b, axis=(0, 1)))
+                    if sum(self.roi) > 0:
+                        x, w, y, h = [int(value * 2 / self.parent.binning) for value in self.roi]
+                        self.roi_int_y.append(np.mean(self.latest_diff_frame_a[y:y + h, x:x + w], axis=(0, 1)))
+                        self.roi_int_y.append(np.mean(self.latest_diff_frame_b[y:y + h, x:x + w], axis=(0, 1)))
                     self.frame_times.append(latest_diff_frame_data_a.timestamp_us * 1e-6)
                     self.frame_times.append(latest_diff_frame_data_b.timestamp_us * 1e-6)
                     if self.averaging:
@@ -179,6 +186,9 @@ class FrameProcessor(QtCore.QObject):
                     self.latest_raw_frame, latest_frame_data = item
                     self.mutex.lock()
                     self.intensities_y.append(np.mean(self.latest_raw_frame, axis=(0, 1)))
+                    if sum(self.roi) > 0:
+                        x, y, w, h = self.roi
+                        self.roi_int_y.append(np.mean(self.latest_raw_frame[y:y+h, x:x+w], axis=(0, 1)))
                     self.frame_times.append(latest_frame_data.timestamp_us * 1e-6)
                     self.mutex.unlock()
                     if self.averaging:

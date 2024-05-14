@@ -41,6 +41,7 @@ class CameraGrabber(QtCore.QObject):
         logging.info("Received exposure time:  %s", exposure_time)
         self.cam.set_attribute_value("EXPOSURE TIME", exposure_time)
         logging.info(f"setting exposure time to {exposure_time}")
+        logging.info(f"Camera exposure time read as {self.cam.get_exposure()}")
         logging.info("Camera ready")
         self.camera_ready.emit()
 
