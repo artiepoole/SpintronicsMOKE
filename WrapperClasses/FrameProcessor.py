@@ -23,7 +23,7 @@ def numpy_rescale(image, low, high):
 
 def numpy_equ(image):
     img_cdf, bin_centers = exposure.cumulative_distribution(image, nbins=100)
-    return (np.interp(image, bin_centers, img_cdf)*63355).astype(np.int32)
+    return (np.interp(image, bin_centers, img_cdf) * 63355).astype(np.int32)
 
 
 def basic_exposure(image):
@@ -39,6 +39,7 @@ class FrameProcessor(QtCore.QObject):
     IMAGE_PROCESSING_ADAPTEQ = 4
     frame_processed_signal = QtCore.pyqtSignal(np.ndarray, np.float64, tuple)
     diff_processed_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.float64, np.float64, tuple)
+    frame_processor_ready = QtCore.pyqtSignal()
     mode = 1
     p_low = 0
     p_high = 100
@@ -47,6 +48,7 @@ class FrameProcessor(QtCore.QObject):
     background = None
     background_raw_stack = None
     running = False
+    closing = False
     frame_counter = 0
     latest_raw_frame = None
     latest_mean_frame = None
@@ -139,10 +141,17 @@ class FrameProcessor(QtCore.QObject):
                     self.frame_times.append(latest_diff_frame_data_a.timestamp_us * 1e-6)
                     self.frame_times.append(latest_diff_frame_data_b.timestamp_us * 1e-6)
                     if self.averaging:
+                        if self.latest_diff_frame_a.shape[0] != self.diff_frame_stack_a.shape[1]:
+                            # This happens when changing binning mode with frames in the buffer.
+                            logging.warning("Latest frame is not correct shape. Discarding frame.")
+                            break
                         if self.frame_counter % self.averages < len(self.diff_frame_stack_a):
+                            # When the stack is full up to the number of averages, this overwrites the frames in memory.
+                            # This is more efficient than rolling or extending
                             self.diff_frame_stack_a[self.frame_counter % self.averages] = self.latest_diff_frame_a
                             self.diff_frame_stack_b[self.frame_counter % self.averages] = self.latest_diff_frame_b
                         else:
+                            # If the stack is not full, then this appends to the array.
                             self.diff_frame_stack_a = np.append(self.diff_frame_stack_a,
                                                                 np.expand_dims(self.latest_diff_frame_a, 0),
                                                                 axis=0)
@@ -150,6 +159,8 @@ class FrameProcessor(QtCore.QObject):
                                                                 np.expand_dims(self.latest_diff_frame_b, 0),
                                                                 axis=0)
                         if len(self.diff_frame_stack_a) > self.averages:
+                            # If the target number of averages is reduced then this code trims the stack to discard
+                            # excess frames.
                             self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
                             self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
                         self.frame_counter += 1
@@ -171,12 +182,21 @@ class FrameProcessor(QtCore.QObject):
                     self.frame_times.append(latest_frame_data.timestamp_us * 1e-6)
                     self.mutex.unlock()
                     if self.averaging:
+                        if self.latest_raw_frame.shape[0] != self.raw_frame_stack.shape[1]:
+                            # This happens when changing binning mode with frames in the buffer.
+                            logging.warning("Latest frame is not correct shape. Discarding frame.")
+                            break
                         if self.frame_counter % self.averages < len(self.raw_frame_stack):
+                            # When the stack is full up to the number of averages, this overwrites the frames in memory.
+                            # This is more efficient than rolling or extending
                             self.raw_frame_stack[self.frame_counter % self.averages] = self.latest_raw_frame
                         else:
+                            # If the stack is not full, then this appends to the array.
                             self.raw_frame_stack = np.append(self.raw_frame_stack,
                                                              np.expand_dims(self.latest_raw_frame, 0), axis=0)
                         if len(self.raw_frame_stack) > self.averages:
+                            # If the target number of averages is reduced then this code trims the stack to discard
+                            # excess frames.
                             self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
                         self.frame_counter += 1
                         self.latest_mean_frame = int_mean(self.raw_frame_stack, axis=0)
@@ -187,6 +207,8 @@ class FrameProcessor(QtCore.QObject):
                 else:
                     logging.warning('Frame processor received neither single frame nor difference frame')
         logging.info("Stopping Frame Processor")
+        if not self.closing:
+            self.frame_processor_ready.emit()  # This restarts the frame processor after binning mode changes.
 
 
 if __name__ == "__main__":

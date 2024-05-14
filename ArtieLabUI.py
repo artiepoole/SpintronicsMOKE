@@ -122,7 +122,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.LED_control_all = False
         self.exposure_time = 0.05
 
-
         # Magnetic field calibration stuff
         if os.path.isfile('res/last_calibration_location.txt'):
             with open('res/last_calibration_location.txt', 'r') as file:
@@ -160,7 +159,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.plot_timer.start(100)
         self.magnetic_field_timer.start(10)
 
-
     def __connect_signals(self):
         # LED controls
         self.button_left_led1.clicked.connect(self.__on_individual_led)
@@ -195,6 +193,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_draw_line.clicked.connect(self.__draw_line)
         self.button_clear_roi.clicked.connect(self.__on_clear_roi)
         self.button_clear_line.clicked.connect(self.__on_clear_line)
+        self.frame_processor.frame_processor_ready.connect(self.__on_frame_processor_ready)
 
         # Averaging controls
         self.button_measure_background.clicked.connect(self.__on_get_new_background)
@@ -353,8 +352,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         )
 
         # self.frame_time_line.setData(np.diff(self.frame_processor.frame_times))
-
-        self.line_FPSdisplay.setText("%.3f" % np.mean(np.diff(self.frame_processor.frame_times)))
+        if len(self.frame_processor.frame_times) > 1:
+            self.line_FPSdisplay.setText("%.3f" % np.mean(np.diff(self.frame_processor.frame_times)))
 
         self.mag_line.setData(self.mag_t, self.mag_y)
 
@@ -496,6 +495,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         logging.warning("ROI plotting not implemented")
         self.button_clear_roi.setEnabled(True)
         pass
+
     def __draw_line(self):
         logging.warning("Line profile not implemented")
         self.button_clear_line.setEnabled(True)
@@ -505,7 +505,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_clear_line(self):
         self.button_clear_line.setEnabled(False)
-
 
     def __disable_all_leds(self):
         logging.info("Disabling all LEDs")
@@ -786,6 +785,19 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                                 QtCore.Qt.ConnectionType.QueuedConnection)
                 logging.info("Camera grabber starting normal mode")
 
+    def __on_frame_processor_ready(self):
+        logging.info("Frame processor ready received")
+        self.mutex.lock()
+        self.frame_processor.frame_counter = 0
+        self.frame_processor.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        self.frame_processor.background = None
+        self.frame_processor.background_raw_stack = None
+        self.mutex.unlock()
+        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
+
     def __reset_after_flicker_mode(self):
         logging.info("Resetting after flicker mode")
         self.item_semaphore = QtCore.QSemaphore(0)
@@ -898,12 +910,33 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.camera_grabber.set_exposure_time(value)
             self.exposure_time = value
 
-
-
     def __on_binning_mode_changed(self, binning_idx):
-        logging.info("Binning mode changes not implemented yet.")
-        # TODO: Need to change the scale of the processed image to be super/subsampled to be 1024 square on screen
-        pass
+        match binning_idx:
+            case 0:
+                value = 1
+                dim = 2048
+            case 1:
+                value = 2
+                dim = 1024
+            case 2:
+                value = 4
+                dim = 512
+            case _:
+                logging.warning("Invalid Binning Mode!")
+                return
+        if value != self.binning:
+            logging.info(f"Attempting to set binning mode to {value}x{value}")
+            self.mutex.lock()
+            self.frame_processor.running = False
+            self.camera_grabber.waiting = True
+            self.camera_grabber.running = False
+            self.mutex.unlock()
+            self.camera_grabber.set_binning_mode(value)
+            self.binning = value
+
+            self.width = dim
+            self.height = dim
+            self.frame_processor.latest_processed_frame = np.zeros((dim, dim), dtype=np.uint16)
 
     def __on_average_changed(self, value):
         self.frame_processor.averages = value
@@ -1262,6 +1295,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.mutex.lock()
         self.camera_grabber.closing = True
         self.camera_grabber.running = False
+        self.frame_processor.closing = True
         self.frame_processor.running = False
         self.mutex.unlock()
         cv2.destroyAllWindows()

@@ -44,6 +44,19 @@ class CameraGrabber(QtCore.QObject):
         logging.info("Camera ready")
         self.camera_ready.emit()
 
+    @QtCore.pyqtSlot(int)
+    def set_binning_mode(self, binning=2):
+        '''
+        Resumes because is usually set via GUI
+        :param float binning: binning x binning mode.
+        :return:
+        '''
+        logging.info(f"Received binning mode:  {binning}x{binning}")
+        self.cam.set_roi(hbin=binning, vbin=binning)
+        logging.info(f"Set binning mode binning mode:  {binning}x{binning}")
+        logging.info("Camera ready")
+        self.camera_ready.emit()
+
     def _prepare_camera(self):
         '''
         Does not resume because is only used internally.
@@ -169,6 +182,7 @@ class CameraGrabber(QtCore.QObject):
                 self.parent.frame_buffer.append(frame_a + frame_b)
                 self.parent.item_semaphore.release()
                 logging.debug("Got difference frames")
+
 
 if __name__ == "__main__":
     import numpy as np
