@@ -120,6 +120,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.close_event = None
         self.get_background = False
         self.LED_control_all = False
+        self.exposure_time = 0.05
+
 
         # Magnetic field calibration stuff
         if os.path.isfile('res/last_calibration_location.txt'):
@@ -158,6 +160,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.plot_timer.start(100)
         self.magnetic_field_timer.start(10)
 
+
     def __connect_signals(self):
         # LED controls
         self.button_left_led1.clicked.connect(self.__on_individual_led)
@@ -188,6 +191,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spin_percentile_lower.valueChanged.connect(self.__on_image_processing_spin_box_change)
         self.spin_percentile_upper.valueChanged.connect(self.__on_image_processing_spin_box_change)
         self.spin_clip.valueChanged.connect(self.__on_image_processing_spin_box_change)
+        self.button_ROI_select.clicked.connect(self.__select_roi)
+        self.button_draw_line.clicked.connect(self.__draw_line)
+        self.button_clear_roi.clicked.connect(self.__on_clear_roi)
+        self.button_clear_line.clicked.connect(self.__on_clear_line)
 
         # Averaging controls
         self.button_measure_background.clicked.connect(self.__on_get_new_background)
@@ -195,7 +202,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spin_foreground_averages.valueChanged.connect(self.__on_average_changed)
 
         # Camera Controls
-        self.combo_targetfps.currentIndexChanged.connect(self.__on_exposure_time_changed)
+        # self.combo_targetfps.currentIndexChanged.connect(self.__on_exposure_time_changed)
+        self.spin_exposure_time.editingFinished.connect(self.__on_exposure_time_changed)
         self.combo_binning.currentIndexChanged.connect(self.__on_binning_mode_changed)
         self.button_pause_camera.clicked.connect(self.__on_pause_button)
         self.button_display_subtraction.clicked.connect(self.__on_show_subtraction)
@@ -344,7 +352,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.latest_hist_data
         )
 
-        self.frame_time_line.setData(np.diff(self.frame_processor.frame_times))
+        # self.frame_time_line.setData(np.diff(self.frame_processor.frame_times))
+
+        self.line_FPSdisplay.setText("%.3f" % np.mean(np.diff(self.frame_processor.frame_times)))
 
         self.mag_line.setData(self.mag_t, self.mag_y)
 
@@ -379,7 +389,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_reset_plots(self):
         self.mutex.lock()
-        self.frame_processor.frame_times = deque(maxlen=self.spin_number_of_points.value())
+        self.frame_processor.frame_times = deque(maxlen=11)
         self.frame_processor.intensities_y = deque(maxlen=self.spin_number_of_points.value())
         self.mutex.unlock()
 
@@ -481,6 +491,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.spin_clip.setEnabled(True)
                 self.frame_processor.set_clip_limit(self.spin_clip.value())
                 # this is Adaptive EQ and needs a clip limit
+
+    def __select_roi(self):
+        logging.warning("ROI plotting not implemented")
+        self.button_clear_roi.setEnabled(True)
+        pass
+    def __draw_line(self):
+        logging.warning("Line profile not implemented")
+        self.button_clear_line.setEnabled(True)
+
+    def __on_clear_roi(self):
+        self.button_clear_line.setEnabled(False)
+
+    def __on_clear_line(self):
+        self.button_clear_line.setEnabled(False)
+
 
     def __disable_all_leds(self):
         logging.info("Disabling all LEDs")
@@ -862,30 +887,18 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_grabber.running = False
         self.mutex.unlock()
 
-    def __on_exposure_time_changed(self, exposure_time_idx):
-        logging.info("Attempting to set exposure time to: %s", exposure_time_idx)
-        self.mutex.lock()
-        self.camera_grabber.waiting = True
-        self.camera_grabber.running = False
-        self.mutex.unlock()
+    def __on_exposure_time_changed(self):
+        value = self.spin_exposure_time.value()
+        if value != self.exposure_time:
+            logging.info("Attempting to set exposure time to: %s", value)
+            self.mutex.lock()
+            self.camera_grabber.waiting = True
+            self.camera_grabber.running = False
+            self.mutex.unlock()
+            self.camera_grabber.set_exposure_time(value)
+            self.exposure_time = value
 
-        match exposure_time_idx:
-            case 0:  # 20fps
-                QtCore.QMetaObject.invokeMethod(
-                    self.camera_grabber, "set_exposure_time",
-                    QtCore.Qt.ConnectionType.QueuedConnection,
-                    QtCore.Q_ARG(int, 1 / 20)
-                )
-                self.lamp_controller.frame_rate = 20
-            case 1:  # 30fps
-                QtCore.QMetaObject.invokeMethod(
-                    self.camera_grabber, "set_exposure_time",
-                    QtCore.Qt.ConnectionType.QueuedConnection,
-                    QtCore.Q_ARG(int, 1 / 30)
-                )
-                self.lamp_controller.frame_rate = 30
-            case _:
-                logging.warning(f"Unexpected exposure time setting")
+
 
     def __on_binning_mode_changed(self, binning_idx):
         logging.info("Binning mode changes not implemented yet.")
@@ -1051,7 +1064,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'binnning': self.combo_binning.currentText(),
             'lens': self.combo_lens.currentText(),
             'magnification': self.combo_magnification.currentText(),
-            'target fps': self.combo_targetfps.currentText(),
+            'exposure_time': self.spin_exposure_time.value(),
             'correction': self.line_correction.text(),
             'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
@@ -1177,7 +1190,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'binnning': self.combo_binning.currentText(),
             'lens': self.combo_lens.currentText(),
             'magnification': self.combo_magnification.currentText(),
-            'target fps': self.combo_targetfps.currentText(),
+            'exposure_time': self.spin_exposure_time.value(),
             'correction': self.line_correction.text(),
             'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'normalisation': f'type: {self.combo_normalisation_selector.currentText()} ' +

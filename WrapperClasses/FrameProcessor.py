@@ -61,7 +61,7 @@ class FrameProcessor(QtCore.QObject):
     latest_hist_data = []
     latest_hist_bins = []
     intensities_y = deque(maxlen=100)
-    frame_times = deque(maxlen=100)
+    frame_times = deque(maxlen=11)
     averaging = False
     averages = 16
     mutex = QtCore.QMutex()

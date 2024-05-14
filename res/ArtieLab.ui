@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1466</width>
+    <width>1482</width>
     <height>826</height>
    </rect>
   </property>
@@ -1637,27 +1637,8 @@ QWidget{background-color: rgb(255,255,255)}</string>
                 </size>
                </property>
                <property name="text">
-                <string>Target FPS</string>
+                <string>Exp. Time (s)</string>
                </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QComboBox" name="combo_targetfps">
-               <property name="styleSheet">
-                <string notr="true">QComboBox{color: rgb(0,0,0)}
-
-QWidget{background-color: rgb(255,255,255)}</string>
-               </property>
-               <item>
-                <property name="text">
-                 <string>20 (50ms)</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>30 (33ms)</string>
-                </property>
-               </item>
               </widget>
              </item>
              <item row="2" column="2">
@@ -1785,13 +1766,37 @@ QWidget{background-color: rgb(255,255,255)}</string>
                </property>
               </widget>
              </item>
+             <item row="3" column="1">
+              <widget class="QDoubleSpinBox" name="spin_exposure_time">
+               <property name="styleSheet">
+                <string notr="true">QComboBox{color: rgb(0,0,0)}
+
+QWidget{background-color: rgb(255,255,255)}</string>
+               </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="minimum">
+                <double>0.003000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+               <property name="value">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
           </layout>
          </item>
          <item row="2" column="1">
           <layout class="QGridLayout" name="gridLayout_5">
-           <item row="0" column="1">
+           <item row="0" column="0">
             <widget class="QPushButton" name="button_ROI_select">
              <property name="minimumSize">
               <size>
@@ -1804,21 +1809,8 @@ QWidget{background-color: rgb(255,255,255)}</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="0">
-            <widget class="QPushButton" name="button_planar_subtraction">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Planar Subtraction?</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="pushButton">
+           <item row="1" column="0">
+            <widget class="QPushButton" name="button_draw_line">
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -1827,6 +1819,26 @@ QWidget{background-color: rgb(255,255,255)}</string>
              </property>
              <property name="text">
               <string>Draw Line</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="button_clear_roi">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Clear ROI</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="button_clear_line">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Clear Line</string>
              </property>
             </widget>
            </item>
