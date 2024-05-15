@@ -40,6 +40,12 @@
       </property>
       <item row="0" column="0">
        <widget class="QFrame" name="FRAME_LEDCONTROL">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="styleSheet">
          <string notr="true">background-color: rgba(239,239,239,1)</string>
         </property>
@@ -133,7 +139,7 @@
              <property name="icon">
               <iconset>
                <normaloff>icons/trans_and_pol_off.png</normaloff>
-               <normalon>icons/trans_and_pol_on.png</normalon>icons/trans_and_pol_off.png</iconset>
+               <normalon>icons/long_and_trans_and_pol_on.png</normalon>icons/trans_and_pol_off.png</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -892,8 +898,44 @@ All</string>
            </layout>
           </widget>
          </item>
-         <item row="4" column="0">
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QFrame" name="LOGGINGFRAME">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgba(239,239,239,1)</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Panel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <layout class="QVBoxLayout" name="LOGGINGPART">
+         <property name="leftMargin">
+          <number>10</number>
+         </property>
+         <property name="topMargin">
+          <number>10</number>
+         </property>
+         <property name="rightMargin">
+          <number>10</number>
+         </property>
+         <property name="bottomMargin">
+          <number>10</number>
+         </property>
+         <item>
           <widget class="QFrame" name="FRAME_LOGGING">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="autoFillBackground">
             <bool>false</bool>
            </property>
@@ -1016,7 +1058,7 @@ All</string>
            </property>
            <property name="icon">
             <iconset>
-             <normaloff>icons/saveicon.png</normaloff>icons/saveicon.png</iconset>
+             <normaloff>icons/snap_icon.png</normaloff>icons/snap_icon.png</iconset>
            </property>
           </widget>
          </item>
@@ -1027,7 +1069,7 @@ All</string>
            </property>
            <property name="icon">
             <iconset>
-             <normaloff>icons/saveicon.png</normaloff>icons/saveicon.png</iconset>
+             <normaloff>icons/stack_icon.png</normaloff>icons/stack_icon.png</iconset>
            </property>
           </widget>
          </item>
@@ -1272,7 +1314,7 @@ All</string>
                 </size>
                </property>
                <property name="value">
-                <number>100</number>
+                <number>0</number>
                </property>
                <property name="alignment">
                 <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
@@ -1893,7 +1935,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
        </widget>
       </item>
       <item>
-       <widget class="QFrame" name="FRAME_MAGCONTROL">
+       <widget class="QFrame" name="gridFrame">
         <property name="styleSheet">
          <string notr="true">background-color: rgba(239,239,239,1)</string>
         </property>
@@ -1901,7 +1943,83 @@ QWidget{background-color: rgb(255,255,255)}</string>
          <enum>QFrame::Panel</enum>
         </property>
         <property name="frameShadow">
-         <enum>QFrame::Sunken</enum>
+         <enum>QFrame::Raised</enum>
+        </property>
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <layout class="QGridLayout" name="LAYOUTSPECIALFUNCS">
+         <property name="leftMargin">
+          <number>10</number>
+         </property>
+         <property name="topMargin">
+          <number>10</number>
+         </property>
+         <property name="rightMargin">
+          <number>10</number>
+         </property>
+         <property name="bottomMargin">
+          <number>10</number>
+         </property>
+         <item row="1" column="0">
+          <layout class="QHBoxLayout" name="LAYOUTSPECFUNCBUTTONS">
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QToolButton" name="button_hyst_sweep">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Hystersis Sweep</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="button_analy_sweep">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Analyser Sweep</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Special Functions</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="FRAME_MAGCONTROL">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgba(239,239,239,1)</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Panel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
         </property>
         <property name="lineWidth">
          <number>3</number>

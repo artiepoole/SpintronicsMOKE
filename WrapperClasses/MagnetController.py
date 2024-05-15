@@ -9,8 +9,8 @@ from math import log10, floor
 class MagnetController:
     def __init__(self, reset=False):
         """
-        :param bool reset: Choose whether to reset the DAQ card or not. Because LampController and MagnetController are
-        both using the same DAQ device, this should only be true for the first of these two objects to be created.
+        :param bool reset: Choose whether to reset the DAQ card or not. Because DAQ based controllers are
+        all using the same DAQ device, this should only be true for the first of these two objects to be created.
         """
         self.sample_rate = 1000
         self.frequency = 0.01

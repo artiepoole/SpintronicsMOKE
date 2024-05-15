@@ -7,29 +7,25 @@ import logging
 
 
 class CameraGrabber(QtCore.QObject):
-    logging.info("CameraGrabber: Initializing CameraGrabber...")
-    frame_ready_signal = QtCore.pyqtSignal(np.ndarray)
-    difference_frame_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
-    # difference_frame_stack_ready = QtCore.pyqtSignal(tuple, int)
-    # frame_stack_from_camera_ready_signal = QtCore.pyqtSignal(np.ndarray, int)
-    quit_ready = QtCore.pyqtSignal()
-    camera_ready = QtCore.pyqtSignal()
-    cam = DCAM.DCAMCamera(idx=0)
-    exposure_time = 0.05
-    cam.set_trigger_mode('int')
-    cam.set_attribute_value("EXPOSURE TIME", exposure_time)
-    # self.print_to_queue(self.cam.info)
-    binning = 2
-    cam.set_roi(hbin=binning, vbin=binning)
-    running = False
-    waiting = False
-    closing = False
-    difference_mode = False
-    mutex = QtCore.QMutex()
-
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
+        logging.info("CameraGrabber: Initializing CameraGrabber...")
+        self.frame_ready_signal = QtCore.pyqtSignal(np.ndarray)
+        self.difference_frame_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+        self.quit_ready = QtCore.pyqtSignal()
+        self.camera_ready = QtCore.pyqtSignal()
+        self.cam = DCAM.DCAMCamera(idx=0)
+        exposure_time = 0.05
+        self.cam.set_trigger_mode('int')
+        self.cam.set_attribute_value("EXPOSURE TIME", exposure_time)
+        binning = 2
+        self.cam.set_roi(hbin=binning, vbin=binning)
+        self.running = False
+        self.waiting = False
+        self.closing = False
+        self.difference_mode = False
+        self.mutex = QtCore.QMutex()
 
     @QtCore.pyqtSlot(int)
     def set_exposure_time(self, exposure_time):
@@ -73,6 +69,8 @@ class CameraGrabber(QtCore.QObject):
         else:
             logging.info("CameraGrabber: Setting camera trigger mode to internal")
             self.cam.set_trigger_mode('int')
+        self.cam.setup_acquisition()
+        self.cam.start_acquisition()
 
     def get_detector_size(self):
         return self.cam.get_detector_size()
@@ -81,7 +79,7 @@ class CameraGrabber(QtCore.QObject):
         return self.cam.get_data_dimensions()
 
     def snap(self):
-        self.frame_ready_signal.emit(self.cam.snap())
+        return self.cam.snap()
 
     def grab_n_frames(self, n_frames):
         prev_mode = self.difference_mode
@@ -99,10 +97,7 @@ class CameraGrabber(QtCore.QObject):
         self.waiting = False
         self.difference_mode = False
         self.mutex.unlock()
-
         self._prepare_camera()
-        self.cam.setup_acquisition()
-        self.cam.start_acquisition()
         logging.info("Camera started in normal mode")
         while self.running:
             got_space = self.parent.spaces_semaphore.tryAcquire(1, 1)
@@ -133,8 +128,6 @@ class CameraGrabber(QtCore.QObject):
         self.mutex.unlock()
 
         self._prepare_camera()
-        self.cam.setup_acquisition()
-        self.cam.start_acquisition()
         logging.info("Camera started in live difference mode")
         self.diff_mode_acq_loop()
         self.cam.stop_acquisition()
@@ -187,6 +180,8 @@ class CameraGrabber(QtCore.QObject):
 
 if __name__ == "__main__":
     import numpy as np
+    import cv2
+    import skimage.exposure as exposure
 
     camera_grabber = CameraGrabber(None)
 
@@ -195,6 +190,22 @@ if __name__ == "__main__":
     # camera_grabber.cam.set_attribute_value('TRIGGER ACTIVE', 1)  # Edge
     # camera_grabber.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
     # camera_grabber.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
-    print(camera_grabber.cam.get_data_dimensions())
-
-    frames = camera_grabber.grab_n_frames(16)
+    camera_grabber._prepare_camera()
+    while True:
+        frame = camera_grabber.snap()
+        cv2.imshow(
+            '',
+            cv2.putText(
+                exposure.equalize_hist(frame),
+                f'{np.mean(frame, axis=(0, 1))}',
+                (50, 50),
+                0,
+                1,
+                (255, 255, 255)
+            )
+        )
+        key = cv2.waitKey(50)
+        if key == 27:
+            print('esc is pressed closing all windows')
+            cv2.destroyAllWindows()
+            break
