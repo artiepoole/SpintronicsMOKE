@@ -54,7 +54,7 @@ class CameraGrabber(QtCore.QObject):
         logging.info("Camera ready")
         self.camera_ready.emit()
 
-    def _prepare_camera(self):
+    def prepare_camera(self):
         '''
         Does not resume because is only used internally.
         :return:
@@ -84,7 +84,7 @@ class CameraGrabber(QtCore.QObject):
     def grab_n_frames(self, n_frames):
         prev_mode = self.difference_mode
         self.difference_mode = False
-        self._prepare_camera()
+        self.prepare_camera()
         frames = np.array(self.cam.grab(n_frames), dtype='int32')
         self.difference_mode = prev_mode
         return frames
@@ -97,7 +97,7 @@ class CameraGrabber(QtCore.QObject):
         self.waiting = False
         self.difference_mode = False
         self.mutex.unlock()
-        self._prepare_camera()
+        self.prepare_camera()
         logging.info("Camera started in normal mode")
         while self.running:
             got_space = self.parent.spaces_semaphore.tryAcquire(1, 1)
@@ -127,7 +127,7 @@ class CameraGrabber(QtCore.QObject):
         self.difference_mode = True
         self.mutex.unlock()
 
-        self._prepare_camera()
+        self.prepare_camera()
         logging.info("Camera started in live difference mode")
         self.diff_mode_acq_loop()
         self.cam.stop_acquisition()
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     # camera_grabber.cam.set_attribute_value('TRIGGER ACTIVE', 1)  # Edge
     # camera_grabber.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
     # camera_grabber.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
-    camera_grabber._prepare_camera()
+    camera_grabber.prepare_camera()
     while True:
         frame = camera_grabber.snap()
         cv2.imshow(

@@ -23,7 +23,7 @@ plot_line, = ax.plot(positions, intensities, 'kx')
 position = 0
 steps_per_frame = 1000
 
-camera_grabber._prepare_camera()
+camera_grabber.prepare_camera()
 running = True
 while running:
     frame = camera_grabber.snap()
