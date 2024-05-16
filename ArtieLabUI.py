@@ -402,13 +402,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 frame,
                 (x, y),
                 (x + w, y + h),
-                color=(0,0,0),
-                thickness=1
+                color=(0, 0, 0),
+                thickness=2
             )
-
         if frame.shape[0] != 1024:
             frame = cv2.resize(
-                self.frame_processor.latest_processed_frame.astype(np.uint16),
+                frame,
                 (1024, 1024)
             )
         cv2.imshow(self.stream_window, frame)
@@ -541,10 +540,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                             showCrosshair=True)
         print(roi)
         if sum(roi) > 0:
-            self.frame_processor.roi = tuple([int(value * (2 / self.binning)) for value in roi])
+            # self.frame_processor.roi = tuple([int(value * (2 / self.binning)) for value in roi])
+            self.frame_processor.roi = roi
             self.roi_plot.show()
             logging.info("ROI set to " + str(roi))
             self.button_clear_roi.setEnabled(True)
+        logging.info(f'Binning mode: {self.binning}, roi: {self.frame_processor.roi}')
         self.image_timer.start(0)
 
     def __draw_line(self):
@@ -851,8 +852,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
         self.frame_processor.background = None
         self.frame_processor.background_raw_stack = None
-        if sum(self.frame_processor.roi) > 0:
-            self.frame_processor.roi = tuple([int(value * (2 / self.binning)) for value in self.frame_processor.roi])
         self.mutex.unlock()
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
@@ -984,6 +983,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 logging.warning("Invalid Binning Mode!")
                 return
         if value != self.binning:
+            old_binning = self.binning
+            self.binning = value
             logging.info(f"Attempting to set binning mode to {value}x{value}")
             self.mutex.lock()
             self.frame_processor.running = False
@@ -991,8 +992,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.camera_grabber.running = False
             self.mutex.unlock()
             self.camera_grabber.set_binning_mode(value)
-            self.binning = value
-
+            if sum(self.frame_processor.roi) > 0:
+                self.frame_processor.roi = tuple(
+                    [int(value * (old_binning / self.binning)) for value in self.frame_processor.roi])
+                logging.info(f'Binning mode: {self.binning}, roi: {self.frame_processor.roi}')
             self.width = dim
             self.height = dim
             self.frame_processor.latest_processed_frame = np.zeros((dim, dim), dtype=np.uint16)
@@ -1154,7 +1157,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __rotate_analyser_backward(self):
         amount = -self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
-
 
     def __on_save(self, event):
         meta_data = {
