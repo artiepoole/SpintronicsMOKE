@@ -72,7 +72,7 @@
           <number>10</number>
          </property>
          <item row="0" column="0">
-          <widget class="QLabel" name="label_15">
+          <widget class="QLabel" name="label_ledframe">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -702,7 +702,7 @@ border:  none;</string>
                <number>0</number>
               </property>
               <item>
-               <spacer name="verticalSpacer">
+               <spacer name="spacer_equaliseblocktop">
                 <property name="orientation">
                  <enum>Qt::Vertical</enum>
                 </property>
@@ -838,7 +838,7 @@ All</string>
                </widget>
               </item>
               <item>
-               <spacer name="verticalSpacer_3">
+               <spacer name="spacer_equaliseblockbot">
                 <property name="orientation">
                  <enum>Qt::Vertical</enum>
                 </property>
@@ -853,7 +853,7 @@ All</string>
              </layout>
             </item>
             <item>
-             <layout class="QVBoxLayout" name="verticalLayout_2">
+             <layout class="QVBoxLayout" name="layout_brightness_slider">
               <property name="rightMargin">
                <number>0</number>
               </property>
@@ -1074,7 +1074,7 @@ All</string>
           </widget>
          </item>
          <item row="0" column="0">
-          <widget class="QLabel" name="label_12">
+          <widget class="QLabel" name="label_saving_frame">
            <property name="text">
             <string>Saving Control</string>
            </property>
@@ -1264,7 +1264,7 @@ All</string>
             </widget>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <layout class="QHBoxLayout" name="layout_avgbuttonandbar">
              <property name="spacing">
               <number>0</number>
              </property>
@@ -1875,7 +1875,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
           </layout>
          </item>
          <item row="2" column="1">
-          <layout class="QGridLayout" name="gridLayout_5">
+          <layout class="QGridLayout" name="layout_ROI_buttons">
            <item row="0" column="0">
             <widget class="QPushButton" name="button_ROI_select">
              <property name="minimumSize">
@@ -1925,7 +1925,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
           </layout>
          </item>
          <item row="0" column="0">
-          <widget class="QLabel" name="label_13">
+          <widget class="QLabel" name="label_camframe">
            <property name="text">
             <string>Camera and Image Control</string>
            </property>
@@ -1961,6 +1961,13 @@ QWidget{background-color: rgb(255,255,255)}</string>
          <property name="bottomMargin">
           <number>10</number>
          </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_spec_funcs">
+           <property name="text">
+            <string>Special Functions</string>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="0">
           <layout class="QHBoxLayout" name="LAYOUTSPECFUNCBUTTONS">
            <property name="bottomMargin">
@@ -1969,37 +1976,121 @@ QWidget{background-color: rgb(255,255,255)}</string>
            <item>
             <widget class="QToolButton" name="button_hyst_sweep">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="maximumSize">
+              <size>
+               <width>120</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="text">
               <string>Hystersis Sweep</string>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>icons/hyst_icon.png</normaloff>icons/hyst_icon.png</iconset>
+             </property>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonTextBesideIcon</enum>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QToolButton" name="button_analy_sweep">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="maximumSize">
+              <size>
+               <width>120</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="text">
               <string>Analyser Sweep</string>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>icons/analyser_icon.png</normaloff>icons/analyser_icon.png</iconset>
+             </property>
+             <property name="popupMode">
+              <enum>QToolButton::DelayedPopup</enum>
+             </property>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonTextBesideIcon</enum>
+             </property>
+             <property name="autoRaise">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="spacer_specfuncs">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_analyser">
+             <property name="maximumSize">
+              <size>
+               <width>75</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Amount (°)</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="spin_analyser_move_amount">
+             <property name="maximumSize">
+              <size>
+               <width>50</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <double>0.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>10.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.100000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="button_move_analyser_back">
+             <property name="text">
+              <string>backward</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="button_move_analyser_for">
+             <property name="text">
+              <string>forward</string>
              </property>
             </widget>
            </item>
           </layout>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Special Functions</string>
-           </property>
-          </widget>
          </item>
         </layout>
        </widget>
@@ -2038,19 +2129,19 @@ QWidget{background-color: rgb(255,255,255)}</string>
           <number>10</number>
          </property>
          <item row="7" column="0">
-          <layout class="QVBoxLayout" name="verticalLayout">
+          <layout class="QVBoxLayout" name="layout_magmeasframe">
            <property name="bottomMargin">
             <number>0</number>
            </property>
            <item>
-            <widget class="QLabel" name="label_7">
+            <widget class="QLabel" name="label_magmeas">
              <property name="text">
               <string>Field Measurement</string>
              </property>
             </widget>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <layout class="QHBoxLayout" name="layout_magmeas">
              <property name="bottomMargin">
               <number>0</number>
              </property>
@@ -2107,7 +2198,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_3">
+              <spacer name="spacer_magmeas">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
                </property>
@@ -2430,7 +2521,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
           </layout>
          </item>
          <item row="0" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <layout class="QHBoxLayout" name="layout_magcontrollabel">
            <property name="bottomMargin">
             <number>0</number>
            </property>
@@ -2475,7 +2566,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
        </widget>
       </item>
       <item>
-       <spacer name="verticalSpacer_2">
+       <spacer name="spacer_middle">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
         </property>
