@@ -125,7 +125,7 @@ class AnalyserController:
                     move_degrees = 0.1
                     logging.info(f"Moving backward to find minimum")
                 break
-        target = open("movement log.txt", "w")
+
         searching = True
         while searching:
             self.move(move_degrees)
@@ -134,13 +134,10 @@ class AnalyserController:
             intensities.append(intensity)
             logging.debug(f"intensity: {intensity} at position {self.position_in_degrees} deg")
             positions.append(self.position_in_degrees)
-            target.write(f'{self.position_in_degrees}\t{intensity}\n')
-            target.flush()
             if intensities[-1]-intensities[-2] > 0:
-                # This should only occur when leaving the minimum so the analyser will return by half a step to
+                # This should only occur when going past the minimum so the analyser will return by half a step to
                 # estimate the minimum position. This could be done using interpolation
                 self.move(-0.5*move_degrees)
-                target.close()
                 return
 
     def close(self, reset=False):
