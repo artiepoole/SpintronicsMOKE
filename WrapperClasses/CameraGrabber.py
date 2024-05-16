@@ -7,14 +7,15 @@ import logging
 
 
 class CameraGrabber(QtCore.QObject):
+    frame_ready_signal = QtCore.pyqtSignal(np.ndarray)
+    difference_frame_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+    quit_ready = QtCore.pyqtSignal()
+    camera_ready = QtCore.pyqtSignal()
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
         logging.info("CameraGrabber: Initializing CameraGrabber...")
-        self.frame_ready_signal = QtCore.pyqtSignal(np.ndarray)
-        self.difference_frame_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
-        self.quit_ready = QtCore.pyqtSignal()
-        self.camera_ready = QtCore.pyqtSignal()
+
         self.cam = DCAM.DCAMCamera(idx=0)
         exposure_time = 0.05
         self.cam.set_trigger_mode('int')
