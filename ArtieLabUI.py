@@ -99,6 +99,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Create controller objects and threads
         self.lamp_controller = LampController(reset=True)
         self.magnet_controller = MagnetController()
+        self.analyser_controller = AnalyserController()
         self.lamp_controller.disable_all()
 
         self.frame_processor = FrameProcessor(self)
@@ -227,6 +228,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_DC_field.clicked.connect(self.__on_DC_field)
         self.button_AC_field.clicked.connect(self.__on_AC_field)
         self.button_invert_field.clicked.connect(self.__on_invert_field)
+
+        # Analyser Controls
+        self.button_move_analyser_back.clicked.connect(self.__rotate_analyser_backward)
+        self.button_move_analyser_for.clicked.connect(self.__rotate_analyser_forward)
 
         # Plot controls
         self.magnetic_field_timer.timeout.connect(self.__update_field_measurement)
@@ -1142,6 +1147,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.magnet_controller.set_target_field(self.spin_mag_amplitude.value())
             self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
 
+    def __rotate_analyser_forward(self):
+        amount = self.spin_analyser_move_amount.value()
+        self.analyser_controller.move(amount)
+
+    def __rotate_analyser_backward(self):
+        amount = -self.spin_analyser_move_amount.value()
+        self.analyser_controller.move(amount)
+
+
     def __on_save(self, event):
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
@@ -1346,7 +1360,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.magnetic_field_timer.stop()
         # time.sleep(0.1)
         self.lamp_controller.close(reset=False)
-        self.magnet_controller.close(reset=True)
+        self.magnet_controller.close(reset=False)
+        self.analyser_controller.close(reset=True)
         self.mutex.lock()
         self.camera_grabber.closing = True
         self.camera_grabber.running = False
