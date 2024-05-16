@@ -21,6 +21,7 @@ import numpy as np
 from PyQt5 import QtCore, QtWidgets, uic
 
 import logging
+from logging.handlers import RotatingFileHandler
 
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
@@ -31,6 +32,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Loads the UI file and sets it to full screen
         super(ArtieLabUI, self).__init__()
         uic.loadUi('res/ArtieLab.ui', self)
+        self.__prepare_logging()
         right_monitor = QtWidgets.QDesktopWidget().screenGeometry(1)
         self.move(right_monitor.left(), right_monitor.top())
 
@@ -141,7 +143,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.__populate_calibration_combobox(self.calib_file_dir)
 
-        self.__prepare_logging()
         self.__connect_signals()
         self.__prepare_views()
 
@@ -192,6 +193,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spin_clip.valueChanged.connect(self.__on_image_processing_spin_box_change)
         self.button_ROI_select.clicked.connect(self.__select_roi)
         self.button_draw_line.clicked.connect(self.__draw_line)
+        self.button_flip_line.clicked.connect(self.__on_flip_line)
         self.button_clear_roi.clicked.connect(self.__on_clear_roi)
         self.button_clear_line.clicked.connect(self.__on_clear_line)
         self.frame_processor.frame_processor_ready.connect(self.__on_frame_processor_ready)
@@ -240,14 +242,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spin_number_of_points.valueChanged.connect(self.__on_change_plot_count)
         self.spin_mag_point_count.valueChanged.connect(self.__on_change_mag_plot_count)
         self.button_reset_plots.clicked.connect(self.__on_reset_plots)
-        # TODO: Add planar subtraction
-        # TODO: Add ROI
+
         # TODO: Add Draw Line feature
-        # TODO: Add brightness normalisation
-        # TODO: binning mode change handling#
-        # TODO: Add plot of intensity
-        # TODO: Add change the number of frames
-        # TODO: Add histogram plot
 
     def __prepare_logging(self):
         self.log_text_box = QTextEditLogger(self)
@@ -255,10 +251,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             logging.Formatter('%(asctime)s %(levelname)s %(module)s - %(message)s', "%H:%M:%S"))
         logging.getLogger().addHandler(self.log_text_box)
         logging.getLogger().setLevel(logging.INFO)
-        # TODO: this layout_logging might be under FRAME_LOGGING.layout or similar because I morphed the layout into a frame.
         self.layout_logging.addWidget(self.log_text_box.widget)
 
-        fh = logging.FileHandler('ArtieLabUI.log')
+        fh = RotatingFileHandler('ArtieLabUI.log',
+                                 mode='a',
+                                 maxBytes=1024 * 1024,
+                                 backupCount=1,
+                                 encoding=None,
+                                 delay=False,
+                                 errors=None
+                                 )
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(
             logging.Formatter(
@@ -311,7 +313,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             left="mean intensity",
             bottom="time (s)"
         )
-        self.roi_line = self.roi_plot.plot([], [], pen="k")
+        self.roi_line = self.roi_plot.plot([], pen="k")
         self.roi_plot.hide()
 
         self.line_profile_plot = self.plots_canvas.addPlot(
@@ -381,6 +383,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 list(self.frame_processor.roi_int_y)[-length:]
             )
 
+        if self.frame_processor.line_coords is not None and len(self.frame_processor.latest_profile) > 0:
+            self.line_profile_line.setData(
+                self.frame_processor.latest_profile
+            )
+
         self.mag_line.setData(self.mag_t, self.mag_y)
 
         if self.frame_processor.averaging:
@@ -405,11 +412,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 color=(0, 0, 0),
                 thickness=2
             )
-        if frame.shape[0] != 1024:
-            frame = cv2.resize(
+        if self.frame_processor.line_coords is not None:
+            start, end = self.frame_processor.line_coords
+            frame = cv2.arrowedLine(
                 frame,
-                (1024, 1024)
+                start[::-1],
+                end[::-1],
+                color=(0, 0, 0),
+                thickness=2
             )
+
         cv2.imshow(self.stream_window, frame)
         cv2.waitKey(1)
 
@@ -535,9 +547,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         logging.info(
             "Select a ROI and then press SPACE or ENTER button! \n Cancel the selection process by pressing c button")
         self.image_timer.stop()
-
+        # Seleting using the raw frame means that the scaling is handled automatically.
         roi = cv2.selectROI(self.stream_window, self.frame_processor.latest_processed_frame.astype(np.uint16),
-                            showCrosshair=True)
+                            showCrosshair=True, printNotice=False)
         print(roi)
         if sum(roi) > 0:
             # self.frame_processor.roi = tuple([int(value * (2 / self.binning)) for value in roi])
@@ -545,24 +557,57 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.roi_plot.show()
             logging.info("ROI set to " + str(roi))
             self.button_clear_roi.setEnabled(True)
-        logging.info(f'Binning mode: {self.binning}, roi: {self.frame_processor.roi}')
+            logging.info(f'Binning mode: {self.binning}, roi: {self.frame_processor.roi}')
+        else:
+            logging.info('Failed to set ROI')
+            self.__on_clear_roi()
+
         self.image_timer.start(0)
 
     def __draw_line(self):
-        logging.warning("Line profile not implemented")
+
+        logging.info(
+            "Select a Line and then press SPACE or ENTER button! \n Cancel the selection process by pressing c button")
+        self.image_timer.stop()
+
+        roi = cv2.selectROI(self.stream_window, self.frame_processor.latest_processed_frame.astype(np.uint16),
+                            showCrosshair=True, printNotice=False)
+
+        if sum(roi) > 0:
+            x, y, w, h = roi
+            self.frame_processor.line_coords = ((y, x), (y + h, x + w))
+            self.line_profile_plot.show()
+            self.button_clear_line.setEnabled(True)
+            self.button_flip_line.setEnabled(True)
+            logging.info(
+                f'Binning mode: {self.binning}, line between: {self.frame_processor.line_coords[0]}' +
+                f' and {self.frame_processor.line_coords[1]}')
+        else:
+            logging.info('Failed to set line profile')
+            self.__on_clear_line()
+        self.image_timer.start(0)
         self.button_clear_line.setEnabled(True)
-        self.line_profile_plot.show()
         # cv2.line
 
+    def __on_flip_line(self):
+        (x1, y1), (x2, y2) = self.frame_processor.line_coords
+        self.frame_processor.line_coords = ((x1, y2),(x2, y1))
+        logging.info(
+            f'Flipped line. Line now between: {self.frame_processor.line_coords[0]}' +
+            f' and {self.frame_processor.line_coords[1]}')
+
+
     def __on_clear_roi(self):
-        self.button_clear_line.setEnabled(False)
+        self.button_clear_roi.setEnabled(False)
         self.frame_processor.roi = (0, 0, 0, 0)
         self.frame_processor.roi_int_y = deque(maxlen=self.spin_number_of_points.value())
         self.roi_plot.hide()
 
     def __on_clear_line(self):
         self.button_clear_line.setEnabled(False)
+        self.button_flip_line.setEnabled(False)
         self.line_profile_plot.hide()
+        self.frame_processor.line_coords = None
 
     def __disable_all_leds(self):
         logging.info("Disabling all LEDs")

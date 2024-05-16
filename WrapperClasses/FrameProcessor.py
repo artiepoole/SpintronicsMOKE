@@ -4,6 +4,7 @@ from skimage import exposure
 import logging
 from collections import deque
 import time
+from skimage.measure import profile_line
 
 
 def int_mean(image_stack, axis=0):
@@ -70,7 +71,8 @@ class FrameProcessor(QtCore.QObject):
     averages = 16
     mutex = QtCore.QMutex()
     roi = (0, 0, 0, 0)
-
+    line_coords = None
+    latest_profile = np.array([])
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
@@ -180,6 +182,10 @@ class FrameProcessor(QtCore.QObject):
                             self.latest_diff_frame_a - self.latest_diff_frame_b)
                         self.latest_processed_frame = self.__process_frame(self.latest_diff_frame)
                     self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
+                    if self.line_coords is not None:
+                        start, end = self.line_coords
+                        self.latest_profile = profile_line(self.latest_processed_frame, start,
+                                     end, linewidth=5)
                 elif len(item) == 2:
                     logging.debug("Got single frame")
                     # Single frame mode
@@ -188,7 +194,7 @@ class FrameProcessor(QtCore.QObject):
                     self.intensities_y.append(np.mean(self.latest_raw_frame, axis=(0, 1)))
                     if sum(self.roi) > 0:
                         x, y, w, h = self.roi
-                        self.roi_int_y.append(np.mean(self.latest_raw_frame[y:y+h, x:x+w], axis=(0, 1)))
+                        self.roi_int_y.append(np.mean(self.latest_raw_frame[y:y + h, x:x + w], axis=(0, 1)))
                     self.frame_times.append(latest_frame_data.timestamp_us * 1e-6)
                     self.mutex.unlock()
                     if self.averaging:
@@ -214,6 +220,10 @@ class FrameProcessor(QtCore.QObject):
                     else:
                         self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
                     self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
+                    if self.line_coords is not None:
+                        start, end = self.line_coords
+                        self.latest_profile = profile_line(self.latest_processed_frame, start,
+                                     end, linewidth=5)
                 else:
                     logging.warning('Frame processor received neither single frame nor difference frame')
         logging.info("Stopping Frame Processor")

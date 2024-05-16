@@ -16,10 +16,10 @@ class MagnetController:
         self.frequency = 0.01
         self.target_voltage = 0.0
         self.target_offset_voltage = 0.0
-        print("MagnetController: Initialising MagnetController")
+        logging.info("MagnetController: Initialising MagnetController")
         self.dev = nidaq.system.device.Device('Dev1')
         if reset:
-            print("MagnetController: Resetting DAQ card")
+            logging.info("MagnetController: Resetting DAQ card")
             self.dev.reset_device()
 
         self.analogue_input_task = nidaq.Task()
