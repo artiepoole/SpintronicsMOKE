@@ -15,7 +15,7 @@ class CameraGrabber(QtCore.QObject):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        logging.info("CameraGrabber: Initializing CameraGrabber...")
+        logging.info("Initializing CameraGrabber...")
 
         self.cam = DCAM.DCAMCamera(idx=0)
         exposure_time = 0.05
@@ -62,14 +62,14 @@ class CameraGrabber(QtCore.QObject):
         :return:
         '''
         if self.difference_mode:
-            logging.info("CameraGrabber: Setting camera trigger mode to external")
+            logging.info("Setting camera trigger mode to external")
             self.cam.set_attribute_value('TRIGGER SOURCE', 2)  # External
             self.cam.set_attribute_value('TRIGGER MODE', 1)  # Normal (as opposed to "start")
             self.cam.set_attribute_value('TRIGGER ACTIVE', 3)  # SyncReadOut - Apparently this works but edge doesn't
             self.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
             self.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
         else:
-            logging.info("CameraGrabber: Setting camera trigger mode to internal")
+            logging.info("Setting camera trigger mode to internal")
             self.cam.set_trigger_mode('int')
         self.cam.setup_acquisition()
         self.cam.start_acquisition()
@@ -117,6 +117,7 @@ class CameraGrabber(QtCore.QObject):
             logging.info("Camera closing")
             self.cam.close()
             self.quit_ready.emit()
+            return
         if not self.waiting:
             logging.info("Camera ready")
             self.camera_ready.emit()

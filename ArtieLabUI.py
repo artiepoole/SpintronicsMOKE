@@ -18,7 +18,7 @@ from os.path import isfile, join
 import sys
 
 import numpy as np
-from PyQt5 import QtCore, QtWidgets, uic
+from PyQt5 import QtCore, QtWidgets, uic, QtGui
 
 import logging
 from logging.handlers import RotatingFileHandler
@@ -246,10 +246,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # TODO: Add Draw Line feature
 
     def __prepare_logging(self):
-        self.log_text_box = QTextEditLogger(self)
-        self.log_text_box.setFormatter(
-            logging.Formatter('%(asctime)s %(levelname)s %(module)s - %(message)s', "%H:%M:%S"))
+        self.log_text_box = HTMLBasedColorLogger(self)
+
+        # self.log_text_box.setFormatter(
+        # logging.Formatter('%(asctime)s %(levelname)s %(module)s - %(message)s', "%H:%M:%S"))
+        # logging.Formatter(CustomLoggingFormatter())
         logging.getLogger().addHandler(self.log_text_box)
+        self.log_text_box.setFormatter(CustomLoggingFormatter())
         logging.getLogger().setLevel(logging.INFO)
         self.layout_logging.addWidget(self.log_text_box.widget)
 
@@ -544,13 +547,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 # this is Adaptive EQ and needs a clip limit
 
     def __select_roi(self):
-        logging.info(
-            "Select a ROI and then press SPACE or ENTER button! \n Cancel the selection process by pressing c button")
+        logging.log(
+            ATTENTION_LEVEL,
+            "Select a ROI and then press SPACE or ENTER button! \n"+
+            "   Cancel the selection process by pressing c button")
         self.image_timer.stop()
         # Seleting using the raw frame means that the scaling is handled automatically.
         roi = cv2.selectROI(self.stream_window, self.frame_processor.latest_processed_frame.astype(np.uint16),
                             showCrosshair=True, printNotice=False)
-        print(roi)
         if sum(roi) > 0:
             # self.frame_processor.roi = tuple([int(value * (2 / self.binning)) for value in roi])
             self.frame_processor.roi = roi
@@ -566,8 +570,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __draw_line(self):
 
-        logging.info(
-            "Select a Line and then press SPACE or ENTER button! \n Cancel the selection process by pressing c button")
+        logging.log(
+            ATTENTION_LEVEL,
+            "Select a bounding box and then press SPACE or ENTER button! \n"+
+            "   Cancel the selection process by pressing c button")
         self.image_timer.stop()
 
         roi = cv2.selectROI(self.stream_window, self.frame_processor.latest_processed_frame.astype(np.uint16),
@@ -583,7 +589,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 f'Binning mode: {self.binning}, line between: {self.frame_processor.line_coords[0]}' +
                 f' and {self.frame_processor.line_coords[1]}')
         else:
-            logging.info('Failed to set line profile')
+            logging.warning('Failed to set line profile')
             self.__on_clear_line()
         self.image_timer.start(0)
         self.button_clear_line.setEnabled(True)
@@ -591,23 +597,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def __on_flip_line(self):
         (x1, y1), (x2, y2) = self.frame_processor.line_coords
-        self.frame_processor.line_coords = ((x1, y2),(x2, y1))
+        self.frame_processor.line_coords = ((x1, y2), (x2, y1))
         logging.info(
             f'Flipped line. Line now between: {self.frame_processor.line_coords[0]}' +
             f' and {self.frame_processor.line_coords[1]}')
-
 
     def __on_clear_roi(self):
         self.button_clear_roi.setEnabled(False)
         self.frame_processor.roi = (0, 0, 0, 0)
         self.frame_processor.roi_int_y = deque(maxlen=self.spin_number_of_points.value())
         self.roi_plot.hide()
+        logging.info("Cleared ROI")
 
     def __on_clear_line(self):
         self.button_clear_line.setEnabled(False)
         self.button_flip_line.setEnabled(False)
         self.line_profile_plot.hide()
         self.frame_processor.line_coords = None
+        logging.info("Cleared Line")
 
     def __disable_all_leds(self):
         logging.info("Disabling all LEDs")
@@ -1402,6 +1409,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.close_event = event
+        event.ignore()
         self.image_timer.stop()
         self.plot_timer.stop()
         self.magnetic_field_timer.stop()
@@ -1418,6 +1426,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         cv2.destroyAllWindows()
 
     def __on_quit_ready(self):
+        time.sleep(0.1)
         logging.info("Closing threads and exiting")
         self.camera_thread.quit()
         self.frame_processor_thread.quit()

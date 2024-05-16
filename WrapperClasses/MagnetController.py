@@ -16,10 +16,10 @@ class MagnetController:
         self.frequency = 0.01
         self.target_voltage = 0.0
         self.target_offset_voltage = 0.0
-        logging.info("MagnetController: Initialising MagnetController")
+        logging.info("Initialising MagnetController")
         self.dev = nidaq.system.device.Device('Dev1')
         if reset:
-            logging.info("MagnetController: Resetting DAQ card")
+            logging.info("Resetting DAQ card")
             self.dev.reset_device()
 
         self.analogue_input_task = nidaq.Task()
@@ -40,7 +40,7 @@ class MagnetController:
         self.field_from_volts = field_from_volts
         self.currents = currents
         self.field_from_currents = field_from_currents
-        print("MagnetController: Calibration Updated")
+        logging.info("Calibration Updated")
 
     def interpolate_voltage(self, target_field):
         """
@@ -81,7 +81,7 @@ class MagnetController:
             data = np.ones(n_samples) * self.target_voltage
             self.analogue_output_task.write(data, auto_start=False)
             self.analogue_output_task.start()
-            print(f"MagnetController: Set voltage to {self.target_voltage} VDC")
+            print(f"Set voltage to {self.target_voltage} VDC")
         elif self.mode == "AC":
             n_samples = int(round(
                 1 / self.frequency,
@@ -97,12 +97,12 @@ class MagnetController:
             if len(wave[np.abs(wave) > 10]) > 0:
                 wave[wave > 10] = 10
                 wave[wave < -10] = -10
-                print("MagnetController warning: The voltage is clipping. "
-                      "Please reduce offset or target field.")
+                logging.warning("The voltage is clipping. " +
+                                "Please reduce offset or target field.")
             self.analogue_output_task.write(wave, auto_start=False)
             self.analogue_output_task.start()
 
-            print(f"MagnetController: Outputting AC Waveform with Peak to Peak voltage of: {self.target_voltage}")
+            logging.info(f"Outputting AC Waveform with Peak to Peak voltage of: {self.target_voltage}")
 
     def get_current_amplitude(self):
         voltage = self.analogue_input_task.read()
