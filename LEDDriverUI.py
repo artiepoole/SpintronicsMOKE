@@ -281,7 +281,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
             self.lamp_controller.set_some_brightness([value] * len(keys), [self.led_id_enum[key] for key in keys])
 
     def closeEvent(self, event):
-        self.lamp_controller.close()
+        self.lamp_controller.close(reset=True)
         print("LEDDriverUI: Closing threads and exiting")
         super(LEDDriverUI, self).closeEvent(event)
         sys.exit()
