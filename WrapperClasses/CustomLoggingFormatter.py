@@ -11,7 +11,7 @@ class CustomLoggingFormatter(logging.Formatter):
     FORMATS = {
         logging.ERROR: ("[%(levelname)s] %(module)s [%(filename)s:%(lineno)d] - %(message)s", QtGui.QColor("red")),
         logging.DEBUG: ("[%(levelname)s] [%(filename)s:%(lineno)d] - %(message)s", QtGui.QColor("green")),
-        logging.INFO: ("[%(levelname)s] %(module)s - %(message)s", QtGui.QColor("darkGray")),
+        logging.INFO: ("[%(levelname)s] %(module)s - %(message)s", QtGui.QColor("black")),
         logging.WARNING: (
             '[%(levelname)s] %(asctime)s %(name)s %(levelname)s - %(message)s',
             QtGui.QColor("darkYellow")
