@@ -279,7 +279,7 @@ if __name__ == "__main__":
 
     class TestingContainer:
         def __init__(self):
-            self.BUFFER_SIZE = 1000
+            self.BUFFER_SIZE = 1600  # max 100 stacks
             self.binning = 2
             self.frame_buffer = deque(maxlen=self.BUFFER_SIZE)
             self.item_semaphore = QtCore.QSemaphore(0)
@@ -319,4 +319,4 @@ if __name__ == "__main__":
 
 
     testing_container = TestingContainer()
-    testing_container.benchmarking(1)
+    testing_container.benchmarking(1)  # max 100
