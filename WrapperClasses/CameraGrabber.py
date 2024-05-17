@@ -83,6 +83,9 @@ class CameraGrabber(QtCore.QObject):
     def snap(self):
         return self.cam.snap()
 
+    def snap_n(self, n_frames):
+        return np.array(self.cam.grab(n_frames), dtype='int32')
+
     def grab_n_frames(self, n_frames):
         prev_mode = self.difference_mode
         self.difference_mode = False
