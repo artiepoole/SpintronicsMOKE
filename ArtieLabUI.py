@@ -10,6 +10,7 @@ import cv2
 
 import pyqtgraph as pg
 
+from AnalyserSweepDialog import AnalyserSweepDialog
 from WrapperClasses import *
 
 import os.path
@@ -159,7 +160,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.start_time = time.time()
         self.image_timer.start(0)
         self.plot_timer.start(50)
-        self.magnetic_field_timer.start(10)
+        self.magnetic_field_timer.start(5)
 
     def __connect_signals(self):
         # LED controls
@@ -234,6 +235,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Analyser Controls
         self.button_move_analyser_back.clicked.connect(self.__rotate_analyser_backward)
         self.button_move_analyser_for.clicked.connect(self.__rotate_analyser_forward)
+
+        # Special Function Controls
+        self.button_analy_sweep.clicked.connect(self.__on_analyser_sweep)
 
         # Plot controls
         self.magnetic_field_timer.timeout.connect(self.__update_field_measurement)
@@ -366,6 +370,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 np.array(self.frame_processor.frame_times)[0:length] - np.min(self.frame_processor.frame_times),
                 list(self.frame_processor.intensities_y)[0:length]
             )
+
 
         self.hist_line.setData(
             self.frame_processor.latest_hist_bins,
@@ -1169,12 +1174,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 logging.info("Enabling DC field mode.")
 
             self.magnet_controller.mode = "DC"
+            self.magnet_controller.update_output()
         else:
             if not self.button_AC_field.isChecked():
                 logging.warning("There is no field mode selected.")
-                self.__set_zero_field()
                 self.magnet_controller.mode = None
-        self.magnet_controller.update_output()
+                self.__set_zero_field()
+
+
 
     def __on_AC_field(self, enabled):
         if enabled:
@@ -1186,11 +1193,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.magnet_controller.mode = "AC"
             self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
             self.magnet_controller.set_frequency(self.spin_mag_freq.value())
+            self.magnet_controller.update_output()
         else:
             if not self.button_DC_field.isChecked():
                 logging.warning("There is no field mode selected.")
                 self.magnet_controller.mode = None
-        self.magnet_controller.update_output()
+                self.__set_zero_field()
+
+
 
     def __on_invert_field(self, inverted):
         if inverted:
@@ -1210,7 +1220,38 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         amount = -self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
 
+    def __on_analyser_sweep(self):
+        if self.flickering:
+            logging.error("Cannot run analyser while using difference mode imaging.")
+            return
+
+        logging.info("Pausing main GUI for analyser sweep dialog")
+        self.camera_grabber.waiting = True
+        self.camera_grabber.running = False
+        self.frame_processor.waiting = True
+        self.frame_processor.running = False
+        self.image_timer.stop()
+        self.plot_timer.stop()
+        self.magnetic_field_timer.stop()
+
+        dialog = AnalyserSweepDialog(self)
+        dialog.exec()
+        logging.info("Resuming main GUI after analyser sweep dialog")
+        self.image_timer.start(0)
+        self.plot_timer.start(50)
+        self.magnetic_field_timer.start(10)
+        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
+        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
+
+
+
+
+
+
     def __on_save(self, event):
+        # TODO Add analyser information to metadata
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
