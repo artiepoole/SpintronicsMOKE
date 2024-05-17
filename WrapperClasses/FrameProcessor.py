@@ -38,8 +38,6 @@ class FrameProcessor(QtCore.QObject):
     IMAGE_PROCESSING_PERCENTILE = 2
     IMAGE_PROCESSING_HISTEQ = 3
     IMAGE_PROCESSING_ADAPTEQ = 4
-    frame_processed_signal = QtCore.pyqtSignal(np.ndarray, np.float64, tuple)
-    diff_processed_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.float64, np.float64, tuple)
     frame_processor_ready = QtCore.pyqtSignal()
     mode = 1
     p_low = 0
@@ -73,6 +71,7 @@ class FrameProcessor(QtCore.QObject):
     roi = (0, 0, 0, 0)
     line_coords = None
     latest_profile = np.array([])
+
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
@@ -85,7 +84,7 @@ class FrameProcessor(QtCore.QObject):
         self.mode, self.p_low, self.p_high, self.clip = settings
 
     def set_mode(self, new_mode):
-        if new_mode in [0, 1, 2, 3]:
+        if new_mode in [0, 1, 2, 3, 4]:
             self.mode = new_mode
         else:
             logging.info("FrameProcessor: Invalid mode")
@@ -185,7 +184,7 @@ class FrameProcessor(QtCore.QObject):
                     if self.line_coords is not None:
                         start, end = self.line_coords
                         self.latest_profile = profile_line(self.latest_processed_frame, start,
-                                     end, linewidth=5)
+                                                           end, linewidth=5)
                 elif len(item) == 2:
                     logging.debug("Got single frame")
                     # Single frame mode
@@ -223,21 +222,101 @@ class FrameProcessor(QtCore.QObject):
                     if self.line_coords is not None:
                         start, end = self.line_coords
                         self.latest_profile = profile_line(self.latest_processed_frame, start,
-                                     end, linewidth=5)
+                                                           end, linewidth=5)
                 else:
                     logging.warning('Frame processor received neither single frame nor difference frame')
         logging.info("Stopping Frame Processor")
         if not self.closing:
             self.frame_processor_ready.emit()  # This restarts the frame processor after binning mode changes.
 
+    def _process_buffer(self):
+        self.running = True
+        while self.running:
+            got = self.parent.item_semaphore.tryAcquire(1, 1)
+            if not got:
+                # print("stack empty")
+                return
+            else:
+                item = self.parent.frame_buffer.popleft()
+                self.parent.spaces_semaphore.release()
+                self.latest_raw_frame = item
+                self.intensities_y.append(np.mean(self.latest_raw_frame, axis=(0, 1)))
+                if sum(self.roi) > 0:
+                    x, y, w, h = self.roi
+                    self.roi_int_y.append(np.mean(self.latest_raw_frame[y:y + h, x:x + w], axis=(0, 1)))
+                if self.averaging:
+                    if self.latest_raw_frame.shape[0] != self.raw_frame_stack.shape[1]:
+                        # This happens when changing binning mode with frames in the buffer.
+                        logging.warning("Latest frame is not correct shape. Discarding frame.")
+                        break
+                    if self.frame_counter % self.averages < len(self.raw_frame_stack):
+                        # When the stack is full up to the number of averages, this overwrites the frames in memory.
+                        # This is more efficient than rolling or extending
+                        self.raw_frame_stack[self.frame_counter % self.averages] = self.latest_raw_frame
+                    else:
+                        # If the stack is not full, then this appends to the array.
+                        self.raw_frame_stack = np.append(self.raw_frame_stack,
+                                                         np.expand_dims(self.latest_raw_frame, 0), axis=0)
+                    if len(self.raw_frame_stack) > self.averages:
+                        # If the target number of averages is reduced then this code trims the stack to discard
+                        # excess frames.
+                        self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
+                    self.frame_counter += 1
+                    self.latest_mean_frame = int_mean(self.raw_frame_stack)
+                    self.latest_processed_frame = self.__process_frame(self.latest_mean_frame)
+                else:
+                    self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
+                self.latest_hist_data, self.latest_hist_bins = exposure.histogram(
+                    self.latest_processed_frame)
+                if self.line_coords is not None:
+                    start, end = self.line_coords
+                    self.latest_profile = profile_line(self.latest_processed_frame, start,
+                                                       end, linewidth=5)
+            logging.info("Stack Processed")
+
 
 if __name__ == "__main__":
-    import cv2
 
-    frames = np.loadtxt("../TestScripts/test_stack.dat", delimiter="\t").astype(np.int32).reshape(16, 1024, 1024)
+    class TestingContainer:
+        def __init__(self):
+            self.BUFFER_SIZE = 1000
+            self.binning = 2
+            self.frame_buffer = deque(maxlen=self.BUFFER_SIZE)
+            self.item_semaphore = QtCore.QSemaphore(0)
+            self.spaces_semaphore = QtCore.QSemaphore(self.BUFFER_SIZE)
+            self.frame_processor = FrameProcessor(self)
 
-    frame = frames[0]
-    cv2.imshow('Raw', basic_exposure(frame).astype(np.uint16))
-    cv2.imshow('Processed Frame', numpy_equ(frame).astype(np.uint16))
-    cv2.waitKey(0)
-    print(frame.shape)
+        def benchmarking(self, number_of_stacks):
+            modes = [0, 1, 2, 3, 4]
+            averaging = [False, True]
+            averages = [16]
+            frames = np.loadtxt("../TestScripts/test_stack.dat", delimiter="\t").astype(np.int32).reshape(16, 1024,
+                                                                                                          1024)
+            self.frame_processor.raw_frame_stack = (
+                np.array([], dtype=np.uint16).
+                reshape(0, frames.shape[1], frames.shape[1]))
+
+            loop_index = list(range(frames.shape[0])) * number_of_stacks
+            print("number of frames: ", len(loop_index))
+            for avg_enable in averaging:
+                print("averaging?: ", avg_enable)
+                self.frame_processor.averaging = avg_enable
+                if avg_enable:
+                    for average in averages:
+                        print("averages: ", average)
+                        self.frame_processor.averages = average
+                for mode in modes:
+                    print("Mode: ", mode)
+                    self.frame_processor.set_mode(mode)
+                    for i in loop_index:
+                        got_space = self.spaces_semaphore.tryAcquire(1, 1)
+                        if got_space:
+                            self.frame_buffer.append(frames[i])
+                            self.item_semaphore.release()
+                    start = time.time()
+                    self.frame_processor._process_buffer()
+                    print("Time taken per frame: ", (time.time() - start) / (number_of_stacks * frames.shape[0]))
+
+
+    testing_container = TestingContainer()
+    testing_container.benchmarking(1)
