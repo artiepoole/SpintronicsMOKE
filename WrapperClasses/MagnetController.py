@@ -103,6 +103,18 @@ class MagnetController:
             self.analogue_output_task.start()
 
             logging.info(f"Outputting AC Waveform with Peak to Peak voltage of: {self.target_voltage}")
+        elif self.mode == None:
+            n_samples = 100
+            self.analogue_output_task.timing.cfg_samp_clk_timing(
+                self.sample_rate,
+                sample_mode=AcquisitionType.CONTINUOUS,
+                samps_per_chan=n_samples,
+            )
+
+            data = np.zeros(n_samples)
+            self.analogue_output_task.write(data, auto_start=False)
+            self.analogue_output_task.start()
+            print(f"Set voltage to {self.target_voltage} VDC")
 
     def get_current_amplitude(self):
         voltage = self.analogue_input_task.read()
