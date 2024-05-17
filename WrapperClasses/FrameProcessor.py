@@ -64,7 +64,7 @@ class FrameProcessor(QtCore.QObject):
     intensities_y = deque(maxlen=100)
     frame_times = deque(maxlen=100)
     roi_int_y = deque(maxlen=100)
-
+    waiting = False
     averaging = False
     averages = 16
     mutex = QtCore.QMutex()
@@ -226,7 +226,7 @@ class FrameProcessor(QtCore.QObject):
                 else:
                     logging.warning('Frame processor received neither single frame nor difference frame')
         logging.info("Stopping Frame Processor")
-        if not self.closing:
+        if not (self.closing or self.waiting):
             self.frame_processor_ready.emit()  # This restarts the frame processor after binning mode changes.
 
     def _process_buffer(self):
