@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1482</width>
-    <height>826</height>
+    <height>802</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1469,10 +1469,10 @@ All</string>
 QWidget{background-color: rgb(255,255,255)}</string>
                </property>
                <property name="currentText">
-                <string>Basic</string>
+                <string>Contrast Stretching</string>
                </property>
                <property name="currentIndex">
-                <number>1</number>
+                <number>2</number>
                </property>
                <property name="maxVisibleItems">
                 <number>4</number>
@@ -1838,9 +1838,6 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <height>16777215</height>
                 </size>
                </property>
-               <property name="styleSheet">
-                <string notr="true">background-color: rgb(255,255,255)</string>
-               </property>
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -1970,205 +1967,284 @@ QWidget{background-color: rgb(255,255,255)}</string>
        </widget>
       </item>
       <item>
-       <widget class="QFrame" name="gridFrame">
-        <property name="styleSheet">
-         <string notr="true">background-color: rgba(239,239,239,1)</string>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <property name="topMargin">
+         <number>0</number>
         </property>
-        <property name="frameShape">
-         <enum>QFrame::Panel</enum>
+        <property name="rightMargin">
+         <number>0</number>
         </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <property name="lineWidth">
-         <number>2</number>
-        </property>
-        <layout class="QGridLayout" name="LAYOUTSPECIALFUNCS">
-         <property name="leftMargin">
-          <number>10</number>
-         </property>
-         <property name="topMargin">
-          <number>10</number>
-         </property>
-         <property name="rightMargin">
-          <number>10</number>
-         </property>
-         <property name="bottomMargin">
-          <number>10</number>
-         </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_spec_funcs">
-           <property name="text">
-            <string>Special Functions</string>
+        <item>
+         <widget class="QFrame" name="gridFrame">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgba(239,239,239,1)</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Panel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <property name="lineWidth">
+           <number>2</number>
+          </property>
+          <layout class="QGridLayout" name="LAYOUTSPECIALFUNCS">
+           <property name="leftMargin">
+            <number>10</number>
            </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <layout class="QHBoxLayout" name="LAYOUTSPECFUNCBUTTONS">
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>10</number>
+           </property>
            <property name="bottomMargin">
-            <number>0</number>
+            <number>10</number>
            </property>
-           <item>
-            <widget class="QToolButton" name="button_hyst_sweep">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>120</width>
-               <height>16777215</height>
-              </size>
-             </property>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_spec_funcs">
              <property name="text">
-              <string>Hystersis Sweep</string>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>icons/hyst_icon.png</normaloff>icons/hyst_icon.png</iconset>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonTextBesideIcon</enum>
+              <string>Special Functions</string>
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QToolButton" name="button_analy_sweep">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
+           <item row="1" column="0">
+            <layout class="QHBoxLayout" name="LAYOUTSPECFUNCBUTTONS">
+             <property name="bottomMargin">
+              <number>0</number>
              </property>
-             <property name="maximumSize">
-              <size>
-               <width>120</width>
-               <height>16777215</height>
-              </size>
+             <item>
+              <widget class="QToolButton" name="button_hyst_sweep">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>120</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Hystersis Sweep</string>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>icons/hyst_icon.png</normaloff>icons/hyst_icon.png</iconset>
+               </property>
+               <property name="toolButtonStyle">
+                <enum>Qt::ToolButtonTextBesideIcon</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_analy_sweep">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>120</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Analyser Sweep</string>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>icons/analyser_icon.png</normaloff>icons/analyser_icon.png</iconset>
+               </property>
+               <property name="popupMode">
+                <enum>QToolButton::DelayedPopup</enum>
+               </property>
+               <property name="toolButtonStyle">
+                <enum>Qt::ToolButtonTextBesideIcon</enum>
+               </property>
+               <property name="autoRaise">
+                <bool>false</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QFrame" name="gridFrame">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgba(239,239,239,1)</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Panel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <property name="lineWidth">
+           <number>2</number>
+          </property>
+          <layout class="QGridLayout" name="AnalyserFrame">
+           <property name="leftMargin">
+            <number>10</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>10</number>
+           </property>
+           <property name="bottomMargin">
+            <number>10</number>
+           </property>
+           <item row="1" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <property name="leftMargin">
+              <number>0</number>
              </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QToolButton" name="button_minimise_analyser">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>120</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Minimise Analyser</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_analyser">
+               <property name="maximumSize">
+                <size>
+                 <width>75</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Move (°)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="spin_analyser_move_amount">
+               <property name="maximumSize">
+                <size>
+                 <width>50</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color: rgb(255,255,255)</string>
+               </property>
+               <property name="minimum">
+                <double>0.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.100000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_move_analyser_back">
+               <property name="text">
+                <string>backward</string>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>icons/L_arrow.png</normaloff>icons/L_arrow.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_move_analyser_for">
+               <property name="text">
+                <string>forward</string>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>icons/R_arrow.png</normaloff>icons/R_arrow.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_current_angle">
+               <property name="text">
+                <string>Pos (°)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="line_current_angle">
+               <property name="maximumSize">
+                <size>
+                 <width>50</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>0.00</string>
+               </property>
+               <property name="maxLength">
+                <number>5</number>
+               </property>
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_analyser_2">
              <property name="text">
-              <string>Analyser Sweep</string>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>icons/analyser_icon.png</normaloff>icons/analyser_icon.png</iconset>
-             </property>
-             <property name="popupMode">
-              <enum>QToolButton::DelayedPopup</enum>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonTextBesideIcon</enum>
-             </property>
-             <property name="autoRaise">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="spacer_specfuncs">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_analyser">
-             <property name="maximumSize">
-              <size>
-               <width>75</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Move (°)</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="spin_analyser_move_amount">
-             <property name="maximumSize">
-              <size>
-               <width>50</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(255,255,255)</string>
-             </property>
-             <property name="minimum">
-              <double>0.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>10.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.100000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="button_move_analyser_back">
-             <property name="text">
-              <string>backward</string>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>icons/L_arrow.png</normaloff>icons/L_arrow.png</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="button_move_analyser_for">
-             <property name="text">
-              <string>forward</string>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>icons/R_arrow.png</normaloff>icons/R_arrow.png</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_current_angle">
-             <property name="text">
-              <string>Pos (°)</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="line_currentangle">
-             <property name="maximumSize">
-              <size>
-               <width>50</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(255,255,255)</string>
-             </property>
-             <property name="text">
-              <string>0.00</string>
-             </property>
-             <property name="maxLength">
-              <number>5</number>
-             </property>
-             <property name="readOnly">
-              <bool>true</bool>
+              <string>Analyser Control</string>
              </property>
             </widget>
            </item>
           </layout>
-         </item>
-        </layout>
-       </widget>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="QFrame" name="FRAME_MAGCONTROL">
@@ -2295,6 +2371,9 @@ of Points</string>
              </item>
              <item>
               <widget class="QSpinBox" name="spin_mag_point_count">
+               <property name="styleSheet">
+                <string notr="true">background-color: rgb(255,255,255)</string>
+               </property>
                <property name="minimum">
                 <number>10</number>
                </property>
@@ -2787,6 +2866,9 @@ of Points</string>
                 <width>16777215</width>
                 <height>30</height>
                </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(255,255,255)</string>
               </property>
               <property name="minimum">
                <number>10</number>

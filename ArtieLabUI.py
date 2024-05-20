@@ -238,6 +238,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Analyser Controls
         self.button_move_analyser_back.clicked.connect(self.__rotate_analyser_backward)
         self.button_move_analyser_for.clicked.connect(self.__rotate_analyser_forward)
+        self.button_minimise_analyser.clicked.connect(self.__on_find_minimum)
 
         # Special Function Controls
         self.button_analy_sweep.clicked.connect(self.__on_analyser_sweep)
@@ -250,7 +251,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spin_mag_point_count.valueChanged.connect(self.__on_change_mag_plot_count)
         self.button_reset_plots.clicked.connect(self.__on_reset_plots)
 
-        # TODO: Add Draw Line feature
 
     def __prepare_logging(self):
         self.log_text_box = HTMLBasedColorLogger(self)
@@ -373,7 +373,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 np.array(self.frame_processor.frame_times)[0:length] - np.min(self.frame_processor.frame_times),
                 list(self.frame_processor.intensities_y)[0:length]
             )
-
 
         self.hist_line.setData(
             self.frame_processor.latest_hist_bins,
@@ -559,7 +558,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __select_roi(self):
         logging.log(
             ATTENTION_LEVEL,
-            "Select a ROI and then press SPACE or ENTER button! \n"+
+            "Select a ROI and then press SPACE or ENTER button! \n" +
             "   Cancel the selection process by pressing c button")
         self.image_timer.stop()
         # Seleting using the raw frame means that the scaling is handled automatically.
@@ -582,7 +581,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         logging.log(
             ATTENTION_LEVEL,
-            "Select a bounding box and then press SPACE or ENTER button! \n"+
+            "Select a bounding box and then press SPACE or ENTER button! \n" +
             "   Cancel the selection process by pressing c button")
         self.image_timer.stop()
 
@@ -1187,8 +1186,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.magnet_controller.mode = None
                 self.__set_zero_field()
 
-
-
     def __on_AC_field(self, enabled):
         if enabled:
             self.button_DC_field.setChecked(False)
@@ -1206,8 +1203,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.magnet_controller.mode = None
                 self.__set_zero_field()
 
-
-
     def __on_invert_field(self, inverted):
         if inverted:
             logging.info("Inverting field")
@@ -1221,16 +1216,19 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __rotate_analyser_forward(self):
         amount = self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
-        self.line_currentangle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
+        self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
     def __rotate_analyser_backward(self):
         amount = -self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
-        self.line_currentangle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
+        self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
     def __on_analyser_sweep(self):
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
+            return
+        if sum(self.enabled_leds_spi.values()) == 0:
+            logging.error("Cannot run analyser without lights.")
             return
         # TODO: Check for no lights on.
 
@@ -1256,8 +1254,37 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
-    def __on_save(self, event):
-        # TODO Add analyser information to metadata
+    def __on_find_minimum(self):
+        if self.flickering:
+            logging.error("Cannot run analyser while using difference mode imaging.")
+            return
+        if sum(self.enabled_leds_spi.values()) == 0:
+            logging.error("Cannot run analyser without lights.")
+            return
+
+        logging.info("Pausing main GUI for usage with Analyser")
+        self.mutex.lock()
+        self.camera_grabber.waiting = True
+        self.camera_grabber.running = False
+        self.frame_processor.waiting = True
+        self.frame_processor.running = False
+        self.mutex.unlock()
+        self.image_timer.stop()
+        self.plot_timer.stop()
+        self.magnetic_field_timer.stop()
+
+        self.analyser_controller.find_minimum(self.camera_grabber)
+        self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
+
+        self.image_timer.start(0)
+        self.plot_timer.start(50)
+        self.magnetic_field_timer.start(10)
+        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
+        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
+
+    def __on_save(self):
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
@@ -1285,7 +1312,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 meta_data['mag_field_freq'] = self.spin_mag_freq.value()
                 meta_data['mag_field_offset'] = self.spin_mag_offset.value()
                 meta_data['coil_calib'] = self.combo_calib_file.currentText()
-
+        if sum(self.frame_processor.roi) > 0:
+            meta_data['roi'] = [self.frame_processor.roi]
+        if self.frame_processor.line_coords is not None:
+            meta_data['line_coords'] = [self.frame_processor.line_coords]
         contents = []
         file_path = Path(self.line_directory.text()).joinpath(
             datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
@@ -1347,15 +1377,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 store[key] = pd.DataFrame(self.frame_processor.latest_raw_frame)
 
         if self.check_save_as_seen.isChecked():
-            key = 'as seen:'
+            key = 'as_seen'
             if self.button_toggle_averaging.isChecked():
-                key += f' averaged({self.spin_foreground_averages.value()}) '
+                key += f'_averaged({self.spin_foreground_averages.value()}) '
             if self.button_display_subtraction.isChecked() and not self.flickering:
-                key += ' subtracted'
+                key += '_subtracted'
             if self.flickering:
-                key += ' difference image'
+                key += '_difference image'
             if key == 'as seen:':
-                key += ' single frame'
+                key += '_single frame'
             meta_data['normalisation'] = f'type: {self.combo_normalisation_selector.currentText()} ' + \
                                          f'lower: {self.spin_percentile_lower.value()} ' + \
                                          f'upper: {self.spin_percentile_upper.value()} ' + \
@@ -1400,7 +1430,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                              f'lower: {self.spin_percentile_lower.value()} ' +
                              f'upper: {self.spin_percentile_upper.value()} ' +
                              f'clip: {self.spin_clip.value()}',
-            'contents': 'frame_0',
+            'contents': 'frame_as_seen',
         }
         if self.button_toggle_averaging.isChecked():
             if self.button_display_subtraction.isChecked():
@@ -1429,6 +1459,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 meta_data['mag_field_freq'] = self.spin_mag_freq.value()
                 meta_data['mag_field_offset'] = self.spin_mag_offset.value()
                 meta_data['coil_calib'] = self.combo_calib_file.currentText()
+        if sum(self.frame_processor.roi) > 0:
+            meta_data['roi'] = [self.frame_processor.roi]
+        if self.frame_processor.line_coords is not None:
+            meta_data['line_coords'] = [self.frame_processor.line_coords]
 
         file_path = Path(
             self.line_directory.text()).joinpath(
@@ -1498,6 +1532,7 @@ if __name__ == '__main__':
     sys.excepthook = my_exception_hook
 
     app = QtWidgets.QApplication(sys.argv)
+
     app.setStyle('plastique')
     window = ArtieLabUI()
     try:
