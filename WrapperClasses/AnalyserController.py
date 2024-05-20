@@ -5,7 +5,7 @@ import numpy as np
 from nidaqmx.stream_writers import DigitalSingleChannelWriter
 import time
 
-from WrapperClasses import CameraGrabber
+from WrapperClasses import CameraGrabber, LampController
 
 
 class AnalyserController:
@@ -44,7 +44,7 @@ class AnalyserController:
             self.stepper_stream.write_one_sample_port_byte(data[1])
             time.sleep(2e-3)
             self.position_in_steps += 1
-            self.position_in_degrees += 1/self.STEPS_PER_DEGREE
+            self.position_in_degrees += 1 / self.STEPS_PER_DEGREE
 
     def _step_backward(self, steps: int, fine=False):
         logging.info(f"moving -{steps} steps")
@@ -55,25 +55,27 @@ class AnalyserController:
             self.stepper_stream.write_one_sample_port_byte(data[1])
             time.sleep(2e-3)
             self.position_in_steps -= 1
-            self.position_in_degrees -= 1/self.STEPS_PER_DEGREE
+            self.position_in_degrees -= 1 / self.STEPS_PER_DEGREE
 
-    def move(self, degrees: float):
+    def move(self, degrees: float, force_fine=False):
         """
         Rotate the polariser a number of degrees (positive or negative). Rate of movement is approx 1 degree per second.
+        :param force_fine: It is possible to move the
         :param degrees: number of degrees to rotate
         :return None:
         """
-        if abs(degrees) <= 1/(8 * self.STEPS_PER_DEGREE):
+        if abs(degrees) <= 1 / (8 * self.STEPS_PER_DEGREE):
             logging.warning(f"Ignored attempted to move. Reason: Number steps smaller than 1")
             return
 
-        if abs(degrees) <= 1 / self.STEPS_PER_DEGREE:
+        if abs(degrees) <= 1 / self.STEPS_PER_DEGREE or force_fine:
             logging.info(f"Using fine mode to move {degrees} degrees")
             fine = True
+            steps = int(abs(degrees) * self.STEPS_PER_DEGREE * 8)
         else:
             fine = False
+            steps = int(abs(degrees) * self.STEPS_PER_DEGREE)
 
-        steps = int(abs(degrees) * self.STEPS_PER_DEGREE)
         if degrees > 0:
             self._step_forward(steps, fine)
         else:
@@ -107,7 +109,7 @@ class AnalyserController:
             positions.append(self.position_in_degrees)
             logging.debug(f"intensity: {intensity} at position {self.position_in_degrees} deg")
 
-            change = intensities[-1]-intensities[-2]
+            change = intensities[-1] - intensities[-2]
             if abs(change) <= 0.01:
                 # Catch the case where it is as a maximum so can't determine which direction to move.
                 if intensities[-1] >= 65534:
@@ -134,10 +136,10 @@ class AnalyserController:
             intensities.append(intensity)
             logging.debug(f"intensity: {intensity} at position {self.position_in_degrees} deg")
             positions.append(self.position_in_degrees)
-            if intensities[-1]-intensities[-2] > 0:
+            if intensities[-1] - intensities[-2] > 0:
                 # This should only occur when going past the minimum so the analyser will return by half a step to
                 # estimate the minimum position. This could be done using interpolation
-                self.move(-0.5*move_degrees)
+                self.move(-0.5 * move_degrees)
                 return
 
     def close(self, reset=False):
@@ -149,9 +151,13 @@ class AnalyserController:
 
 if __name__ == "__main__":
     logging.root.setLevel(logging.NOTSET)
+    lamp_controller = LampController(True)
+    lamp_controller.enable_left_pair()
     controller = AnalyserController()
     # controller.move(5)
     camera_grabber = CameraGrabber(None)
     controller.find_minimum(camera_grabber)
     camera_grabber.cam.close()
     controller.close()
+    lamp_controller.close(True)
+

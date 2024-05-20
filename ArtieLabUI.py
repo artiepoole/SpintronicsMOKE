@@ -10,7 +10,7 @@ import cv2
 
 import pyqtgraph as pg
 
-from AnalyserSweepDialog import AnalyserSweepDialog
+from SweeperUIs import AnalyserSweepDialog
 from WrapperClasses import *
 
 import os.path
@@ -490,7 +490,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         )
         self.lamp_controller.set_all_brightness(180)
 
-    def __get_lighting_configuration(self):
+    def get_lighting_configuration(self):
         if self.button_long_pol.isChecked():
             return "longitudinal and polar"
         elif self.button_trans_pol.isChecked():
@@ -649,7 +649,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_individual_led(self, state):
         logging.info("Individual LED being called")
         if not self.flickering:
-            if self.__check_for_any_active_LED_mode():
+            if self.check_for_any_active_LED_mode():
                 self.button_long_pol.setChecked(False)
                 self.button_trans_pol.setChecked(False)
                 self.button_polar.setChecked(False)
@@ -695,7 +695,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_pairs()
         else:
-            if not self.__check_for_any_active_LED_mode():
+            if not self.check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_trans_pol(self, checked):
@@ -728,7 +728,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_pairs()
         else:
-            if not self.__check_for_any_active_LED_mode():
+            if not self.check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_polar(self, checked):
@@ -764,7 +764,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.__update_controller_spi()
         else:
-            if not self.__check_for_any_active_LED_mode():
+            if not self.check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_long_trans(self, checked):
@@ -791,7 +791,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
             self.lamp_controller.continuous_flicker(0, )
         else:
-            if not self.__check_for_any_active_LED_mode():
+            if not self.check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_pure_long(self, checked):
@@ -818,7 +818,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_left_led1.setChecked(False)
             self.button_left_led2.setChecked(False)
         else:
-            if not self.__check_for_any_active_LED_mode():
+            if not self.check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __on_pure_trans(self, checked):
@@ -845,7 +845,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_left_led1.setChecked(False)
             self.button_left_led2.setChecked(False)
         else:
-            if not self.__check_for_any_active_LED_mode():
+            if not self.check_for_any_active_LED_mode():
                 self.__disable_all_leds()
 
     def __prepare_for_flicker_mode(self):
@@ -937,7 +937,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_right_led2.setEnabled(True)
         self.lamp_controller.stop_flicker()
 
-    def __check_for_any_active_LED_mode(self):
+    def check_for_any_active_LED_mode(self):
         return bool(
             self.button_long_pol.isChecked() +
             self.button_trans_pol.isChecked() +
@@ -947,8 +947,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_pure_trans.isChecked()
         )
 
-    def __get_magnet_mode(self):
+    def get_magnet_mode(self):
         return (self.button_DC_field.isChecked() * 1 +
+                self.button_AC_field.isChecked() * 2 +
                 self.button_AC_field.isChecked() * 2 +
                 self.button_decay_field.isChecked() * 4)
 
@@ -1215,15 +1216,18 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __rotate_analyser_forward(self):
         amount = self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
+        self.line_currentangle.setText(str(self.analyser_controller.position_in_degrees))
 
     def __rotate_analyser_backward(self):
         amount = -self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
+        self.line_currentangle.setText(str(self.analyser_controller.position_in_degrees))
 
     def __on_analyser_sweep(self):
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
             return
+        # TODO: Check for no lights on.
 
         logging.info("Pausing main GUI for analyser sweep dialog")
         self.camera_grabber.waiting = True
@@ -1257,7 +1261,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                            "Nottingham using ArtieLab V0-2024.04.05.",
             'camera': 'Hamamatsu C11440',
             'sample': self.line_prefix.text(),
-            'lighting configuration': [self.__get_lighting_configuration()],
+            'lighting configuration': [self.get_lighting_configuration()],
             'binnning': self.combo_binning.currentText(),
             'lens': self.combo_lens.currentText(),
             'magnification': self.combo_magnification.currentText(),
@@ -1265,7 +1269,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'correction': self.line_correction.text(),
             'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
-        match self.__get_magnet_mode():
+        match self.get_magnet_mode():
             case 0:
                 meta_data['magnet_mode'] = None
             case 1:  # DC
@@ -1383,7 +1387,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of Nottingham using ArtieLab V0-2024.04.05.",
             'camera': 'Hamamatsu C11440',
             'sample': self.line_prefix.text(),
-            'lighting configuration': self.__get_lighting_configuration(),
+            'lighting configuration': self.get_lighting_configuration(),
             'binnning': self.combo_binning.currentText(),
             'lens': self.combo_lens.currentText(),
             'magnification': self.combo_magnification.currentText(),
@@ -1409,7 +1413,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         else:
             meta_data['type'] = 'single'
             meta_data['averages'] = 1
-        match self.__get_magnet_mode():
+        match self.get_magnet_mode():
             case 0:
                 meta_data['magnet_mode'] = None
             case 1:  # DC
