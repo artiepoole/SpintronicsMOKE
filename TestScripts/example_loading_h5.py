@@ -4,10 +4,6 @@ import cv2
 from skimage import exposure
 import numpy as np
 
-
-
-
-
 file = filedialog.askopenfilename()
 meta_data = pd.read_hdf(file, 'meta_data')
 print(meta_data)
@@ -15,11 +11,11 @@ contents = meta_data.contents[0]
 print(contents)
 frames = {}
 
-
-
 for item in contents:
     data = pd.read_hdf(file, item).values
-    cv2.imshow(item, data/np.amax(data))
+    if len(data.shape) == 2:
+        if data.shape[0] == data.shape[1]:
+            cv2.imshow(item, data / np.amax(data))
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
