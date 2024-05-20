@@ -126,23 +126,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.exposure_time = 0.05
         self.roi = (0, 0, 0, 0)
 
-        # Magnetic field calibration stuff
-        if os.path.isfile('res/last_calibration_location.txt'):
-            with open('res/last_calibration_location.txt', 'r') as file:
-                self.calib_file_dir = file.readline()
-                logging.info("Previous calibration file directory found.")
-        elif os.path.isdir("Coil Calibrations\\"):
-            self.calib_file_dir = "Coil Calibrations\\"
-            logging.warning("No calibration location found, trying: " + str(self.calib_file_dir))
-        else:
-            logging.warning("Default calib file location not found. Asking for user input.")
-            self.calib_file_dir = QtWidgets.QFileDialog.getExistingDirectory(
-                None,
-                'Choose Calibration File Directory',
-                QtWidgets.QFileDialog.ShowDirsOnly
-            )
-
-        self.__populate_calibration_combobox(self.calib_file_dir)
+        self.__populate_calibration_combobox()
 
         self.__connect_signals()
         self.__prepare_views()
@@ -166,6 +150,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.__on_image_processing_mode_change(2)
 
     def __connect_signals(self):
+        """
+        Connects all signals between buttons and pyqt signals enabling communication between threads.
+        :return None:
+        """
         # LED controls
         self.button_left_led1.clicked.connect(self.__on_individual_led)
         self.button_right_led1.clicked.connect(self.__on_individual_led)
@@ -253,6 +241,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
 
     def __prepare_logging(self):
+        """
+        The multicolour logging box in the GUI and the log file are both set up here.
+        :return None:
+        """
         self.log_text_box = HTMLBasedColorLogger(self)
 
         # self.log_text_box.setFormatter(
@@ -278,6 +270,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         logging.getLogger().addHandler(fh)
 
     def __prepare_views(self):
+        """
+        Prepares the empty camera view(s) and the graph axes
+        :return:
+        """
         self.stream_window = 'HamamatsuView'
         window_width = self.width
         window_height = self.height
@@ -350,8 +346,27 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.mag_t = deque(maxlen=100)
         self.mag_line = self.mag_plot.plot(self.mag_t, self.mag_y, pen="k")
 
-    def __populate_calibration_combobox(self, dir):
-
+    def __populate_calibration_combobox(self):
+        """
+        Loads the last used calibration file if possible else searches in the local Coil Calibrations directory else
+        asks for user input.
+        :return None: """
+        # Magnetic field calibration stuff
+        if os.path.isfile('res/last_calibration_location.txt'):
+            with open('res/last_calibration_location.txt', 'r') as file:
+                self.calib_file_dir = file.readline()
+                logging.info("Previous calibration file directory found.")
+        elif os.path.isdir("Coil Calibrations\\"):
+            self.calib_file_dir = "Coil Calibrations\\"
+            logging.warning("No calibration location found, trying: " + str(self.calib_file_dir))
+        else:
+            logging.warning("Default calib file location not found. Asking for user input.")
+            self.calib_file_dir = QtWidgets.QFileDialog.getExistingDirectory(
+                None,
+                'Choose Calibration File Directory',
+                QtWidgets.QFileDialog.ShowDirsOnly
+            )
+        dir = self.calib_file_dir
         file_names = [f for f in listdir(dir) if isfile(join(dir, f)) and ".txt" in f]
         if file_names:
             self.calibration_dictionary = {i + 1: name for i, name in enumerate(file_names)}
@@ -366,6 +381,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             logging.warning(" No magnet calibration files found.")
 
     def __update_plots(self):
+        """
+        Updates all the graph axes. Is called by a continuously running timer: self.plot_timer
+        :return None:
+        """
         # Sometimes, the update can be called between the appending to frame times and to intensities
         length = min([self.frame_processor.frame_times.__len__(), self.frame_processor.intensities_y.__len__()])
         if length > 0:
@@ -414,6 +433,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.bar_averaging.setValue(0)
 
     def __update_images(self):
+        """
+        Updates the CV2 display(s) with latest frame data.
+        :return None:
+        """
         frame = self.frame_processor.latest_processed_frame.astype(np.uint16)
         if sum(self.frame_processor.roi) > 0:
             x, y, w, h = self.frame_processor.roi
@@ -438,31 +461,58 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         cv2.waitKey(1)
 
     def __update_field_measurement(self):
+        """
+        Updates the data used in the field plots ready for plotting. Is called by a continuously running timer:
+        self.magnetic_field_timer. This updates more often than the plot is updated to improve performance
+        :return None:
+        """
         field, voltage = self.magnet_controller.get_current_amplitude()
         self.line_measured_field.setText("{:0.4f}".format(field))
         self.line_measured_voltage.setText("{:0.4f}".format(voltage))
         self.mag_y.append(field)
         self.mag_t.append(time.time() - self.start_time)
 
-    def __on_change_mag_plot_count(self, value):
-        self.mag_y = deque(self.mag_y, maxlen=value)
-        self.mag_t = deque(self.mag_t, maxlen=value)
 
     def __on_reset_plots(self):
+        """
+        Resets all the data used to plot graphs that have a time/frame number axis.
+        :return :
+        """
         self.mutex.lock()
         self.frame_processor.frame_times = deque(maxlen=self.spin_number_of_points.value())
         self.frame_processor.intensities_y = deque(maxlen=self.spin_number_of_points.value())
         self.frame_processor.roi_int_y = deque(maxlen=self.spin_number_of_points.value())
+        self.mag_y = deque(self.mag_y, maxlen=self.spin_mag_point_count.value())
+        self.mag_t = deque(self.mag_t, maxlen=self.spin_mag_point_count.value())
         self.mutex.unlock()
 
     def __on_change_plot_count(self, value):
+        """
+        Changes the maxmimum length of the data used to plot the data on the right hand panel
+        :param value: The new number of points
+        :return:
+        """
         self.mutex.lock()
         self.frame_processor.frame_times = deque(self.frame_processor.frame_times, maxlen=value)
         self.frame_processor.intensities_y = deque(self.frame_processor.intensities_y, maxlen=value)
         self.frame_processor.roi_int_y = deque(self.frame_processor.roi_int_y, maxlen=value)
         self.mutex.unlock()
 
+    def __on_change_mag_plot_count(self, value):
+        """
+        Changes the maxmimum length of the data used to plot the magnetic field vs time.
+        :param value: The new number of points
+        :return None:
+        """
+        self.mag_y = deque(self.mag_y, maxlen=value)
+        self.mag_t = deque(self.mag_t, maxlen=value)
+
+
     def __reset_pairs(self):
+        """
+        Reset the local store of all enabled pairs of LEDs to False
+        :return:
+        """
         self.enabled_led_pairs.update(
             {"left": False,
              "right": False,
@@ -470,6 +520,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
              "down": False})
 
     def __reset_led_spis(self):
+        """
+        Reset the local store of all enabled individual LEDs to False
+        :return:
+        """
         self.enabled_leds_spi.update(
             {"left1": False,
              "left2": False,
@@ -482,6 +536,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         )
 
     def __reset_brightness(self):
+        """
+        Sets all the LED brightnesses to maximum
+        :return:
+        """
         self.LED_brightnesses.update(
             {"left1": 180,
              "left2": 180,
@@ -495,6 +553,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.lamp_controller.set_all_brightness(180)
 
     def get_lighting_configuration(self):
+        """
+        Finds the current lighting state, basically which mode is enabled. If no mode is selected then it returns
+        all enabled LEDs as a boolean.
+        :return str/list: str of currently selected lighting mode or list of bools for each LED's enabled state.
+        """
         if self.button_long_pol.isChecked():
             return "longitudinal and polar"
         elif self.button_trans_pol.isChecked():
@@ -517,16 +580,27 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     self.button_right_led1.isChecked(),
                     self.button_right_led2.isChecked()]
 
-    def __on_image_processing_spin_box_change(self, ignored_event):
+    def __on_image_processing_spin_box_change(self):
+        """
+        Updates the frame processor with all variables for the various image processing modes.
+        :return None:
+        """
+
         self.frame_processor.set_percentile_lower(self.spin_percentile_lower.value())
         self.frame_processor.set_percentile_upper(self.spin_percentile_upper.value())
         self.frame_processor.set_clip_limit(self.spin_clip.value())
 
     def __on_image_processing_mode_change(self, mode):
+        """
+        Changes the currently used image processing mode based on the user selection.
+        :param mode: 0 - none, 1 - basic (just divides by max), 2 - contrast stretching (percentile based stretching of
+        histogram), 3 - whole image histogram equalisation to linearise the cumulative distribution 4 - local version
+        of 3, very computationally demanding.
+        :return None:
+        """
+
         self.frame_processor.set_mode(mode)
         match mode:
-            case -1:
-                pass
             case 0:  # None
                 self.spin_percentile_lower.setEnabled(False)
                 self.spin_percentile_upper.setEnabled(False)
@@ -554,8 +628,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.spin_clip.setEnabled(True)
                 self.frame_processor.set_clip_limit(self.spin_clip.value())
                 # this is Adaptive EQ and needs a clip limit
-
+            case _:
+                logging.error("Unsupported image processing mode")
     def __select_roi(self):
+        """
+        Asks the user to select a region of interest and then, if one is selected, updates the frame processor and plots
+        such that the ROI based information is accessible.
+        :return None:
+        """
         logging.log(
             ATTENTION_LEVEL,
             "Select a ROI and then press SPACE or ENTER button! \n" +
@@ -578,7 +658,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.image_timer.start(0)
 
     def __draw_line(self):
-
+        """
+        Asks the user to draw a rectangle containing the two ends of a line and then, if one is selected, updates the
+        frame processor and plots such that the line profile is plotted for each frame.
+        :return None:
+        """
         logging.log(
             ATTENTION_LEVEL,
             "Select a bounding box and then press SPACE or ENTER button! \n" +
@@ -605,6 +689,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # cv2.line
 
     def __on_flip_line(self):
+        """
+        Because the drawn line is taken from the corners of an ROI box, the line can be flipped such that the other
+        pair of corners is used instead. This is that.
+        :return None:
+        """
         (x1, y1), (x2, y2) = self.frame_processor.line_coords
         self.frame_processor.line_coords = ((x1, y2), (x2, y1))
         logging.info(
@@ -612,6 +701,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             f' and {self.frame_processor.line_coords[1]}')
 
     def __on_clear_roi(self):
+        """
+        Clear the ROI and disable now-irrelevant plots buttons.
+        :return None:
+        """
         self.button_clear_roi.setEnabled(False)
         self.frame_processor.roi = (0, 0, 0, 0)
         self.frame_processor.roi_int_y = deque(maxlen=self.spin_number_of_points.value())
@@ -619,6 +712,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         logging.info("Cleared ROI")
 
     def __on_clear_line(self):
+        """
+        Clear the points used for line profiling and disable now-irrelevant plots buttons.
+        :return None:
+        """
         self.button_clear_line.setEnabled(False)
         self.button_flip_line.setEnabled(False)
         self.line_profile_plot.hide()
@@ -626,6 +723,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         logging.info("Cleared Line")
 
     def __disable_all_leds(self):
+        """
+        Called when the user clicks the red cross button to disable all LEDs. Disables an enabled LED modes and turns
+        all the lights off
+        :return None:
+        """
         logging.info("Disabling all LEDs")
         self.__reset_led_spis()
         self.__reset_pairs()
@@ -650,7 +752,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.__update_controller_pairs()
 
-    def __on_individual_led(self, state):
+    def __on_individual_led(self):
+        """
+        This is called whenever the user clicked to enable or disable an individual LED. It disables all active modes
+        and enables the enabled LEDs.
+        :return None:
+        """
         logging.info("Individual LED being called")
         if not self.flickering:
             if self.check_for_any_active_LED_mode():
@@ -671,6 +778,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.__update_controller_spi()
 
     def __on_long_pol(self, checked):
+        """
+        Called when the user clicks the long and pol button. Enables top pair.
+        :param bool checked: The state of button_long_pol after clicking.
+        :return None:
+        """
         if checked:
             if self.flickering:
                 self.__reset_after_flicker_mode()
@@ -703,7 +815,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__disable_all_leds()
 
     def __on_trans_pol(self, checked):
-
+        """
+        Called when the user clicks the trans and pol button. Enables left pair.
+        :param bool checked: The state of button_trans_pol after clicking.
+        :return None:
+        """
         if checked:
             if self.flickering:
                 self.__reset_after_flicker_mode()
@@ -736,7 +852,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__disable_all_leds()
 
     def __on_polar(self, checked):
-
+        """
+        Called when the user clicks the polar button. Enables top middle and bottom middle.
+        Cancels longitudinal component.
+        :param bool checked: The state of button_pol after clicking.
+        :return None:
+        """
         if checked:
             if self.flickering:
                 self.__reset_after_flicker_mode()
@@ -772,6 +893,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__disable_all_leds()
 
     def __on_long_trans(self, checked):
+        """
+        Called when the user clicks the long and trans and pol button. Flickers between the left and top pairs,
+        taking a difference image.
+        :param bool checked: The state of button_long_trans after clicking.
+        :return None:
+        """
         if checked:
             if not self.flickering:
                 self.__prepare_for_flicker_mode()
@@ -799,6 +926,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__disable_all_leds()
 
     def __on_pure_long(self, checked):
+        """
+        Called when the user clicks the long and trans and pol button. Flickers between the top and bottom pairs,
+        taking a difference image. This shows contrast in the longitudinal axis.
+        :param bool checked: The state of button_pure_long after clicking.
+        :return None:
+        """
         if checked:
             if not self.flickering:
                 self.__prepare_for_flicker_mode()
@@ -826,6 +959,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__disable_all_leds()
 
     def __on_pure_trans(self, checked):
+        """
+        Called when the user clicks the long and trans and pol button. Flickers between the left and right pairs,
+        taking a difference image.
+        :param bool checked: The state of button_pure_trans after clicking.
+        :return None:
+        """
         if checked:
             if not self.flickering:
                 self.__prepare_for_flicker_mode()
@@ -853,7 +992,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__disable_all_leds()
 
     def __prepare_for_flicker_mode(self):
-
+        """
+        Is called whenever enabling long and trans and pol, pure long or pure trans measurements. It simply updates the
+        GUI and some program flow parameters. It pauses the camera which will resume itself in a new mode in
+        self.__on_camera_ready. The flicker lights and trigger setup is handled by
+        self.lamp_controller.continuous_flicker(mode) in the button callbacks.
+        :return None:
+        """
         self.frame_processor.subtracting = False
         self.button_display_subtraction.setEnabled(False)
         # TODO: Add cv2 windows for raw frames
@@ -884,6 +1029,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         Whenever the camera is stopped, this is automatically called but cannot be instigated until after the method
         that changed the running mode has been executed fully. If paused, this is ignored and unpausing manually
         restarts the camera.
+        This allows for the collection of a background image and for the swapping between two camera operating modes.
         :return:
         """
         logging.info("ready received")
@@ -905,6 +1051,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 logging.info("Camera grabber starting normal mode")
 
     def __on_frame_processor_ready(self):
+        """
+        The frame processor gets paused in order to change the binning mode etc. This allows for the frame processor to
+         get restarted with the correct shape empty arrays.
+        :return None:
+        """
         logging.info("Frame processor ready received")
         self.mutex.lock()
         self.frame_processor.frame_counter = 0
@@ -918,6 +1069,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
     def __reset_after_flicker_mode(self):
+        """
+        This handles all the changes necessary to reset the GUI to running without the difference imaging modes.
+        Is called whenever the GUI is changed from a difference mode into normal running mode.
+        :return:
+        """
         logging.info("Resetting after flicker mode")
         self.item_semaphore = QtCore.QSemaphore(0)
         self.spaces_semaphore = QtCore.QSemaphore(self.BUFFER_SIZE)
@@ -942,6 +1098,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.lamp_controller.stop_flicker()
 
     def check_for_any_active_LED_mode(self):
+        """
+        Checks if any of the LED mode buttons are active. Is used when the active LED mode is disabled to check whether
+        all the other buttons are disabled.
+        :return bool: True when any mode is active, False when all modes are disabled.
+        """
         return bool(
             self.button_long_pol.isChecked() +
             self.button_trans_pol.isChecked() +
@@ -952,15 +1113,26 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         )
 
     def get_magnet_mode(self):
+        """
+        Returns enum of magnet modes. Only used in saving at the moment.
+        :return int: Sum of modes 1, 2, 4 corresponding to DC, AC, Decay respectively.
+        """
         return (self.button_DC_field.isChecked() * 1 +
-                self.button_AC_field.isChecked() * 2 +
                 self.button_AC_field.isChecked() * 2 +
                 self.button_decay_field.isChecked() * 4)
 
     def __update_controller_pairs(self):
+        """
+        Sends the currently active pairs to the lamp controller to enable the correct LEDs in the non-SPI mode.
+        :return None:
+        """
         self.lamp_controller.enable_assortment_pairs(self.enabled_led_pairs)
 
     def __update_controller_spi(self):
+        """
+        Sends the currently active LEDs to the lamp controller to enable the correct LEDs in SPI mode.
+        :return None:
+        """
         # I assumed the numbering would go outside then inside, but it goes inside then outside
         value = self.enabled_leds_spi["left1"] * 2 \
                 + self.enabled_leds_spi["left2"] * 1 \
@@ -973,6 +1145,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.lamp_controller.enable_leds(value)
 
     def __on_control_change(self, control_all):
+        """
+        Called when button_LED_control_all is clicked to handle whether the brightness slider controls active LEDs or
+        all LEDs
+        :param control_all:
+        :return None:
+        """
         self.LED_control_all = control_all
         if self.LED_control_all:
             self.button_LED_control_all.setText("Control\nSelected")
@@ -981,11 +1159,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.__update_brightness(180 - self.scroll_LED_brightness.value())
 
     def __on_brightness_slider(self, value):
+        """
+        Updates the LED brightness when the slider is changed. Which LEDs are controlled is handled in __update_brightness
+        :param int value: The new brightness value
+        :return None:
+        """
         value = 180 - value
         logging.info(f"Slider Value Changed to: {value}")
         self.__update_brightness(value)
 
     def __update_brightness_slider(self):
+        """
+        When selecting a new more or new LEDs, the brightness slider is moved to display the brightness LED value of the current selection.
+        Does not currently update the values of the LEDs until the brightness slider is moved again.
+        :return
+        """
         if self.LED_control_all:
             keys = self.LED_brightnesses.keys()
         else:
@@ -997,9 +1185,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.scroll_blocker.reblock()
             self.scroll_LED_brightness.setValue(180 - brightest_val)
             self.scroll_blocker.unblock()
-            self.__update_brightness(brightest_val)
+            # self.__update_brightness(brightest_val)
 
     def __update_brightness(self, value):
+        """
+        Sets the brightness of the appropriate LEDs based on the state of button_LED_control_all and the currently
+        enabled LEDs.
+        :param int value: New brightness value
+        :return:
+        """
+
         if self.LED_control_all:
             keys = self.LED_brightnesses.keys()
         else:
@@ -1012,7 +1207,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.LED_brightnesses[key] = value
             self.lamp_controller.set_some_brightness([value] * len(keys), [self.led_id_enum[key] for key in keys])
 
-    def __on_get_new_background(self, ignored_event):
+    def __on_get_new_background(self):
+        """
+        Stops the camera and prepares the GUI to measure the background once the camera is ready. This is handled in
+        self.__on_camera_ready
+        :return None:
+        """
         logging.info("Getting background")
         self.get_background = True
         self.mutex.lock()
@@ -1020,6 +1220,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.mutex.unlock()
 
     def __on_exposure_time_changed(self):
+        """
+        Stops the camera and stops the camera from emitting the ready signal at the end of the collection loop.
+        The camera then emits ready after it processes the set_exposure_time call. And this leads to a
+        self.__on_camera_ready call which restarts the camera.
+        :return:
+        """
         value = self.spin_exposure_time.value()
         if value != self.exposure_time:
             logging.info("Attempting to set exposure time to: %s", value)
@@ -1027,10 +1233,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.camera_grabber.waiting = True
             self.camera_grabber.running = False
             self.mutex.unlock()
-            self.camera_grabber.set_exposure_time(value)
+            QtCore.QMetaObject.invokeMethod(
+                self.camera_grabber,
+                "set_exposure_time",
+                QtCore.Qt.ConnectionType.QueuedConnection,
+                QtCore.Q_ARG(float, value)
+            )
             self.exposure_time = value
 
     def __on_binning_mode_changed(self, binning_idx):
+        """
+        Stops the camera and stops the camera from emitting the ready signal at the end of the collection loop.
+        The camera then emits ready after it processes the set_binning_mode call. And this leads to a
+        self.__on_camera_ready call which restarts the camera.
+        :return:
+        """
         match binning_idx:
             case 0:
                 value = 1
@@ -1053,7 +1270,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.camera_grabber.waiting = True
             self.camera_grabber.running = False
             self.mutex.unlock()
-            self.camera_grabber.set_binning_mode(value)
+            QtCore.QMetaObject.invokeMethod(
+                self.camera_grabber,
+                "set_binning_mode",
+                QtCore.Qt.ConnectionType.QueuedConnection,
+                QtCore.Q_ARG(int, value)
+            )
             if sum(self.frame_processor.roi) > 0:
                 self.frame_processor.roi = tuple(
                     [int(value * (old_binning / self.binning)) for value in self.frame_processor.roi])
@@ -1063,9 +1285,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.latest_processed_frame = np.zeros((dim, dim), dtype=np.uint16)
 
     def __on_average_changed(self, value):
+        """Is called when the number of averages is changed."""
         self.frame_processor.averages = value
 
     def __on_averaging(self, enabled):
+        """
+        Is called when button_toggle_averaging is clicked. This sets everyting up for averaging and gets the frame
+        processor to start averaging.
+        :param bool enabled: State of button_toggle_averaging after clicking.
+        :return None:
+        """
         if enabled:
             self.button_toggle_averaging.setText("Disable Averaging (F3)")
             logging.info("Averaging enabled")
@@ -1086,6 +1315,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.mutex.unlock()
 
     def __on_show_subtraction(self, subtracting):
+        """
+        Is called when button_display_subtraction is clicked. Toggles the frame processor between subtracting the
+        background and not.
+        :param bool subtracting: state of button_display_subtraction after clicking.
+        :return None:
+        """
         if subtracting:
             self.button_display_subtraction.setText("Ignore Background (F2)")
             self.frame_processor.subtracting = True
@@ -1094,6 +1329,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.subtracting = False
 
     def __on_pause_button(self, paused):
+        """
+        Called when button_pause_camera is clicked. Pauses/resumes the camera grabber to stop/start updating the frames.
+        :param bool paused: state of button_pause_camera after clicking
+        :return None:
+        """
         self.paused = paused
         if paused:
             self.mutex.lock()
@@ -1119,6 +1359,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 )
 
     def __on_change_calibration(self, index):
+        """
+        Is called whenever the user selects a new field coil calibration file in combo_calib_file.
+        Updates the magnetic field control values and relevant GUI elements. If None is selected, it defaults to using
+        uncalibrated voltage
+        :param int index: New index after selection.
+        :return None:
+        """
         if index > 0:
             file_name = self.calibration_dictionary[index]
             calibration_array = np.loadtxt(os.path.join(self.calib_file_dir, file_name), delimiter=',', skiprows=1)
@@ -1133,6 +1380,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.label_amplitude.setText("Amplitude (mT)")
             self.label_offset.setText("Offset (mT)")
             self.label_measured_field.setText("Field (mT)")
+            self.label_max_field.setText("Max Field (mT)")
+            self.line_max_field.setText(str(round(max_field, 5)))
             self.spin_mag_amplitude.setValue(0.0)
             self.spin_mag_amplitude.setRange(-max_field, max_field)
             self.spin_mag_amplitude.setSingleStep(round(max_field / 50, 1))
@@ -1147,8 +1396,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 defaults,
                 defaults
             )
+            self.label_amplitude.setText("Amplitude (V)")
+            self.label_offset.setText("Offset (V)")
+            self.label_measured_field.setText("Field (V)")
+            self.label_max_field.setText("Max Field (V)")
+            self.line_max_field.setText(str(10))
+            self.spin_mag_amplitude.setValue(0.0)
+            self.spin_mag_amplitude.setRange(-10, 10)
+            self.spin_mag_amplitude.setSingleStep(0.1)
+            self.spin_mag_offset.setValue(0.0)
+            self.spin_mag_offset.setRange(-10, 10)
+            self.spin_mag_offset.setSingleStep(0.1)
+
 
     def __on_change_field_amplitude(self, value):
+
         if self.button_invert_field.isChecked():
             self.magnet_controller.set_target_field(-value)
         else:
@@ -1380,7 +1642,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             key = 'as_seen'
             if self.button_toggle_averaging.isChecked():
                 key += f'_averaged({self.spin_foreground_averages.value()}) '
-            if self.button_display_subtraction.isChecked() and not self.flickering:
+            if (self.button_display_subtraction.isChecked()
+                    and not self.flickering
+                    and self.frame_processor.background is not None):
                 key += '_subtracted'
             if self.flickering:
                 key += '_difference image'
