@@ -113,7 +113,6 @@ class CameraGrabber(QtCore.QObject):
                     if frame is not None:
                         self.parent.frame_buffer.append((frame[0].astype(np.int32), frame[1]))
                         self.parent.item_semaphore.release()
-                        logging.debug("Got frame")
         self.cam.stop_acquisition()
         logging.info("Camera stopped")
         if self.closing:
@@ -162,7 +161,6 @@ class CameraGrabber(QtCore.QObject):
                     if frame_data is not None:
                         if frame_data[1].frame_index % 2 == 0:
                             frame_a = (frame_data[0].astype(np.int32), frame_data[1])
-                            logging.debug("Got frame_a")
                     if not self.running:
                         logging.warning("stopping without frame_a")
                         self.parent.frame_buffer.append([])
@@ -173,7 +171,6 @@ class CameraGrabber(QtCore.QObject):
                     if frame_data is not None:
                         if frame_data[1].frame_index % 2 == 1:
                             frame_b = (frame_data[0].astype(np.int32), frame_data[1])
-                            logging.debug("Got frame_b")
                     if not self.running:
                         logging.warning("stopping without frame_b")
                         self.parent.frame_buffer.append([])
@@ -181,7 +178,6 @@ class CameraGrabber(QtCore.QObject):
                         return
                 self.parent.frame_buffer.append(frame_a + frame_b)
                 self.parent.item_semaphore.release()
-                logging.debug("Got difference frames")
 
 
 if __name__ == "__main__":
