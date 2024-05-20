@@ -163,10 +163,10 @@ class AnalyserSweepDialog(QDialog):
             angle += self.step_size
 
         contents.append('sweep_data')
+        data_dict = {'angles': angles, 'intensities': intensities}
+        store['sweep_data'] = pd.DataFrame(data_dict)
         meta_data['contents'] = [contents]
         store['meta_data'] = pd.DataFrame(meta_data)
-        store['sweep_data'] = pd.DataFrame(np.array(list(zip(angles, intensities))))
-        contents.append('sweep_data')
 
         store.close()
         logging.info("Sweep complete. Data saved to: " + str(file_path))
@@ -334,11 +334,11 @@ class FieldSweepDialog(QDialog):
             pg.QtGui.QGuiApplication.processEvents()  # draws the updates to screen.
 
         contents.append('sweep_data')
-        meta_data['contents'] = [contents]
-        store['meta_data'] = pd.DataFrame(meta_data)
         data_dict = {'fields (mT)': fields, 'voltages (V)': voltages, 'intensities': intensities}
         store['sweep_data'] = pd.DataFrame(data_dict)
-        contents.append('sweep_data')
+
+        meta_data['contents'] = [contents]
+        store['meta_data'] = pd.DataFrame(meta_data)
 
         store.close()
         logging.info("Sweep complete. Data saved to: " + str(file_path))
