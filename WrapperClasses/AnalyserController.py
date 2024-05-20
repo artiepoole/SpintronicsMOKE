@@ -141,6 +141,8 @@ class AnalyserController:
                 # estimate the minimum position. This could be done using interpolation
                 self.move(-0.5 * move_degrees)
                 return
+        self.position_in_degrees = 0
+        self.position_in_steps = 0
 
     def close(self, reset=False):
         logging.info("Closing LampController")
@@ -160,4 +162,3 @@ if __name__ == "__main__":
     camera_grabber.cam.close()
     controller.close()
     lamp_controller.close(True)
-
