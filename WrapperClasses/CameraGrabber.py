@@ -29,7 +29,7 @@ class CameraGrabber(QtCore.QObject):
         self.difference_mode = False
         self.mutex = QtCore.QMutex()
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.pyqtSlot(float)
     def set_exposure_time(self, exposure_time):
         '''
         Resumes because is usually set via GUI
