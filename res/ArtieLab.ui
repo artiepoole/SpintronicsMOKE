@@ -2557,6 +2557,20 @@ of Points</string>
                </property>
               </widget>
              </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_offset">
+               <property name="text">
+                <string>Offset (V)</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_amplitude">
+               <property name="text">
+                <string>Amplitude (V)</string>
+               </property>
+              </widget>
+             </item>
              <item row="1" column="3">
               <widget class="QDoubleSpinBox" name="spin_mag_decay">
                <property name="enabled">
@@ -2573,17 +2587,10 @@ of Points</string>
                </property>
               </widget>
              </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_offset">
+             <item row="0" column="3">
+              <widget class="QLabel" name="label_decay_time">
                <property name="text">
-                <string>Offset (V)</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLabel" name="label_amplitude">
-               <property name="text">
-                <string>Amplitude (V)</string>
+                <string>Decay Time (s)</string>
                </property>
               </widget>
              </item>
@@ -2594,10 +2601,32 @@ of Points</string>
                </property>
               </widget>
              </item>
-             <item row="0" column="3">
-              <widget class="QLabel" name="label_decay_time">
+             <item row="0" column="4">
+              <widget class="QLabel" name="label_max_field">
                <property name="text">
-                <string>Decay Time (s)</string>
+                <string>Max Field (V)</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="4">
+              <widget class="QLineEdit" name="line_max_field">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>120</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>10.0</string>
+               </property>
+               <property name="maxLength">
+                <number>5</number>
                </property>
               </widget>
              </item>
