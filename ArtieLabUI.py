@@ -161,6 +161,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.image_timer.start(0)
         self.plot_timer.start(50)
         self.magnetic_field_timer.start(5)
+        self.button_long_pol.setChecked(True)
+        self.__on_long_pol(True)
+        self.__on_image_processing_mode_change(2)
 
     def __connect_signals(self):
         # LED controls
@@ -377,13 +380,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.latest_hist_data
         )
 
-        # self.frame_time_line.setData(np.diff(self.frame_processor.frame_times))
+        # The time taken to measure a frame is calculated from the difference in frame times so must be 2 or more frames.
         if len(self.frame_processor.frame_times) > 1:
             n_to_avg = min(10, self.frame_processor.frame_times.__len__())
             self.line_FPSdisplay.setText(
                 "%.3f" % (1 / (np.mean(np.diff(np.array(self.frame_processor.frame_times)[-n_to_avg:]))))
             )
 
+        # After starting a ROI measurement, these deques will have different lengths so must take the last values
+        # from the frame times until they are both fully populated.
         length = min([self.frame_processor.frame_times.__len__(), self.frame_processor.roi_int_y.__len__()])
         if sum(self.frame_processor.roi) > 0 and length > 0:
             self.roi_line.setData(
@@ -1216,12 +1221,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __rotate_analyser_forward(self):
         amount = self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
-        self.line_currentangle.setText(str(self.analyser_controller.position_in_degrees))
+        self.line_currentangle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
     def __rotate_analyser_backward(self):
         amount = -self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
-        self.line_currentangle.setText(str(self.analyser_controller.position_in_degrees))
+        self.line_currentangle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
     def __on_analyser_sweep(self):
         if self.flickering:
@@ -1230,10 +1235,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # TODO: Check for no lights on.
 
         logging.info("Pausing main GUI for analyser sweep dialog")
+        self.mutex.lock()
         self.camera_grabber.waiting = True
         self.camera_grabber.running = False
         self.frame_processor.waiting = True
         self.frame_processor.running = False
+        self.mutex.unlock()
         self.image_timer.stop()
         self.plot_timer.stop()
         self.magnetic_field_timer.stop()
@@ -1248,11 +1255,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                         QtCore.Qt.ConnectionType.QueuedConnection)
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
-
-
-
-
-
 
     def __on_save(self, event):
         # TODO Add analyser information to metadata

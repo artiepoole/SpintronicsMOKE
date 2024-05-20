@@ -2088,7 +2088,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </size>
              </property>
              <property name="text">
-              <string>Amount (°)</string>
+              <string>Move (°)</string>
              </property>
             </widget>
            </item>
@@ -2099,6 +2099,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                <width>50</width>
                <height>16777215</height>
               </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(255,255,255)</string>
              </property>
              <property name="minimum">
               <double>0.000000000000000</double>
@@ -2116,12 +2119,49 @@ QWidget{background-color: rgb(255,255,255)}</string>
              <property name="text">
               <string>backward</string>
              </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>icons/L_arrow.png</normaloff>icons/L_arrow.png</iconset>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QToolButton" name="button_move_analyser_for">
              <property name="text">
               <string>forward</string>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>icons/R_arrow.png</normaloff>icons/R_arrow.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_current_angle">
+             <property name="text">
+              <string>Pos (°)</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="line_currentangle">
+             <property name="maximumSize">
+              <size>
+               <width>50</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(255,255,255)</string>
+             </property>
+             <property name="text">
+              <string>0.00</string>
+             </property>
+             <property name="maxLength">
+              <number>5</number>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
