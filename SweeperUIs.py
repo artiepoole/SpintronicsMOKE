@@ -136,13 +136,14 @@ class AnalyserSweepDialog(QDialog):
         contents = []
         intensities = []
         angles = []
-        self.analyser_controller.move(-self.start_angle)
+        self.analyser_controller.move(-self.start_angle) # go to zero
         angle = self.start
 
         self.camera_grabber.prepare_camera()
         if abs(self.start) > 0.0001:
             self.analyser_controller.move(self.start)
-        for i in range(self.steps):
+
+        for i in range(self.steps + 1):
             time.sleep(self.parent.exposure_time)
             if self.averaging:
                 frames = self.camera_grabber.snap_n(self.averages)
@@ -152,7 +153,9 @@ class AnalyserSweepDialog(QDialog):
             if self.roi:
                 x, y, w, h = self.roi
                 intensities.append(np.mean(frame[y:y + h, x:x + w], axis=(0, 1)))
-                angles.append(angle)
+            else:
+                intensities.append(np.mean(frame, axis=(0, 1)))
+            angles.append(angle)
             self.sweep_line.setData(angles, intensities)
             pg.QtGui.QGuiApplication.processEvents()  # draws the updates to screen.
 
@@ -161,7 +164,7 @@ class AnalyserSweepDialog(QDialog):
             store[key] = pd.DataFrame(frame)
             self.analyser_controller.move(self.step_size)
             angle += self.step_size
-
+        print(angles, intensities)
         contents.append('sweep_data')
         data_dict = {'angles': angles, 'intensities': intensities}
         store['sweep_data'] = pd.DataFrame(data_dict)
@@ -327,9 +330,11 @@ class FieldSweepDialog(QDialog):
             if self.roi:
                 x, y, w, h = self.roi
                 intensities.append(np.mean(frame[y:y + h, x:x + w], axis=(0, 1)))
-                field, voltage = self.magnet_controller.get_current_amplitude()
-                fields.append(field)
-                voltages.append(voltage)
+            else:
+                intensities.append(np.mean(frame, axis=(0, 1)))
+            field, voltage = self.magnet_controller.get_current_amplitude()
+            fields.append(field)
+            voltages.append(voltage)
             self.sweep_line.setData(fields, intensities)
             pg.QtGui.QGuiApplication.processEvents()  # draws the updates to screen.
 
