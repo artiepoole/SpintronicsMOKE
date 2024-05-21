@@ -104,10 +104,10 @@ class FrameProcessor(QtCore.QObject):
     def set_clip_limit(self, new_clip_limit):
         self.clip = new_clip_limit
 
-    def __process_frame(self, frame_in):
+    def _process_frame(self, frame_in):
         if self.subtracting and self.background is not None:
-            frame_in = frame_in - self.background
-            frame_in[frame_in < 0] = 0
+            frame_in = np.abs(frame_in - self.background)
+            # frame_in[frame_in < 0] = 0
         match self.mode:
             case self.IMAGE_PROCESSING_NONE:
                 return frame_in
@@ -175,11 +175,11 @@ class FrameProcessor(QtCore.QObject):
                         mean_a = int_mean(self.diff_frame_stack_a, axis=0)
                         mean_b = int_mean(self.diff_frame_stack_b, axis=0)
                         self.latest_mean_diff = np.abs(mean_a - mean_b)
-                        self.latest_processed_frame = self.__process_frame(self.latest_mean_diff)
+                        self.latest_processed_frame = self._process_frame(self.latest_mean_diff)
                     else:
                         self.latest_diff_frame = np.abs(
                             self.latest_diff_frame_a - self.latest_diff_frame_b)
-                        self.latest_processed_frame = self.__process_frame(self.latest_diff_frame)
+                        self.latest_processed_frame = self._process_frame(self.latest_diff_frame)
                     self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
                     if self.line_coords is not None:
                         start, end = self.line_coords
@@ -215,9 +215,9 @@ class FrameProcessor(QtCore.QObject):
                             self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
                         self.frame_counter += 1
                         self.latest_mean_frame = int_mean(self.raw_frame_stack, axis=0)
-                        self.latest_processed_frame = self.__process_frame(self.latest_mean_frame)
+                        self.latest_processed_frame = self._process_frame(self.latest_mean_frame)
                     else:
-                        self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
+                        self.latest_processed_frame = self._process_frame(self.latest_raw_frame)
                     self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
                     if self.line_coords is not None:
                         start, end = self.line_coords
@@ -263,9 +263,9 @@ class FrameProcessor(QtCore.QObject):
                         self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
                     self.frame_counter += 1
                     self.latest_mean_frame = int_mean(self.raw_frame_stack)
-                    self.latest_processed_frame = self.__process_frame(self.latest_mean_frame)
+                    self.latest_processed_frame = self._process_frame(self.latest_mean_frame)
                 else:
-                    self.latest_processed_frame = self.__process_frame(self.latest_raw_frame)
+                    self.latest_processed_frame = self._process_frame(self.latest_raw_frame)
                 self.latest_hist_data, self.latest_hist_bins = exposure.histogram(
                     self.latest_processed_frame)
                 if self.line_coords is not None:

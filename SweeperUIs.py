@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 import logging
 import numpy as np
+import cv2
 
 
 class AnalyserSweepDialog(QDialog):
@@ -104,7 +105,7 @@ class AnalyserSweepDialog(QDialog):
             'camera': 'Hamamatsu C11440',
             'sample': self.parent.line_prefix.text(),
             'lighting configuration': [self.parent.get_lighting_configuration()],
-            'binnning': self.parent.combo_binning.currentText(),
+            'binning': self.parent.combo_binning.currentText(),
             'lens': self.parent.combo_lens.currentText(),
             'magnification': self.parent.combo_magnification.currentText(),
             'exposure_time': self.parent.spin_exposure_time.value(),
@@ -136,7 +137,7 @@ class AnalyserSweepDialog(QDialog):
         contents = []
         intensities = []
         angles = []
-        self.analyser_controller.move(-self.start_angle) # go to zero
+        self.analyser_controller.move(-self.start_angle)  # go to zero
         angle = self.start
 
         self.camera_grabber.prepare_camera()
@@ -217,9 +218,9 @@ class FieldSweepDialog(QDialog):
         )
         self.sweep_line = self.sweep_plot.plot([], [], pen='k')
 
-        self.amplitude.valueChanged.connect(self.spin_amplitude_value_changed)
-        self.offset.valueChanged.connect(self.spin_offset_value_changed)
-        self.step_size.valueChanged.connect(self.spin_step_size_value_changed)
+        self.spin_amplitude.valueChanged.connect(self.spin_amplitude_value_changed)
+        self.spin_offset.valueChanged.connect(self.spin_offset_value_changed)
+        self.spin_step_size.valueChanged.connect(self.spin_step_size_value_changed)
         self.spin_repeats.valueChanged.connect(self.spin_repeats_value_changed)
         self.button_run.clicked.connect(self.run)
         self.button_cancel.clicked.connect(self.close)
@@ -251,7 +252,7 @@ class FieldSweepDialog(QDialog):
         if steps == 0:
             return
         self.points = steps
-        self.line_steps.setText(str(steps))
+        self.line_points.setText(str(steps))
 
     def run(self):
         file_path = Path(
@@ -275,16 +276,17 @@ class FieldSweepDialog(QDialog):
             'camera': 'Hamamatsu C11440',
             'sample': self.parent.line_prefix.text(),
             'lighting configuration': [self.parent.get_lighting_configuration()],
-            'binnning': self.parent.combo_binning.currentText(),
+            'binning': self.parent.combo_binning.currentText(),
             'lens': self.parent.combo_lens.currentText(),
             'magnification': self.parent.combo_magnification.currentText(),
             'exposure_time': self.parent.spin_exposure_time.value(),
             'correction': self.parent.line_correction.text(),
             'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'start': self.spin_start.value(),
-            'stop': self.spin_stop.value(),
-            'step': self.spin_step.value(),
-            'steps': self.points,
+            'amplitude': self.spin_amplitude.value(),
+            'offset': self.spin_offset.value(),
+            'step': self.spin_step_size.value(),
+            'repeats': self.spin_repeats.value(),
+            'points': self.line_points.text(),
             'roi': [self.roi],
         }
         match self.parent.get_magnet_mode():
@@ -292,21 +294,21 @@ class FieldSweepDialog(QDialog):
                 meta_data['magnet_mode'] = None
             case 1:  # DC
                 meta_data['magnet_mode'] = 'DC'
-                meta_data['mag_field'] = self.mag_y[-1]
-                meta_data['coil_calib'] = self.combo_calib_file.currentText()
+                meta_data['mag_field'] = self.parent.mag_y[-1]
+                meta_data['coil_calib'] = self.parent.combo_calib_file.currentText()
             case 2:  # AC
                 meta_data['magnet_mode'] = 'AC'
-                meta_data['mag_field'] = self.mag_y[-1]
-                meta_data['mag_field_amp'] = self.spin_mag_amplitude.value()
-                meta_data['mag_field_freq'] = self.spin_mag_freq.value()
-                meta_data['mag_field_offset'] = self.spin_mag_offset.value()
-                meta_data['coil_calib'] = self.combo_calib_file.currentText()
+                meta_data['mag_field'] = self.parent.zmag_y[-1]
+                meta_data['mag_field_amp'] = self.parent.spin_mag_amplitude.value()
+                meta_data['mag_field_freq'] = self.parent.spin_mag_freq.value()
+                meta_data['mag_field_offset'] = self.parent.spin_mag_offset.value()
+                meta_data['coil_calib'] = self.parent.combo_calib_file.currentText()
         if self.averaging:
             meta_data['averages'] = self.parent.spin_foreground_averages.value()
         one_side = np.arange(0, self.amplitude + self.step_size, self.step_size)
 
-        target_fields = np.repeat(np.concatenate([one_side, np.flip(one_side), -one_side, -np.flip(one_side)]),
-                                  self.repeats) + self.offset
+        target_fields = np.tile(np.concatenate([one_side, np.flip(one_side), -one_side, -np.flip(one_side)]),
+                                self.repeats) + self.offset
 
         contents = []
         intensities = []
@@ -336,6 +338,12 @@ class FieldSweepDialog(QDialog):
             fields.append(field)
             voltages.append(voltage)
             self.sweep_line.setData(fields, intensities)
+            cv2.imshow(self.parent.stream_window,
+                       self.parent.frame_processor._process_frame(
+                           frame.astype(np.int32)
+                       ).astype(np.uint16)
+                       )
+            cv2.waitKey(1)
             pg.QtGui.QGuiApplication.processEvents()  # draws the updates to screen.
 
         contents.append('sweep_data')
@@ -347,3 +355,9 @@ class FieldSweepDialog(QDialog):
 
         store.close()
         logging.info("Sweep complete. Data saved to: " + str(file_path))
+        # TODO: add number of points remaining text to figure.
+        # Update CV2 plot
+        logging.info("Setting field to zero and mode to off")
+        self.magnet_controller.set_target_field(0)
+        self.magnet_controller.mode = None
+

@@ -10,7 +10,7 @@ import cv2
 
 import pyqtgraph as pg
 
-from SweeperUIs import AnalyserSweepDialog
+from SweeperUIs import AnalyserSweepDialog, FieldSweepDialog
 from WrapperClasses import *
 
 import os.path
@@ -230,6 +230,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         # Special Function Controls
         self.button_analy_sweep.clicked.connect(self.__on_analyser_sweep)
+        self.button_hyst_sweep.clicked.connect(self.__on_hysteresis_sweep)
 
         # Plot controls
         self.magnetic_field_timer.timeout.connect(self.__update_field_measurement)
@@ -767,15 +768,19 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.button_long_trans.setChecked(False)
                 self.button_pure_long.setChecked(False)
                 self.button_pure_trans.setChecked(False)
-            self.enabled_leds_spi["up1"] = self.button_up_led1.isChecked()
-            self.enabled_leds_spi["up2"] = self.button_up_led2.isChecked()
-            self.enabled_leds_spi["down1"] = self.button_down_led1.isChecked()
-            self.enabled_leds_spi["down2"] = self.button_down_led2.isChecked()
-            self.enabled_leds_spi["left1"] = self.button_left_led1.isChecked()
-            self.enabled_leds_spi["left2"] = self.button_left_led2.isChecked()
-            self.enabled_leds_spi["right1"] = self.button_right_led1.isChecked()
-            self.enabled_leds_spi["right2"] = self.button_right_led2.isChecked()
+            self.__populate_spis()
             self.__update_controller_spi()
+
+
+    def __populate_spis(self):
+        self.enabled_leds_spi["up1"] = self.button_up_led1.isChecked()
+        self.enabled_leds_spi["up2"] = self.button_up_led2.isChecked()
+        self.enabled_leds_spi["down1"] = self.button_down_led1.isChecked()
+        self.enabled_leds_spi["down2"] = self.button_down_led2.isChecked()
+        self.enabled_leds_spi["left1"] = self.button_left_led1.isChecked()
+        self.enabled_leds_spi["left2"] = self.button_left_led2.isChecked()
+        self.enabled_leds_spi["right1"] = self.button_right_led1.isChecked()
+        self.enabled_leds_spi["right2"] = self.button_right_led2.isChecked()
 
     def __on_long_pol(self, checked):
         """
@@ -808,7 +813,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_long_trans.setChecked(False)
             self.button_pure_long.setChecked(False)
             self.button_pure_trans.setChecked(False)
-
+            self.__populate_spis()
             self.__update_controller_pairs()
         else:
             if not self.check_for_any_active_LED_mode():
@@ -845,7 +850,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_long_trans.setChecked(False)
             self.button_pure_long.setChecked(False)
             self.button_pure_trans.setChecked(False)
-
+            self.__populate_spis()
             self.__update_controller_pairs()
         else:
             if not self.check_for_any_active_LED_mode():
@@ -886,7 +891,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_long_trans.setChecked(False)
             self.button_pure_long.setChecked(False)
             self.button_pure_trans.setChecked(False)
-
+            self.__populate_spis()
             self.__update_controller_spi()
         else:
             if not self.check_for_any_active_LED_mode():
@@ -919,7 +924,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_down_led2.setChecked(False)
             self.button_right_led1.setChecked(False)
             self.button_right_led2.setChecked(False)
-
+            self.__populate_spis()
             self.lamp_controller.continuous_flicker(0, )
         else:
             if not self.check_for_any_active_LED_mode():
@@ -954,6 +959,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_right_led2.setChecked(False)
             self.button_left_led1.setChecked(False)
             self.button_left_led2.setChecked(False)
+            self.__populate_spis()
         else:
             if not self.check_for_any_active_LED_mode():
                 self.__disable_all_leds()
@@ -987,6 +993,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.button_down_led2.setChecked(False)
             self.button_left_led1.setChecked(False)
             self.button_left_led2.setChecked(False)
+            self.__populate_spis()
         else:
             if not self.check_for_any_active_LED_mode():
                 self.__disable_all_leds()
@@ -1384,10 +1391,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.line_max_field.setText(str(round(max_field, 5)))
             self.spin_mag_amplitude.setValue(0.0)
             self.spin_mag_amplitude.setRange(-max_field, max_field)
-            self.spin_mag_amplitude.setSingleStep(round(max_field / 50, 1))
+            self.spin_mag_amplitude.setSingleStep(round(max_field / 200, 1))
             self.spin_mag_offset.setValue(0.0)
             self.spin_mag_offset.setRange(-max_field, max_field)
-            self.spin_mag_offset.setSingleStep(round(max_field / 50, 1))
+            self.spin_mag_offset.setSingleStep(round(max_field / 200, 1))
         else:
             defaults = np.linspace(-10, 10, 100)
             self.magnet_controller.set_calibration(
@@ -1410,7 +1417,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
 
     def __on_change_field_amplitude(self, value):
-
+        # TODO: got to here when adding documentation
         if self.button_invert_field.isChecked():
             self.magnet_controller.set_target_field(-value)
         else:
@@ -1485,6 +1492,39 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.analyser_controller.move(amount)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
+    def __on_hysteresis_sweep(self):
+        if self.flickering:
+            logging.error("Cannot run analyser while using difference mode imaging.")
+            return
+        if sum(self.enabled_leds_spi.values()) == 0:
+            logging.error("Cannot run analyser without lights.")
+            return
+        if self.combo_calib_file.currentIndex() == 0:
+            logging.error("No calibration file selected.")
+            return
+        # TODO: Check for no lights on.
+
+        logging.info("Pausing main GUI for Field sweep dialog")
+        self.mutex.lock()
+        self.camera_grabber.waiting = True
+        self.camera_grabber.running = False
+        self.frame_processor.waiting = True
+        self.frame_processor.running = False
+        self.mutex.unlock()
+        self.image_timer.stop()
+        self.plot_timer.stop()
+        self.magnetic_field_timer.stop()
+
+        dialog = FieldSweepDialog(self)
+        dialog.exec()
+        logging.info("Resuming main GUI after Field sweep dialog")
+        self.image_timer.start(0)
+        self.plot_timer.start(50)
+        self.magnetic_field_timer.start(10)
+        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
+        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
     def __on_analyser_sweep(self):
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
@@ -1541,8 +1581,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.image_timer.start(0)
         self.plot_timer.start(50)
         self.magnetic_field_timer.start(10)
-        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
-                                        QtCore.Qt.ConnectionType.QueuedConnection)
+        QtCore.QMetaObject.invokeMethod(
+            self.camera_grabber,
+            "set_exposure_time",
+            QtCore.Qt.ConnectionType.QueuedConnection,
+            QtCore.Q_ARG(float, self.exposure_time)
+        )
+        # QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+        #                                 QtCore.Qt.ConnectionType.QueuedConnection)
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
@@ -1553,7 +1599,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'camera': 'Hamamatsu C11440',
             'sample': self.line_prefix.text(),
             'lighting configuration': [self.get_lighting_configuration()],
-            'binnning': self.combo_binning.currentText(),
+            'binning': self.combo_binning.currentText(),
             'lens': self.combo_lens.currentText(),
             'magnification': self.combo_magnification.currentText(),
             'exposure_time': self.spin_exposure_time.value(),
@@ -1684,7 +1730,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'camera': 'Hamamatsu C11440',
             'sample': self.line_prefix.text(),
             'lighting configuration': self.get_lighting_configuration(),
-            'binnning': self.combo_binning.currentText(),
+            'binning': self.combo_binning.currentText(),
             'lens': self.combo_lens.currentText(),
             'magnification': self.combo_magnification.currentText(),
             'exposure_time': self.spin_exposure_time.value(),

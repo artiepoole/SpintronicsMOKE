@@ -81,7 +81,7 @@ class MagnetController:
             data = np.ones(n_samples) * self.target_voltage
             self.analogue_output_task.write(data, auto_start=False)
             self.analogue_output_task.start()
-            print(f"Set voltage to {self.target_voltage} VDC")
+            logging.debug(f"Set voltage to {self.target_voltage} VDC")
         elif self.mode == "AC":
             n_samples = int(round(
                 1 / self.frequency,
@@ -114,7 +114,7 @@ class MagnetController:
             data = np.zeros(n_samples)
             self.analogue_output_task.write(data, auto_start=False)
             self.analogue_output_task.start()
-            print(f"Set voltage to {self.target_voltage} VDC")
+            logging.info(f"Set voltage to {self.target_voltage} VDC")
 
     def get_current_amplitude(self):
         voltage = self.analogue_input_task.read()
