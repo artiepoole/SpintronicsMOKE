@@ -10,12 +10,30 @@ print(meta_data)
 contents = meta_data.contents[0]
 print(contents)
 frames = {}
+adapter = cv2.createCLAHE()
+adapter.setClipLimit(100)
+stream_window = 'window'
+cv2.namedWindow(
+    stream_window,
+    cv2.WINDOW_NORMAL
+)
+cv2.resizeWindow(
+    stream_window,
+    1024,
+    1024)
 
 for item in contents:
-    data = pd.read_hdf(file, item).values
-    if len(data.shape) == 2:
-        if data.shape[0] == data.shape[1]:
-            cv2.imshow(item, data / np.amax(data))
+    if "frame" in item or "stack" in item:
+        data = pd.read_hdf(file, item).values
+        if len(data.shape) == 2:
+            if data.shape[0] == data.shape[1]:
+                # cv2.imshow(item, data / np.amax(data))
+                cv2.imshow(stream_window, cv2.putText(adapter.apply(data.astype(np.uint16)), item,
+                                                      (50, 50),
+                                                      0,
+                                                      1,
+                                                      (255, 255, 255)))
+                cv2.waitKey(1000)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
