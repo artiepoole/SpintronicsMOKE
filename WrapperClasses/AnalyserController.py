@@ -40,9 +40,9 @@ class AnalyserController:
         data = [self.FINE * fine + self.CLOCK, self.FINE * fine]
         for i in range(steps):
             self.stepper_stream.write_one_sample_port_byte(data[0])
-            time.sleep(3e-3)
+            time.sleep(2e-3)
             self.stepper_stream.write_one_sample_port_byte(data[1])
-            time.sleep(3e-3)
+            time.sleep(2e-3)
             self.position_in_steps += 1
             self.position_in_degrees += 1 / self.STEPS_PER_DEGREE
 
