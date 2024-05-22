@@ -17,6 +17,7 @@ cv2.namedWindow(
     stream_window,
     cv2.WINDOW_NORMAL
 )
+cv2.setWindowProperty(stream_window, cv2.WND_PROP_TOPMOST, 1.0)
 cv2.resizeWindow(
     stream_window,
     1024,
@@ -33,7 +34,7 @@ for item in contents:
                                                       0,
                                                       1,
                                                       (255, 255, 255)))
-                cv2.waitKey(1000)
+                cv2.waitKey(20)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
