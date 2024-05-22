@@ -102,7 +102,7 @@ class MagnetController:
             self.analogue_output_task.write(wave, auto_start=False)
             self.analogue_output_task.start()
 
-            logging.info(f"Outputting AC Waveform with Peak to Peak voltage of: {self.target_voltage}")
+            logging.debug(f"Outputting AC Waveform with Peak to Peak voltage of: {self.target_voltage}")
         elif self.mode == None:
             n_samples = 100
             self.analogue_output_task.timing.cfg_samp_clk_timing(

@@ -40,9 +40,9 @@ class AnalyserController:
         data = [self.FINE * fine + self.CLOCK, self.FINE * fine]
         for i in range(steps):
             self.stepper_stream.write_one_sample_port_byte(data[0])
-            time.sleep(2e-3)
+            time.sleep(3e-3)
             self.stepper_stream.write_one_sample_port_byte(data[1])
-            time.sleep(2e-3)
+            time.sleep(3e-3)
             self.position_in_steps += 1
             self.position_in_degrees += 1 / self.STEPS_PER_DEGREE
 
@@ -140,7 +140,8 @@ class AnalyserController:
                 # This should only occur when going past the minimum so the analyser will return by half a step to
                 # estimate the minimum position. This could be done using interpolation
                 self.move(-0.5 * move_degrees)
-                return
+                searching = False
+        logging.info(f"Moved {self.position_in_degrees} degrees to find the minimum.")
         self.position_in_degrees = 0
         self.position_in_steps = 0
 

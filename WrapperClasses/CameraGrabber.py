@@ -192,49 +192,51 @@ if __name__ == "__main__":
     # camera_grabber.cam.set_attribute_value('TRIGGER ACTIVE', 1)  # Edge
     # camera_grabber.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
     # camera_grabber.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
-    # camera_grabber.prepare_camera()
-    # while True:
-    #     frame = camera_grabber.snap()
-    #     cv2.imshow(
-    #         '',
-    #         cv2.putText(
-    #             exposure.equalize_hist(frame),
-    #             f'{np.mean(frame, axis=(0, 1))}',
-    #             (50, 50),
-    #             0,
-    #             1,
-    #             (255, 255, 255)
-    #         )
-    #     )
-    #     key = cv2.waitKey(50)
-    #     if key == 27:
-    #         print('esc is pressed closing all windows')
-    #         cv2.destroyAllWindows()
-    #         break
+
+
     camera_grabber.prepare_camera()
-    frame = camera_grabber.snap()
-    camera_grabber.cam.close()
-    cv2.imshow(
-        '',
-        cv2.putText(
-            exposure.equalize_hist(frame),
-            f'{np.mean(frame, axis=(0, 1))}',
-            (50, 50),
-            0,
-            1,
-            (255, 255, 255)
+    while True:
+        frame = camera_grabber.snap()
+        cv2.imshow(
+            '',
+            cv2.putText(
+                exposure.equalize_hist(frame),
+                f'{np.mean(frame, axis=(0, 1))}',
+                (50, 50),
+                0,
+                1,
+                (255, 255, 255)
+            )
         )
-    )
-    cv2.waitKey(1)
-    rois = cv2.selectROIs('', cv2.putText(
-        exposure.equalize_hist(frame),
-        f'{np.mean(frame, axis=(0, 1))}',
-        (50, 50),
-        0,
-        1,
-        (255, 255, 255)
-        ),
-        showCrosshair=True,
-        printNotice=True
-    )
-    print(rois)
+        key = cv2.waitKey(50)
+        if key == 27:
+            print('esc is pressed closing all windows')
+            cv2.destroyAllWindows()
+            break
+    # camera_grabber.prepare_camera()
+    # frame = camera_grabber.snap()
+    # camera_grabber.cam.close()
+    # cv2.imshow(
+    #     '',
+    #     cv2.putText(
+    #         exposure.equalize_hist(frame),
+    #         f'{np.mean(frame, axis=(0, 1))}',
+    #         (50, 50),
+    #         0,
+    #         1,
+    #         (255, 255, 255)
+    #     )
+    # )
+    # cv2.waitKey(1)
+    # rois = cv2.selectROIs('', cv2.putText(
+    #     exposure.equalize_hist(frame),
+    #     f'{np.mean(frame, axis=(0, 1))}',
+    #     (50, 50),
+    #     0,
+    #     1,
+    #     (255, 255, 255)
+    #     ),
+    #     showCrosshair=True,
+    #     printNotice=True
+    # )
+    # print(rois)

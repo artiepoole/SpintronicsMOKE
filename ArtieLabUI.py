@@ -147,7 +147,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.magnetic_field_timer.start(5)
         self.button_long_pol.setChecked(True)
         self.__on_long_pol(True)
-        self.__on_image_processing_mode_change(2)
+        self.__on_image_processing_mode_change(4)
 
     def __connect_signals(self):
         """
@@ -180,9 +180,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         # Image Processing Controls
         self.combo_normalisation_selector.currentIndexChanged.connect(self.__on_image_processing_mode_change)
-        self.spin_percentile_lower.valueChanged.connect(self.__on_image_processing_spin_box_change)
-        self.spin_percentile_upper.valueChanged.connect(self.__on_image_processing_spin_box_change)
-        self.spin_clip.valueChanged.connect(self.__on_image_processing_spin_box_change)
+        self.spin_percentile_lower.editingFinished.connect(self.__on_image_processing_spin_box_change)
+        self.spin_percentile_upper.editingFinished.connect(self.__on_image_processing_spin_box_change)
+        self.spin_clip.editingFinished.connect(self.__on_image_processing_spin_box_change)
         self.button_ROI_select.clicked.connect(self.__select_roi)
         self.button_draw_line.clicked.connect(self.__draw_line)
         self.button_flip_line.clicked.connect(self.__on_flip_line)
@@ -193,7 +193,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Averaging controls
         self.button_measure_background.clicked.connect(self.__on_get_new_background)
         self.button_toggle_averaging.clicked.connect(self.__on_averaging)
-        self.spin_foreground_averages.valueChanged.connect(self.__on_average_changed)
+        self.spin_foreground_averages.editingFinished.connect(self.__on_average_changed)
 
         # Camera Controls
         # self.combo_targetfps.currentIndexChanged.connect(self.__on_exposure_time_changed)
@@ -214,9 +214,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Magnetic Field Control
 
         self.combo_calib_file.currentIndexChanged.connect(self.__on_change_calibration)
-        self.spin_mag_amplitude.valueChanged.connect(self.__on_change_field_amplitude)
-        self.spin_mag_offset.valueChanged.connect(self.__on_change_field_offset)
-        self.spin_mag_freq.valueChanged.connect(self.__on_change_mag_freq)
+        self.spin_mag_amplitude.editingFinished.connect(self.__on_change_field_amplitude)
+        self.spin_mag_offset.editingFinished.connect(self.__on_change_field_offset)
+        self.spin_mag_freq.editingFinished.connect(self.__on_change_mag_freq)
 
         self.button_zero_field.clicked.connect(self.__set_zero_field)
         self.button_DC_field.clicked.connect(self.__on_DC_field)
@@ -236,8 +236,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.magnetic_field_timer.timeout.connect(self.__update_field_measurement)
         self.plot_timer.timeout.connect(self.__update_plots)
         self.image_timer.timeout.connect(self.__update_images)
-        self.spin_number_of_points.valueChanged.connect(self.__on_change_plot_count)
-        self.spin_mag_point_count.valueChanged.connect(self.__on_change_mag_plot_count)
+        self.spin_number_of_points.editingFinished.connect(self.__on_change_plot_count)
+        self.spin_mag_point_count.editingFinished.connect(self.__on_change_mag_plot_count)
         self.button_reset_plots.clicked.connect(self.__on_reset_plots)
 
 
@@ -487,24 +487,26 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.mag_t = deque(self.mag_t, maxlen=self.spin_mag_point_count.value())
         self.mutex.unlock()
 
-    def __on_change_plot_count(self, value):
+    def __on_change_plot_count(self):
         """
         Changes the maxmimum length of the data used to plot the data on the right hand panel
         :param value: The new number of points
         :return:
         """
+        value = self.spin_number_of_points.value()
         self.mutex.lock()
         self.frame_processor.frame_times = deque(self.frame_processor.frame_times, maxlen=value)
         self.frame_processor.intensities_y = deque(self.frame_processor.intensities_y, maxlen=value)
         self.frame_processor.roi_int_y = deque(self.frame_processor.roi_int_y, maxlen=value)
         self.mutex.unlock()
 
-    def __on_change_mag_plot_count(self, value):
+    def __on_change_mag_plot_count(self):
         """
         Changes the maxmimum length of the data used to plot the magnetic field vs time.
         :param value: The new number of points
         :return None:
         """
+        value = self.spin_mag_point_count.value()
         self.mag_y = deque(self.mag_y, maxlen=value)
         self.mag_t = deque(self.mag_t, maxlen=value)
 
@@ -1007,6 +1009,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         :return None:
         """
         self.frame_processor.subtracting = False
+        self.button_measure_background.setEnabled(False)
         self.button_display_subtraction.setEnabled(False)
         # TODO: Add cv2 windows for raw frames
 
@@ -1090,6 +1093,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.flickering = False
         self.camera_grabber.running = False
         self.mutex.unlock()
+        self.button_measure_background.setEnabled(True)
         self.button_display_subtraction.setEnabled(True)
         self.frame_processor.subtracting = self.button_display_subtraction.isChecked()
         # TODO: hide the CV2 windows for the raw pos/neg
@@ -1287,12 +1291,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.frame_processor.roi = tuple(
                     [int(value * (old_binning / self.binning)) for value in self.frame_processor.roi])
                 logging.info(f'Binning mode: {self.binning}, roi: {self.frame_processor.roi}')
+            self.frame_processor.background = None
             self.width = dim
             self.height = dim
             self.frame_processor.latest_processed_frame = np.zeros((dim, dim), dtype=np.uint16)
 
-    def __on_average_changed(self, value):
+    def __on_average_changed(self):
         """Is called when the number of averages is changed."""
+        value = self.spin_foreground_averages.value()
         self.frame_processor.averages = value
 
     def __on_averaging(self, enabled):
@@ -1416,20 +1422,23 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.spin_mag_offset.setSingleStep(0.1)
 
 
-    def __on_change_field_amplitude(self, value):
+    def __on_change_field_amplitude(self):
         # TODO: got to here when adding documentation
+        value = self.spin_mag_amplitude.value()
         if self.button_invert_field.isChecked():
             self.magnet_controller.set_target_field(-value)
         else:
             self.magnet_controller.set_target_field(value)
 
-    def __on_change_field_offset(self, value):
+    def __on_change_field_offset(self):
+        value = self.spin_mag_offset.value()
         if self.button_invert_field.isChecked():
             self.magnet_controller.set_target_offset(-value)
         else:
             self.magnet_controller.set_target_offset(value)
 
-    def __on_change_mag_freq(self, value):
+    def __on_change_mag_freq(self):
+        value = self.spin_mag_freq.value()
         self.magnet_controller.set_frequency(value)
 
     def __set_zero_field(self):
@@ -1491,6 +1500,44 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         amount = -self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
+
+
+    def __on_find_minimum(self):
+        if self.flickering:
+            logging.error("Cannot run analyser while using difference mode imaging.")
+            return
+        if sum(self.enabled_leds_spi.values()) == 0:
+            logging.error("Cannot run analyser without lights.")
+            return
+
+
+        logging.info("Pausing main GUI for usage with Analyser")
+        self.mutex.lock()
+        self.camera_grabber.waiting = True
+        self.camera_grabber.running = False
+        self.frame_processor.waiting = True
+        self.frame_processor.running = False
+        self.mutex.unlock()
+        self.image_timer.stop()
+        self.plot_timer.stop()
+        self.magnetic_field_timer.stop()
+
+        self.analyser_controller.find_minimum(self.camera_grabber)
+        self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
+
+        self.image_timer.start(0)
+        self.plot_timer.start(50)
+        self.magnetic_field_timer.start(10)
+        QtCore.QMetaObject.invokeMethod(
+            self.camera_grabber,
+            "set_exposure_time",
+            QtCore.Qt.ConnectionType.QueuedConnection,
+            QtCore.Q_ARG(float, self.exposure_time)
+        )
+        # QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+        #                                 QtCore.Qt.ConnectionType.QueuedConnection)
+        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
 
     def __on_hysteresis_sweep(self):
         if self.flickering:
@@ -1556,43 +1603,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
-    def __on_find_minimum(self):
-        if self.flickering:
-            logging.error("Cannot run analyser while using difference mode imaging.")
-            return
-        if sum(self.enabled_leds_spi.values()) == 0:
-            logging.error("Cannot run analyser without lights.")
-            return
-
-        logging.info("Pausing main GUI for usage with Analyser")
-        self.mutex.lock()
-        self.camera_grabber.waiting = True
-        self.camera_grabber.running = False
-        self.frame_processor.waiting = True
-        self.frame_processor.running = False
-        self.mutex.unlock()
-        self.image_timer.stop()
-        self.plot_timer.stop()
-        self.magnetic_field_timer.stop()
-
-        self.analyser_controller.find_minimum(self.camera_grabber)
-        self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
-
-        self.image_timer.start(0)
-        self.plot_timer.start(50)
-        self.magnetic_field_timer.start(10)
-        QtCore.QMetaObject.invokeMethod(
-            self.camera_grabber,
-            "set_exposure_time",
-            QtCore.Qt.ConnectionType.QueuedConnection,
-            QtCore.Q_ARG(float, self.exposure_time)
-        )
-        # QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
-        #                                 QtCore.Qt.ConnectionType.QueuedConnection)
-        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
-                                        QtCore.Qt.ConnectionType.QueuedConnection)
 
     def __on_save(self):
+
+        # TODO: reorder the stack so that latest frame is last.
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",

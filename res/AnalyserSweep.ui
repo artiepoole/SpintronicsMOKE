@@ -104,6 +104,93 @@
         </property>
         <item>
          <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="11">
+           <widget class="QPushButton" name="button_cancel">
+            <property name="text">
+             <string>Cancel</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Step size (°)</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Stop Positon (°)</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="7">
+           <widget class="QLineEdit" name="line_steps">
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>10</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="10">
+           <widget class="QPushButton" name="button_run">
+            <property name="text">
+             <string>Run Sweep</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="9">
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="5">
+           <widget class="QDoubleSpinBox" name="spin_step">
+            <property name="styleSheet">
+             <string notr="true">QComboBox{color: rgb(0,0,0)}
+
+QWidget{background-color: rgb(255,255,255)}</string>
+            </property>
+            <property name="decimals">
+             <number>3</number>
+            </property>
+            <property name="minimum">
+             <double>-90.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>90.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="value">
+             <double>0.100000000000000</double>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="1">
            <widget class="QDoubleSpinBox" name="spin_start">
             <property name="styleSheet">
@@ -119,6 +206,16 @@ QWidget{background-color: rgb(255,255,255)}</string>
             </property>
             <property name="value">
              <double>0.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="6">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Steps</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>
@@ -150,102 +247,12 @@ QWidget{background-color: rgb(255,255,255)}</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="6">
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string>Steps</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="7">
-           <widget class="QLineEdit" name="line_steps">
-            <property name="maximumSize">
-             <size>
-              <width>50</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>10</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="10">
-           <widget class="QPushButton" name="button_cancel">
-            <property name="text">
-             <string>Cancel</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="4">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Step size (°)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Stop Positon (°)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="5">
-           <widget class="QDoubleSpinBox" name="spin_step">
-            <property name="styleSheet">
-             <string notr="true">QComboBox{color: rgb(0,0,0)}
-
-QWidget{background-color: rgb(255,255,255)}</string>
-            </property>
-            <property name="decimals">
-             <number>3</number>
-            </property>
-            <property name="minimum">
-             <double>-90.000000000000000</double>
-            </property>
-            <property name="maximum">
-             <double>90.000000000000000</double>
-            </property>
-            <property name="singleStep">
-             <double>0.100000000000000</double>
-            </property>
-            <property name="value">
-             <double>0.100000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="9">
-           <widget class="QPushButton" name="button_run">
-            <property name="text">
-             <string>Run Sweep</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="8">
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+           <widget class="QCheckBox" name="check_save_frames">
+            <property name="text">
+             <string>Save Frames?</string>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+           </widget>
           </item>
          </layout>
         </item>

@@ -5,30 +5,38 @@ import logging
 from collections import deque
 import time
 from skimage.measure import profile_line
+import cv2
+
+UINT16_MAX = 65535
+INT16_MAX = 65535//2
+
 
 
 def int_mean(image_stack, axis=0):
     return np.sum(image_stack, axis=axis) // image_stack.shape[0]
 
 
-def numpy_rescale(image, low, high):
-    px_low, px_high = np.percentile(image, (low, high))
+def numpy_rescale(image, low, high, roi=None):
+    if roi is not None:
+        px_low, px_high = np.percentile(roi, (low, high))
+    else:
+        px_low, px_high = np.percentile(image, (low, high))
     px_low = np.int32(px_low)
     px_high = np.int32(px_high)
     image[image < px_low] = px_low
     image[image > px_high] = px_high
-    return (image - px_low) * 65535 // (px_high - px_low)
+    return (image - px_low) * UINT16_MAX // (px_high - px_low)
 
 
 # Cast to int32 is twice as fast as cast to float64
 
 def numpy_equ(image):
     img_cdf, bin_centers = exposure.cumulative_distribution(image, nbins=100)
-    return (np.interp(image, bin_centers, img_cdf) * 65535).astype(np.int32)
+    return (np.interp(image, bin_centers, img_cdf) * UINT16_MAX)
 
 
 def basic_exposure(image):
-    return (image * (65535 // np.amax(image))).astype(np.int32)
+    return (image * (UINT16_MAX // np.amax(image)))
 
 
 class FrameProcessor(QtCore.QObject):
@@ -71,6 +79,7 @@ class FrameProcessor(QtCore.QObject):
     roi = (0, 0, 0, 0)
     line_coords = None
     latest_profile = np.array([])
+    adapter = cv2.createCLAHE()
 
     def __init__(self, parent):
         super().__init__()
@@ -102,29 +111,34 @@ class FrameProcessor(QtCore.QObject):
             logging.info("FrameProcessor: Please reduce lower % min to avoid overlap")
 
     def set_clip_limit(self, new_clip_limit):
+        self.adapter.setClipLimit(new_clip_limit)
         self.clip = new_clip_limit
 
-    def _process_frame(self, frame_in):
+    def _process_frame(self, frame):
         if self.subtracting and self.background is not None:
-            frame_in = np.abs(frame_in - self.background)
-            # frame_in[frame_in < 0] = 0
+            frame = (frame - self.background + UINT16_MAX)//2
         match self.mode:
             case self.IMAGE_PROCESSING_NONE:
-                return frame_in
+                pass
             case self.IMAGE_PROCESSING_BASIC:
-                return basic_exposure(frame_in)
+                frame = basic_exposure(frame)
             case self.IMAGE_PROCESSING_PERCENTILE:
                 # Fast
-                return numpy_rescale(frame_in, self.p_low, self.p_high)
+                if sum(self.roi) > 0:
+                    x, w, y, h = [int(value * 2 / self.parent.binning) for value in self.roi]
+                    frame = numpy_rescale(frame, self.p_low, self.p_high, frame[y:y + h, x:x + w])
+                else:
+                    frame = numpy_rescale(frame, self.p_low, self.p_high)
             case self.IMAGE_PROCESSING_HISTEQ:
                 # Okay performance
-                return numpy_equ(frame_in)
+                frame = numpy_equ(frame)
             case self.IMAGE_PROCESSING_ADAPTEQ:
                 # Really slow
-                return exposure.equalize_adapthist(frame_in / np.amax(frame_in), clip_limit=self.clip)
+                frame = np.int32(self.adapter.apply(frame.astype(np.uint16)))
             case _:
                 logging.info("FrameProcessor: Unrecognized image processing mode")
-                return frame_in
+        return frame
+
 
     @QtCore.pyqtSlot()
     def start_processing(self):
@@ -132,9 +146,15 @@ class FrameProcessor(QtCore.QObject):
         while self.running:
             got = self.parent.item_semaphore.tryAcquire(1, 1)
             if got:
-                logging.debug("Processing Frame")
-                item = self.parent.frame_buffer.popleft()
-                self.parent.spaces_semaphore.release()
+                try:
+                    item = self.parent.frame_buffer.popleft()
+                    self.parent.spaces_semaphore.release()
+                except IndexError:
+                    logging.error("Processing Frame queue is empty after get call. Resetting buffer.")
+                    self.parent.frame_buffer = deque(maxlen=self.parent.BUFFER_SIZE)
+                    self.parent.item_semaphore = QtCore.QSemaphore(0)
+                    self.parent.spaces_semaphore = QtCore.QSemaphore(self.parent.BUFFER_SIZE)
+                    continue
 
                 if len(item) == 4:
                     logging.debug("Got difference frames")
@@ -174,12 +194,18 @@ class FrameProcessor(QtCore.QObject):
                         self.frame_counter += 1
                         mean_a = int_mean(self.diff_frame_stack_a, axis=0)
                         mean_b = int_mean(self.diff_frame_stack_b, axis=0)
-                        self.latest_mean_diff = np.abs(mean_a - mean_b)
-                        self.latest_processed_frame = self._process_frame(self.latest_mean_diff)
+                        self.latest_mean_diff = mean_a - mean_b
+                        # diff_frame = ((sweep_3_frames[i] - sweep_2_frames[i]) / (sweep_3_frames[i] + sweep_2_frames[i]))
+                        # cv2.imshow(str(sweep_2_data[i]),
+                        #            (diff_frame - diff_frame.min()) / (diff_frame.max() - diff_frame.min()))
+                        self.latest_processed_frame = self._process_frame(self.latest_mean_diff + UINT16_MAX) // 2
+
                     else:
-                        self.latest_diff_frame = np.abs(
-                            self.latest_diff_frame_a - self.latest_diff_frame_b)
-                        self.latest_processed_frame = self._process_frame(self.latest_diff_frame)
+                        self.latest_diff_frame = self.latest_diff_frame_a - self.latest_diff_frame_b
+                        # diff_frame = ((sweep_3_frames[i] - sweep_2_frames[i]) / (sweep_3_frames[i] + sweep_2_frames[i]))
+                        # cv2.imshow(str(sweep_2_data[i]),
+                        #            (diff_frame - diff_frame.min()) / (diff_frame.max() - diff_frame.min()))
+                        self.latest_processed_frame = self._process_frame(self.latest_diff_frame + UINT16_MAX) // 2
                     self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
                     if self.line_coords is not None:
                         start, end = self.line_coords
@@ -224,6 +250,7 @@ class FrameProcessor(QtCore.QObject):
                         self.latest_profile = profile_line(self.latest_processed_frame, start,
                                                            end, linewidth=5)
                 else:
+                    logging.info("Incorrect length of contents")
                     logging.warning('Frame processor received neither single frame nor difference frame')
         logging.info("Stopping Frame Processor")
         if not (self.closing or self.waiting):
