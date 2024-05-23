@@ -36,7 +36,7 @@ class CameraGrabber(QtCore.QObject):
         :param float exposure_time:
         :return:
         '''
-        logging.info("Received exposure time:  %s", exposure_time)
+        logging.debug("Received exposure time:  %s", exposure_time)
         self.cam.set_attribute_value("EXPOSURE TIME", exposure_time)
         logging.info(f"setting exposure time to {exposure_time}")
         logging.info(f"Camera exposure time read as {self.cam.get_exposure()}")
@@ -50,7 +50,7 @@ class CameraGrabber(QtCore.QObject):
         :param float binning: binning x binning mode.
         :return:
         '''
-        logging.info(f"Received binning mode:  {binning}x{binning}")
+        logging.debug(f"Received binning mode:  {binning}x{binning}")
         self.cam.set_roi(hbin=binning, vbin=binning)
         logging.info(f"Set binning mode binning mode:  {binning}x{binning}")
         logging.info("Camera ready")
@@ -90,6 +90,7 @@ class CameraGrabber(QtCore.QObject):
         prev_mode = self.difference_mode
         self.difference_mode = False
         self.prepare_camera()
+        logging.info(f"Grabbing {n_frames} frames")
         frames = np.array(self.cam.grab(n_frames), dtype='int32')
         self.difference_mode = prev_mode
         return frames
@@ -109,6 +110,10 @@ class CameraGrabber(QtCore.QObject):
             if got_space:
                 frame = None
                 while frame is None:
+                    if self.cam.get_status() != "busy":
+                        logging.error("Camera not busy")
+                        self.parent.spaces_semaphore.release()
+                        continue
                     frame = self.cam.read_newest_image(return_info=True)
                     if frame is not None:
                         self.parent.frame_buffer.append((frame[0].astype(np.int32), frame[1]))
@@ -157,8 +162,15 @@ class CameraGrabber(QtCore.QObject):
                 frame_a = None
                 frame_b = None
                 while frame_a is None:
+                    if self.cam.get_status() != "busy":
+                        logging.error("Camera not busy")
+                        self.parent.spaces_semaphore.release()
+                        continue
                     frame_data = self.cam.read_newest_image(return_info=True)
                     if frame_data is not None:
+                        if self.cam.get_status() != "busy":
+                            logging.error("Camera not busy")
+                            continue
                         if frame_data[1].frame_index % 2 == 0:
                             frame_a = (frame_data[0].astype(np.int32), frame_data[1])
                     if not self.running:
@@ -167,6 +179,10 @@ class CameraGrabber(QtCore.QObject):
                         self.parent.item_semaphore.release()
                         return
                 while frame_b is None:
+                    if self.cam.get_status() != "busy":
+                        logging.error("Camera not busy")
+                        self.parent.spaces_semaphore.release()
+                        continue
                     frame_data = self.cam.read_newest_image(return_info=True)
                     if frame_data is not None:
                         if frame_data[1].frame_index % 2 == 1:

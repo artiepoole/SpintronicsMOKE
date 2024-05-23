@@ -36,7 +36,7 @@ class AnalyserController:
         self.stepper_stream = DigitalSingleChannelWriter(self.stepper_task.out_stream, True)
 
     def _step_forward(self, steps: int, fine=False):
-        logging.info(f"moving {steps} steps")
+        logging.debug(f"moving {steps} steps")
         data = [self.FINE * fine + self.CLOCK, self.FINE * fine]
         for i in range(steps):
             self.stepper_stream.write_one_sample_port_byte(data[0])
@@ -47,7 +47,7 @@ class AnalyserController:
             self.position_in_degrees += 1 / self.STEPS_PER_DEGREE
 
     def _step_backward(self, steps: int, fine=False):
-        logging.info(f"moving -{steps} steps")
+        logging.debug(f"moving -{steps} steps")
         data = [self.FINE * fine + self.CLOCK + self.DIR, self.FINE * fine + self.DIR]
         for i in range(steps):
             self.stepper_stream.write_one_sample_port_byte(data[0])

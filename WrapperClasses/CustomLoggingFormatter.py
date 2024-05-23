@@ -14,7 +14,7 @@ class CustomLoggingFormatter(logging.Formatter):
         logging.INFO: ("[%(levelname)s] %(module)s - %(message)s", QtGui.QColor("black")),
         logging.WARNING: (
             '[%(levelname)s] %(asctime)s %(name)s %(levelname)s - %(message)s',
-            QtGui.QColor("darkYellow")
+            QtGui.QColor("orange")
         ),
         logging.ATTENTION: ('[%(levelname)s] %(message)s', QtGui.QColor("darkGreen"))
     }

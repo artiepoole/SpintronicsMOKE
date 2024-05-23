@@ -355,11 +355,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Magnetic field calibration stuff
         if os.path.isfile('res/last_calibration_location.txt'):
             with open('res/last_calibration_location.txt', 'r') as file:
-                self.calib_file_dir = file.readline()
-                logging.info("Previous calibration file directory found.")
+                dir = file.readline()
+                logging.info(f"Previous calibration file directory found.")
         elif os.path.isdir("Coil Calibrations\\"):
-            self.calib_file_dir = "Coil Calibrations\\"
-            logging.warning("No calibration location found, trying: " + str(self.calib_file_dir))
+            dir = "Coil Calibrations\\"
+            logging.warning("No calibration location found, trying: " + str(dir))
         else:
             logging.warning("Default calib file location not found. Asking for user input.")
             self.calib_file_dir = QtWidgets.QFileDialog.getExistingDirectory(
@@ -367,7 +367,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 'Choose Calibration File Directory',
                 QtWidgets.QFileDialog.ShowDirsOnly
             )
-        dir = self.calib_file_dir
+        self.calib_file_dir = dir
+        logging.info(f"Loading calibration files from {dir}")
         file_names = [f for f in listdir(dir) if isfile(join(dir, f)) and ".txt" in f]
         if file_names:
             self.calibration_dictionary = {i + 1: name for i, name in enumerate(file_names)}
@@ -588,10 +589,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         Updates the frame processor with all variables for the various image processing modes.
         :return None:
         """
+        if self.spin_percentile_lower.value() < self.frame_processor.p_high:
+            self.frame_processor.p_low = self.spin_percentile_lower.value()
+        if self.spin_percentile_upper.value() > self.frame_processor.p_low:
+            self.frame_processor.p_high = self.spin_percentile_upper.value()
+        self.frame_processor.clip = self.spin_clip.value()
 
-        self.frame_processor.set_percentile_lower(self.spin_percentile_lower.value())
-        self.frame_processor.set_percentile_upper(self.spin_percentile_upper.value())
-        self.frame_processor.set_clip_limit(self.spin_clip.value())
 
     def __on_image_processing_mode_change(self, mode):
         """
@@ -602,7 +605,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         :return None:
         """
 
-        self.frame_processor.set_mode(mode)
+        self.frame_processor.mode = mode
         match mode:
             case 0:  # None
                 self.spin_percentile_lower.setEnabled(False)
@@ -616,9 +619,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.spin_percentile_lower.setEnabled(True)
                 self.spin_percentile_upper.setEnabled(True)
                 self.spin_clip.setEnabled(False)
-
-                self.frame_processor.set_percentile_lower(self.spin_percentile_lower.value())
-                self.frame_processor.set_percentile_upper(self.spin_percentile_upper.value())
+                if self.spin_percentile_lower.value() < self.frame_processor.p_high:
+                    self.frame_processor.p_low = self.spin_percentile_lower.value()
+                if self.spin_percentile_upper.value() > self.frame_processor.p_low:
+                    self.frame_processor.p_high = self.spin_percentile_upper.value()
                 # This is contrast stretching and needs min and max percentiles
             case 3:  # Histrogram eq
                 self.spin_percentile_lower.setEnabled(False)
@@ -629,7 +633,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.spin_percentile_lower.setEnabled(False)
                 self.spin_percentile_upper.setEnabled(False)
                 self.spin_clip.setEnabled(True)
-                self.frame_processor.set_clip_limit(self.spin_clip.value())
+                self.frame_processor.clip = self.spin_clip.value()
                 # this is Adaptive EQ and needs a clip limit
             case _:
                 logging.error("Unsupported image processing mode")
@@ -1042,7 +1046,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         This allows for the collection of a background image and for the swapping between two camera operating modes.
         :return:
         """
-        logging.info("ready received")
+        logging.debug("Ready received")
         if self.get_background:
             logging.info("Attempting to get background")
             self.get_background = False
@@ -1054,11 +1058,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             if self.flickering:
                 QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_difference_mode",
                                                 QtCore.Qt.ConnectionType.QueuedConnection)
-                logging.info("Camera grabber starting difference mode")
+                logging.debug("Camera grabber starting difference mode")
             else:
                 QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
                                                 QtCore.Qt.ConnectionType.QueuedConnection)
-                logging.info("Camera grabber starting normal mode")
+                logging.debug("Camera grabber starting normal mode")
 
     def __on_frame_processor_ready(self):
         """
@@ -1066,7 +1070,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
          get restarted with the correct shape empty arrays.
         :return None:
         """
-        logging.info("Frame processor ready received")
+        logging.debug("Frame processor ready received")
         self.mutex.lock()
         self.frame_processor.frame_counter = 0
         self.frame_processor.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
@@ -1294,6 +1298,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.background = None
             self.width = dim
             self.height = dim
+            self.frame_processor.resolution = dim
             self.frame_processor.latest_processed_frame = np.zeros((dim, dim), dtype=np.uint16)
 
     def __on_average_changed(self):
@@ -1335,9 +1340,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         :return None:
         """
         if subtracting:
+            logging.info("Subtracting background")
             self.button_display_subtraction.setText("Ignore Background (F2)")
             self.frame_processor.subtracting = True
         else:
+            logging.info("Ignoring background")
             self.button_display_subtraction.setText("Show Subtraction (F2)")
             self.frame_processor.subtracting = False
 
@@ -1349,6 +1356,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         """
         self.paused = paused
         if paused:
+            logging.info("Pausing camera")
             self.mutex.lock()
             self.camera_grabber.running = False
             self.mutex.unlock()
@@ -1356,6 +1364,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             if self.flickering:
                 self.lamp_controller.pause_flicker(paused)
         else:
+            logging.info("Resuming camera")
             self.button_pause_camera.setText("Pause (F4)")
             if self.flickering:
                 self.lamp_controller.pause_flicker(paused)
@@ -1509,8 +1518,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         if sum(self.enabled_leds_spi.values()) == 0:
             logging.error("Cannot run analyser without lights.")
             return
-
-
         logging.info("Pausing main GUI for usage with Analyser")
         self.mutex.lock()
         self.camera_grabber.waiting = True

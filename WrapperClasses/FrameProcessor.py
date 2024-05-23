@@ -8,8 +8,7 @@ from skimage.measure import profile_line
 import cv2
 
 UINT16_MAX = 65535
-INT16_MAX = 65535//2
-
+INT16_MAX = 65535 // 2
 
 
 def int_mean(image_stack, axis=0):
@@ -51,6 +50,7 @@ class FrameProcessor(QtCore.QObject):
     p_low = 0
     p_high = 100
     clip = 0.03
+    resolution = 1024
     subtracting = True
     background = None
     background_raw_stack = None
@@ -92,31 +92,31 @@ class FrameProcessor(QtCore.QObject):
         '''
         self.mode, self.p_low, self.p_high, self.clip = settings
 
-    def set_mode(self, new_mode):
-        if new_mode in [0, 1, 2, 3, 4]:
-            self.mode = new_mode
-        else:
-            logging.info("FrameProcessor: Invalid mode")
+    # def set_mode(self, new_mode):
+    #     if new_mode in [0, 1, 2, 3, 4]:
+    #         self.mode = new_mode
+    #     else:
+    #         logging.info("FrameProcessor: Invalid mode")
 
-    def set_percentile_lower(self, new_percentile):
-        if new_percentile < self.p_high:
-            self.p_low = new_percentile
-        else:
-            logging.info("FrameProcessor: Please raise % max to avoid overlap")
+    # def set_percentile_lower(self, new_percentile):
+    #     if new_percentile < self.p_high:
+    #         self.p_low = new_percentile
+    #     else:
+    #         logging.info("FrameProcessor: Please raise % max to avoid overlap")
 
-    def set_percentile_upper(self, new_percentile):
-        if new_percentile > self.p_low:
-            self.p_high = new_percentile
-        else:
-            logging.info("FrameProcessor: Please reduce lower % min to avoid overlap")
+    # def set_percentile_upper(self, new_percentile):
+    #     if new_percentile > self.p_low:
+    #         self.p_high = new_percentile
+    #     else:
+    #         logging.info("FrameProcessor: Please reduce lower % min to avoid overlap")
 
-    def set_clip_limit(self, new_clip_limit):
-        self.adapter.setClipLimit(new_clip_limit)
-        self.clip = new_clip_limit
+    # def set_clip_limit(self, new_clip_limit):
+    #     self.adapter.setClipLimit(new_clip_limit)
+    #     self.clip = new_clip_limit
 
     def _process_frame(self, frame):
         if self.subtracting and self.background is not None:
-            frame = (frame - self.background + UINT16_MAX)//2
+            frame = (frame - self.background + UINT16_MAX) // 2
         match self.mode:
             case self.IMAGE_PROCESSING_NONE:
                 pass
@@ -125,7 +125,7 @@ class FrameProcessor(QtCore.QObject):
             case self.IMAGE_PROCESSING_PERCENTILE:
                 # Fast
                 if sum(self.roi) > 0:
-                    x, w, y, h = [int(value * 2 / self.parent.binning) for value in self.roi]
+                    x, w, y, h = self.roi
                     frame = numpy_rescale(frame, self.p_low, self.p_high, frame[y:y + h, x:x + w])
                 else:
                     frame = numpy_rescale(frame, self.p_low, self.p_high)
@@ -139,10 +139,11 @@ class FrameProcessor(QtCore.QObject):
                 logging.info("FrameProcessor: Unrecognized image processing mode")
         return frame
 
-
     @QtCore.pyqtSlot()
     def start_processing(self):
         self.running = True
+        self.closing = False
+        self.waiting = False
         while self.running:
             got = self.parent.item_semaphore.tryAcquire(1, 1)
             if got:
@@ -168,11 +169,11 @@ class FrameProcessor(QtCore.QObject):
                         self.roi_int_y.append(np.mean(self.latest_diff_frame_b[y:y + h, x:x + w], axis=(0, 1)))
                     self.frame_times.append(latest_diff_frame_data_a.timestamp_us * 1e-6)
                     self.frame_times.append(latest_diff_frame_data_b.timestamp_us * 1e-6)
+                    if self.latest_diff_frame_a.shape[0] != self.resolution:
+                        # This happens when changing binning mode with frames in the buffer.
+                        logging.warning("Latest frame is not correct shape. Discarding frame.")
+                        continue
                     if self.averaging:
-                        if self.latest_diff_frame_a.shape[0] != self.diff_frame_stack_a.shape[1]:
-                            # This happens when changing binning mode with frames in the buffer.
-                            logging.warning("Latest frame is not correct shape. Discarding frame.")
-                            break
                         if self.frame_counter % self.averages < len(self.diff_frame_stack_a):
                             # When the stack is full up to the number of averages, this overwrites the frames in memory.
                             # This is more efficient than rolling or extending
@@ -222,11 +223,11 @@ class FrameProcessor(QtCore.QObject):
                         self.roi_int_y.append(np.mean(self.latest_raw_frame[y:y + h, x:x + w], axis=(0, 1)))
                     self.frame_times.append(latest_frame_data.timestamp_us * 1e-6)
                     self.mutex.unlock()
+                    if self.latest_raw_frame.shape[0] != self.resolution:
+                        # This happens when changing binning mode with frames in the buffer.
+                        logging.warning("Latest frame is not correct shape. Discarding frame.")
+                        continue
                     if self.averaging:
-                        if self.latest_raw_frame.shape[0] != self.raw_frame_stack.shape[1]:
-                            # This happens when changing binning mode with frames in the buffer.
-                            logging.warning("Latest frame is not correct shape. Discarding frame.")
-                            break
                         if self.frame_counter % self.averages < len(self.raw_frame_stack):
                             # When the stack is full up to the number of averages, this overwrites the frames in memory.
                             # This is more efficient than rolling or extending
@@ -250,9 +251,9 @@ class FrameProcessor(QtCore.QObject):
                         self.latest_profile = profile_line(self.latest_processed_frame, start,
                                                            end, linewidth=5)
                 else:
-                    logging.info("Incorrect length of contents")
-                    logging.warning('Frame processor received neither single frame nor difference frame')
-        logging.info("Stopping Frame Processor")
+                    logging.warning(
+                        'Incorrect length of contents: Frame processor received neither single frame nor difference frame')
+        logging.info("Frame Processor stopped")
         if not (self.closing or self.waiting):
             self.frame_processor_ready.emit()  # This restarts the frame processor after binning mode changes.
 

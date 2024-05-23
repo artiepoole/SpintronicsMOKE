@@ -48,7 +48,7 @@ class LampController:
         self.SPI_stream = DigitalSingleChannelWriter(self.SPI_task.out_stream, True)
         self.SPI_task.write(self.__resting_state_noSPI)
         self.__SPI_enabled = False
-        logging.info("Setting all brightness to max")
+        logging.debug("Setting all brightness to max")
         self.set_all_brightness(180)
 
     def disable_all(self):
@@ -101,13 +101,13 @@ class LampController:
             self.dev.reset_device()
 
     def enable_spi(self):
-        logging.info("Enabling SPI")
+        logging.debug("Enabling SPI")
         self.SPI_task.write(self.__resting_state_SPI)
         time.sleep(50e-3)
         self.__SPI_enabled = True
 
     def disable_spi(self):
-        logging.info("Disabling SPI")
+        logging.debug("Disabling SPI")
         self.SPI_task.write(self.__resting_state_noSPI)
         time.sleep(50e-3)
         self.__SPI_enabled = False
