@@ -231,7 +231,6 @@ class LampController:
                 # pure pol
                 pairs_pos = 1
                 pairs_neg = 2
-        # TODO: Implement checking of exposure time to change this trigger rate or fix exposure time in the main gui
         n_samples = 2 * math.ceil((1 / self.frame_rate) * 1e3) + 24  # 12 ms for lights to change.
         pulse_width_in_samples = 1
         delay_in_samples = 6
