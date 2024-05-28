@@ -1019,6 +1019,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         self.flickering = True
         self.camera_grabber.running = False
+        QtCore.QMetaObject.invokeMethod(
+            self.camera_grabber,
+            "set_exposure_time",
+            QtCore.Qt.ConnectionType.QueuedConnection,
+            QtCore.Q_ARG(float, 0.05)
+        )
 
         self.button_up_led1.setEnabled(False)
         self.button_up_led2.setEnabled(False)
@@ -1037,6 +1043,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_left_led2.setChecked(False)
         self.button_right_led1.setChecked(False)
         self.button_right_led2.setChecked(False)
+        # TODO: need to set the exposure time here.
 
     def __on_camera_ready(self):
         """
@@ -1100,6 +1107,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_measure_background.setEnabled(True)
         self.button_display_subtraction.setEnabled(True)
         self.frame_processor.subtracting = self.button_display_subtraction.isChecked()
+        QtCore.QMetaObject.invokeMethod(
+            self.camera_grabber,
+            "set_exposure_time",
+            QtCore.Qt.ConnectionType.QueuedConnection,
+            QtCore.Q_ARG(float, self.exposure_time)
+        )
+
         # TODO: hide the CV2 windows for the raw pos/neg
 
         self.button_up_led1.setEnabled(True)
@@ -1263,6 +1277,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.__on_camera_ready call which restarts the camera.
         :return:
         """
+        # TODO: this causes a memory issue, probably threading related.
         match binning_idx:
             case 0:
                 value = 1
@@ -1291,15 +1306,20 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 QtCore.Qt.ConnectionType.QueuedConnection,
                 QtCore.Q_ARG(int, value)
             )
+            self.mutex.lock()
             if sum(self.frame_processor.roi) > 0:
+
                 self.frame_processor.roi = tuple(
                     [int(value * (old_binning / self.binning)) for value in self.frame_processor.roi])
+                self.mutex.unlock()
                 logging.info(f'Binning mode: {self.binning}, roi: {self.frame_processor.roi}')
             self.frame_processor.background = None
-            self.width = dim
-            self.height = dim
             self.frame_processor.resolution = dim
             self.frame_processor.latest_processed_frame = np.zeros((dim, dim), dtype=np.uint16)
+            self.mutex.unlock()
+            self.width = dim
+            self.height = dim
+
 
     def __on_average_changed(self):
         """Is called when the number of averages is changed."""
@@ -1614,6 +1634,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_save(self):
 
         # TODO: reorder the stack so that latest frame is last.
+        # Save the frame times as well for all stacks.
+        # Add analyser information
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
