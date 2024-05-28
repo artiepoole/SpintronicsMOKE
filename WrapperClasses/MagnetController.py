@@ -23,7 +23,9 @@ class MagnetController:
             self.dev.reset_device()
 
         self.analogue_input_task = nidaq.Task()
-        self.analogue_input_task.ai_channels.add_ai_voltage_chan('Dev1/ai0')
+        in_chan = self.analogue_input_task.ai_channels.add_ai_voltage_chan('Dev1/ai0')
+        in_chan.ai_rng_low = -10
+        in_chan.ai_rng_high = 10
         self.analogue_input_task.start()
 
         self.analogue_output_task = nidaq.Task()
