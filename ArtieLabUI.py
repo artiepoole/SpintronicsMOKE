@@ -1015,7 +1015,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.subtracting = False
         self.button_measure_background.setEnabled(False)
         self.button_display_subtraction.setEnabled(False)
-        # TODO: Add cv2 windows for raw frames
 
         self.flickering = True
         self.camera_grabber.running = False
@@ -1043,7 +1042,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_left_led2.setChecked(False)
         self.button_right_led1.setChecked(False)
         self.button_right_led2.setChecked(False)
-        # TODO: need to set the exposure time here.
 
     def __on_camera_ready(self):
         """
@@ -1113,8 +1111,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             QtCore.Qt.ConnectionType.QueuedConnection,
             QtCore.Q_ARG(float, self.exposure_time)
         )
-
-        # TODO: hide the CV2 windows for the raw pos/neg
 
         self.button_up_led1.setEnabled(True)
         self.button_up_led2.setEnabled(True)
@@ -1576,7 +1572,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         if self.combo_calib_file.currentIndex() == 0:
             logging.error("No calibration file selected.")
             return
-        # TODO: Check for no lights on.
 
         logging.info("Pausing main GUI for Field sweep dialog")
         self.mutex.lock()
@@ -1606,7 +1601,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         if sum(self.enabled_leds_spi.values()) == 0:
             logging.error("Cannot run analyser without lights.")
             return
-        # TODO: Check for no lights on.
+
 
         logging.info("Pausing main GUI for analyser sweep dialog")
         self.mutex.lock()
@@ -1634,8 +1629,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     def __on_save(self):
 
         # TODO: reorder the stack so that latest frame is last.
-        # Save the frame times as well for all stacks.
-        # Add analyser information
+        # TODO: Save the frame times as well for all stacks.
+        # TODO: Add analyser information
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
