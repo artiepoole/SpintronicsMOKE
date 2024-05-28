@@ -222,33 +222,30 @@ class FieldSweepDialog(QDialog):
         )
         self.sweep_line = self.sweep_plot.plot([], [], pen='k')
 
-        self.spin_amplitude.valueChanged.connect(self.spin_amplitude_value_changed)
-        self.spin_offset.valueChanged.connect(self.spin_offset_value_changed)
-        self.spin_step_size.valueChanged.connect(self.spin_step_size_value_changed)
-        self.spin_repeats.valueChanged.connect(self.spin_repeats_value_changed)
-        # todo: change to on editingFinished
+        self.spin_amplitude.editingFinished.connect(self.spin_amplitude_value_changed)
+        self.spin_offset.editingFinished.connect(self.spin_offset_value_changed)
+        self.spin_step_size.editingFinished.connect(self.spin_step_size_value_changed)
+        self.spin_repeats.editingFinished.connect(self.spin_repeats_value_changed)
         self.button_run.clicked.connect(self.run)
         self.button_cancel.clicked.connect(self.close)
 
-    def spin_amplitude_value_changed(self, value):
-        self.amplitude = value
-
-        self.update_steps()
-
-        pass
-
-    def spin_offset_value_changed(self, value):
-        self.offset = value
+    def spin_amplitude_value_changed(self):
+        self.amplitude = self.spin_amplitude.value()
         self.update_steps()
         pass
 
-    def spin_step_size_value_changed(self, value):
-        self.step_size = value
+    def spin_offset_value_changed(self):
+        self.offset = self.spin_offset.value()
         self.update_steps()
         pass
 
-    def spin_repeats_value_changed(self, value):
-        self.repeats = value
+    def spin_step_size_value_changed(self):
+        self.step_size = self.spin_step_size.value()
+        self.update_steps()
+        pass
+
+    def spin_repeats_value_changed(self):
+        self.repeats = self.spin_repeats.value
         self.update_steps()
         pass
 
