@@ -245,7 +245,7 @@ class FieldSweepDialog(QDialog):
         pass
 
     def spin_repeats_value_changed(self):
-        self.repeats = self.spin_repeats.value
+        self.repeats = self.spin_repeats.value()
         self.update_steps()
         pass
 
@@ -357,3 +357,5 @@ class FieldSweepDialog(QDialog):
         self.magnet_controller.mode = None
 
         # TODO: save background
+
+    # TODO: Handle the close event so that the system stops measuring in the background and to handle the clicking of run twice.
