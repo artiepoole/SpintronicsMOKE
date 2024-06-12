@@ -15,3 +15,4 @@
 /CFrameProcessors/.idea/*
 /CFrameProcessors/cmake-build-debug/*
 /CFrameProcessors/playing/cmake-build-debug/*
+/ArtieLabUI.log.*
