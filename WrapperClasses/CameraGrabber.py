@@ -113,7 +113,7 @@ class CameraGrabber(QtCore.QObject):
                     if self.cam.get_status() != "busy":
                         logging.error("Camera not busy")
                         self.parent.spaces_semaphore.release()
-                        continue
+                        break
                     frame = self.cam.read_newest_image(return_info=True)
                     if frame is not None:
                         self.parent.frame_buffer.append((frame[0].astype(np.int32), frame[1]))
