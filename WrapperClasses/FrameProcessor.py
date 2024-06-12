@@ -9,6 +9,9 @@ import cv2
 
 UINT16_MAX = 65535
 INT16_MAX = 65535 // 2
+import os
+os.add_dll_directory(r"C:\Program Files\JetBrains\CLion 2024.1.1\bin\mingw\bin")
+from CImageProcessing import equalizeHistogram
 
 
 def int_mean(image_stack, axis=0):
@@ -71,15 +74,9 @@ class FrameProcessor(QtCore.QObject):
     latest_hist_bins = []
     intensities_y = deque(maxlen=100)
     frame_times = deque(maxlen=100)
-    roi_int_y = deque(maxlen=100)
-    waiting = False
     averaging = False
     averages = 16
     mutex = QtCore.QMutex()
-    roi = (0, 0, 0, 0)
-    line_coords = None
-    latest_profile = np.array([])
-    adapter = cv2.createCLAHE()
 
     def __init__(self, parent):
         super().__init__()
@@ -131,8 +128,7 @@ class FrameProcessor(QtCore.QObject):
                     frame = numpy_rescale(frame, self.p_low, self.p_high)
             case self.IMAGE_PROCESSING_HISTEQ:
                 # Okay performance
-                # frame = cv2.equalizeHist(cv2.convertScaleAbs(frame, alpha=(255.0/65535.0))).astype(np.uint16) * 255
-                frame = numpy_equ(frame)
+                return equalizeHistogram(frame)
             case self.IMAGE_PROCESSING_ADAPTEQ:
 
                 # Really slow
