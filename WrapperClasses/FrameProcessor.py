@@ -30,7 +30,7 @@ def numpy_rescale(image, low, high, roi=None):
 # Cast to int32 is twice as fast as cast to float64
 
 def numpy_equ(image):
-    img_cdf, bin_centers = exposure.cumulative_distribution(image, nbins=100)
+    img_cdf, bin_centers = exposure.cumulative_distribution(image, nbins=UINT16_MAX)
     return (np.interp(image, bin_centers, img_cdf) * UINT16_MAX)
 
 
@@ -131,8 +131,10 @@ class FrameProcessor(QtCore.QObject):
                     frame = numpy_rescale(frame, self.p_low, self.p_high)
             case self.IMAGE_PROCESSING_HISTEQ:
                 # Okay performance
+                # frame = cv2.equalizeHist(cv2.convertScaleAbs(frame, alpha=(255.0/65535.0))).astype(np.uint16) * 255
                 frame = numpy_equ(frame)
             case self.IMAGE_PROCESSING_ADAPTEQ:
+
                 # Really slow
                 frame = np.int32(self.adapter.apply(frame.astype(np.uint16)))
             case _:
@@ -337,7 +339,7 @@ if __name__ == "__main__":
                         self.frame_processor.averages = average
                 for mode in modes:
                     print("Mode: ", mode)
-                    self.frame_processor.set_mode(mode)
+                    self.frame_processor.mode = mode
                     for i in loop_index:
                         got_space = self.spaces_semaphore.tryAcquire(1, 1)
                         if got_space:
