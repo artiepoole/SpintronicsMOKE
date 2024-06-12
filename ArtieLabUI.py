@@ -240,7 +240,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spin_mag_point_count.editingFinished.connect(self.__on_change_mag_plot_count)
         self.button_reset_plots.clicked.connect(self.__on_reset_plots)
 
-
     def __prepare_logging(self):
         """
         The multicolour logging box in the GUI and the log file are both set up here.
@@ -440,6 +439,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         :return None:
         """
         frame = self.frame_processor.latest_processed_frame.astype(np.uint16)
+        # frame = cv2.applyColorMap((frame//255).astype(np.uint8), cv2.COLORMAP_AUTUMN)
         if sum(self.frame_processor.roi) > 0:
             x, y, w, h = self.frame_processor.roi
             frame = cv2.rectangle(
@@ -473,7 +473,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.line_measured_voltage.setText("{:0.4f}".format(voltage))
         self.mag_y.append(field)
         self.mag_t.append(time.time() - self.start_time)
-
 
     def __on_reset_plots(self):
         """
@@ -510,7 +509,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         value = self.spin_mag_point_count.value()
         self.mag_y = deque(self.mag_y, maxlen=value)
         self.mag_t = deque(self.mag_t, maxlen=value)
-
 
     def __reset_pairs(self):
         """
@@ -595,7 +593,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.p_high = self.spin_percentile_upper.value()
         self.frame_processor.clip = self.spin_clip.value()
 
-
     def __on_image_processing_mode_change(self, mode):
         """
         Changes the currently used image processing mode based on the user selection.
@@ -637,6 +634,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 # this is Adaptive EQ and needs a clip limit
             case _:
                 logging.error("Unsupported image processing mode")
+
     def __select_roi(self):
         """
         Asks the user to select a region of interest and then, if one is selected, updates the frame processor and plots
@@ -776,7 +774,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.button_pure_trans.setChecked(False)
             self.__populate_spis()
             self.__update_controller_spi()
-
 
     def __populate_spis(self):
         self.enabled_leds_spi["up1"] = self.button_up_led1.isChecked()
@@ -1304,7 +1301,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             )
             self.mutex.lock()
             if sum(self.frame_processor.roi) > 0:
-
                 self.frame_processor.roi = tuple(
                     [int(value * (old_binning / self.binning)) for value in self.frame_processor.roi])
                 self.mutex.unlock()
@@ -1315,7 +1311,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.mutex.unlock()
             self.width = dim
             self.height = dim
-
 
     def __on_average_changed(self):
         """Is called when the number of averages is changed."""
@@ -1446,7 +1441,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.spin_mag_offset.setRange(-10, 10)
             self.spin_mag_offset.setSingleStep(0.1)
 
-
     def __on_change_field_amplitude(self):
         # TODO: got to here when adding documentation
         value = self.spin_mag_amplitude.value()
@@ -1526,8 +1520,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.analyser_controller.move(amount)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
-
     def __on_find_minimum(self):
+        # TODO: add ROI consideration
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
             return
@@ -1594,6 +1588,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                         QtCore.Qt.ConnectionType.QueuedConnection)
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
+
     def __on_analyser_sweep(self):
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
@@ -1601,7 +1596,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         if sum(self.enabled_leds_spi.values()) == 0:
             logging.error("Cannot run analyser without lights.")
             return
-
 
         logging.info("Pausing main GUI for analyser sweep dialog")
         self.mutex.lock()
@@ -1625,11 +1619,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
-
     def __on_save(self):
 
-        # TODO: reorder the stack so that latest frame is last.
-        # TODO: Save the frame times as well for all stacks.
         # TODO: Add analyser information
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
@@ -1643,6 +1634,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'exposure_time': self.spin_exposure_time.value(),
             'correction': self.line_correction.text(),
             'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'analyser_postion': self.analyser_controller.position_in_degrees
         }
         match self.get_magnet_mode():
             case 0:
@@ -1681,13 +1673,26 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     contents.append(key)
                     store[key] = pd.DataFrame(self.frame_processor.latest_mean_diff)
                 if self.check_save_stack.isChecked():
-                    for i in range(self.frame_processor.diff_frame_stack_a.shape[0]):
+                    diff_stack_a = self.frame_processor.diff_frame_stack_a
+                    diff_stack_b = self.frame_processor.diff_frame_stack_b
+                    n_frames = diff_stack_a.shape[0]
+                    # Due to the way the frames overwrite during averaging, this reorders the frames such that index 0
+                    # is the oldest frame
+                    last_index = (self.frame_processor.frame_counter + 1) % self.frame_processor.averages
+                    indices = list(range(n_frames))
+                    new_indices = indices[last_index:] + indices[:last_index]
+                    diff_stack_a = diff_stack_a[new_indices]
+                    diff_stack_b = diff_stack_b[new_indices]
+                    for i in range(n_frames):
                         key_a = 'raw_stack_a_' + str(i)
                         key_b = 'raw_stack_b_' + str(i)
                         contents.append(key_a)
                         contents.append(key_b)
-                        store[key_a] = pd.DataFrame(self.frame_processor.diff_frame_stack_a[i])
-                        store[key_b] = pd.DataFrame(self.frame_processor.diff_frame_stack_b[i])
+                        store[key_a] = pd.DataFrame(diff_stack_a[i])
+                        store[key_b] = pd.DataFrame(diff_stack_b[i])
+                    key = "stack_frame_times"
+                    contents.append(key)
+                    store[key] = pd.DataFrame(np.array(self.frame_processor.frame_times)[-n_frames:])
             else:
                 if self.check_save_avg.isChecked():
                     logging.info("Average not saved: measuring in single frame mode")
@@ -1709,10 +1714,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     contents.append(key)
                     store[key] = pd.DataFrame(self.frame_processor.latest_mean_frame)
                 if self.check_save_stack.isChecked():
-                    for i in range(self.frame_processor.raw_frame_stack.shape[0]):
+                    raw_stack = self.frame_processor.raw_frame_stack
+                    n_frames = raw_stack.shape[0]
+                    # Due to the way the frames overwrite during averaging, this reorders the frames such that index 0
+                    # is the oldest frame
+                    last_index = (self.frame_processor.frame_counter + 1) % self.frame_processor.averages
+                    indices = list(range(n_frames))
+                    new_indices = indices[last_index:] + indices[:last_index]
+                    raw_stack = raw_stack[new_indices]
+                    for i in range(n_frames):
                         key = 'raw_stack_' + str(i)
                         contents.append(key)
-                        store[key] = pd.DataFrame(self.frame_processor.raw_frame_stack[i])
+                        store[key] = pd.DataFrame(raw_stack[i])
+                    key = "stack_frame_times"
+                    contents.append(key)
+                    store[key] = pd.DataFrame(np.array(self.frame_processor.frame_times)[-n_frames:])
             else:
                 if self.check_save_avg.isChecked():
                     logging.info("Average not saved: measuring in single frame mode")
