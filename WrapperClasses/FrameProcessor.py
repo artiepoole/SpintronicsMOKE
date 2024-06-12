@@ -74,9 +74,15 @@ class FrameProcessor(QtCore.QObject):
     latest_hist_bins = []
     intensities_y = deque(maxlen=100)
     frame_times = deque(maxlen=100)
+    roi_int_y = deque(maxlen=100)
+    waiting = False
     averaging = False
     averages = 16
     mutex = QtCore.QMutex()
+    roi = (0, 0, 0, 0)
+    line_coords = None
+    latest_profile = np.array([])
+    adapter = cv2.createCLAHE()
 
     def __init__(self, parent):
         super().__init__()
@@ -127,8 +133,10 @@ class FrameProcessor(QtCore.QObject):
                 else:
                     frame = numpy_rescale(frame, self.p_low, self.p_high)
             case self.IMAGE_PROCESSING_HISTEQ:
-                # Okay performance
-                return equalizeHistogram(frame)
+                if not frame.flags.c_contiguous:
+                    return equalizeHistogram(np.ascontiguousarray(frame))
+                else:
+                    return equalizeHistogram(frame)
             case self.IMAGE_PROCESSING_ADAPTEQ:
 
                 # Really slow
@@ -321,7 +329,7 @@ if __name__ == "__main__":
             frames = np.loadtxt("../TestScripts/test_stack.dat", delimiter="\t").astype(np.int32).reshape(16, 1024,
                                                                                                           1024)
             self.frame_processor.raw_frame_stack = (
-                np.array([], dtype=np.uint16).
+                np.array([], dtype=np.int32).
                 reshape(0, frames.shape[1], frames.shape[1]))
 
             loop_index = list(range(frames.shape[0])) * number_of_stacks

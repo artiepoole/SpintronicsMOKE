@@ -147,7 +147,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.magnetic_field_timer.start(5)
         self.button_long_pol.setChecked(True)
         self.__on_long_pol(True)
-        self.__on_image_processing_mode_change(4)
+        self.__on_image_processing_mode_change(3)
 
     def __connect_signals(self):
         """

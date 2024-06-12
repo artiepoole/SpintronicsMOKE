@@ -11,15 +11,20 @@ namespace py = pybind11;
 
 // typedef typename py::array_t<double, py::array::c_style | py::array::forcecast> py_cdarray_t;
 
-py::array_t<int> equalizeHistogram(py::array_t<int> frame_in, py::ssize_t width,  py::ssize_t height, int max_val = 65535) {
-    int total = width * height;
+py::array_t<int> equalizeHistogram(py::array_t<int> frame_in) {
+    int max_val = 65535;
+    py::ssize_t width = frame_in.shape(0);
+    py::ssize_t height = frame_in.shape(1);
+    py::ssize_t total = width * height;
     int n_bins = max_val + 1;
-    auto frame_out = py::array_t<int>({total}); // Not sure, but I don't think you need the explicit '{h, 1}'
+    auto frame_out = py::array_t<int>({width, height}); // Not sure, but I don't think you need the explicit '{h, 1}'
 
     // Compute histogram
     vector<int> hist(n_bins, 0);
-    for (ssize_t i = 0; i < total; ++i) {
-        hist[frame_in.at(i)]++;
+    for (ssize_t i = 0; i < width; ++i) {
+        for (ssize_t j = 0; j < width; ++j) {
+            hist[frame_in.at(i, j)]++;
+        }
     }
 
 
@@ -29,9 +34,13 @@ py::array_t<int> equalizeHistogram(py::array_t<int> frame_in, py::ssize_t width,
     int i = 0;
     while (!hist[i]) ++i;
 
+    // If all pixels are same? not sure what catch this is.
     if (hist[i] == total) {
-        for (int j = 0; j < total; ++j) {
+        for (int j = 0; j < width; ++j) {
             frame_in.mutable_at(j) = i;
+            for (int k = 0; k < height; ++k) {
+                frame_in.mutable_at(j, k) = i;
+            }
         }
         return frame_out;
     }
@@ -51,17 +60,18 @@ py::array_t<int> equalizeHistogram(py::array_t<int> frame_in, py::ssize_t width,
     }
 
     // Apply equalization
-    for (int i = 0; i < total; ++i) {
-        frame_out.mutable_at(i) = lut[frame_in.at(i)];
+    for (int i = 0; i < width; ++i) {
+        for (int j = 0; j < height; ++j)
+            frame_out.mutable_at(i,j) = lut[frame_in.at(i,j)];
     }
     return frame_out;
 }
 
 PYBIND11_MODULE(CImageProcessing, m) {
     // hists.doc() = "";
-    m.def("equalizeHistogram", &equalizeHistogram, "void equalizeHistogram(short *frame_in, short *frame_out, int width, int height, int max_val = 65535)");
+    m.def("equalizeHistogram", &equalizeHistogram,
+          "void equalizeHistogram(short *frame_in, short *frame_out, int width, int height, int max_val = 65535)");
 }
-
 
 
 //
