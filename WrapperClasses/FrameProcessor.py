@@ -4,6 +4,9 @@ from skimage import exposure
 import logging
 from collections import deque
 import time
+import os
+os.add_dll_directory(r"C:\Program Files\JetBrains\CLion 2024.1.1\bin\mingw\bin")
+from CImageProcessing import equalizeHistogram
 
 
 def int_mean(image_stack, axis=0):
@@ -112,7 +115,7 @@ class FrameProcessor(QtCore.QObject):
                 return numpy_rescale(frame_in, self.p_low, self.p_high)
             case self.IMAGE_PROCESSING_HISTEQ:
                 # Okay performance
-                return numpy_equ(frame_in)
+                return equalizeHistogram(frame_in)
             case self.IMAGE_PROCESSING_ADAPTEQ:
                 # Really slow
                 return exposure.equalize_adapthist(frame_in / np.amax(frame_in), clip_limit=self.clip)
