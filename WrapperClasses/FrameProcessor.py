@@ -10,6 +10,7 @@ import cv2
 UINT16_MAX = 65535
 INT16_MAX = 65535 // 2
 import os
+
 os.add_dll_directory(r"C:\Program Files\JetBrains\CLion 2024.1.1\bin\mingw\bin")
 from CImageProcessing import equalizeHistogram
 
@@ -134,6 +135,7 @@ class FrameProcessor(QtCore.QObject):
                     frame = numpy_rescale(frame, self.p_low, self.p_high)
             case self.IMAGE_PROCESSING_HISTEQ:
                 if not frame.flags.c_contiguous:
+                    logging.warning('Not contiguous')
                     return equalizeHistogram(np.ascontiguousarray(frame))
                 else:
                     return equalizeHistogram(frame)
@@ -323,7 +325,7 @@ if __name__ == "__main__":
             self.frame_processor = FrameProcessor(self)
 
         def benchmarking(self, number_of_stacks):
-            modes = [0, 1, 2, 3, 4]
+            modes = [2, 3, 4]
             averaging = [False, True]
             averages = [16]
             frames = np.loadtxt("../TestScripts/test_stack.dat", delimiter="\t").astype(np.int32).reshape(16, 1024,
