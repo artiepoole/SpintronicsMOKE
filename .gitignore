@@ -12,3 +12,5 @@
 /CFrameProcessors/playing/cmake-build-debug/*
 /CFrameProcessors/lib/cmake-build-debug/*
 /TestScripts/test_frame.dat
+/CFrameProcessors/pybind11/*
+/ArtieLabUI.log.*
