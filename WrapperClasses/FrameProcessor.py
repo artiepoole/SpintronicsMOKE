@@ -128,7 +128,7 @@ class FrameProcessor(QtCore.QObject):
                 frame = basic_exposure(frame)
             case self.IMAGE_PROCESSING_PERCENTILE:
                 if sum(self.roi) > 0:
-                    x, w, y, h = self.roi
+                    x, y, w, h = self.roi
                     frame = numpy_rescale(frame, self.p_low, self.p_high, frame[y:y + h, x:x + w])
                 else:
                     frame = numpy_rescale(frame, self.p_low, self.p_high)
