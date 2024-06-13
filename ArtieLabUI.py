@@ -1521,7 +1521,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
     def __on_find_minimum(self):
-        # TODO: add ROI consideration
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
             return
@@ -1538,8 +1537,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.image_timer.stop()
         self.plot_timer.stop()
         self.magnetic_field_timer.stop()
-
-        self.analyser_controller.find_minimum(self.camera_grabber)
+        if sum(self.roi)>0:
+            self.analyser_controller.find_minimum(self.camera_grabber, roi=self.ROI)
+        else:
+            self.analyser_controller.find_minimum(self.camera_grabber)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
         self.image_timer.start(0)
@@ -1620,8 +1621,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
     def __on_save(self):
-
-        # TODO: Add analyser information
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",

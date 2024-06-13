@@ -81,7 +81,7 @@ class AnalyserController:
         else:
             self._step_backward(steps, fine)
 
-    def find_minimum(self, _camera_grabber):
+    def find_minimum(self, _camera_grabber, roi=None):
         """
         Moves the analyser to the position of minimum intensity. Must have a single pair of LEDs on in order to use this.
         The camera should be finished and acquisition should be stopped. LED flickering must be off.
@@ -92,11 +92,15 @@ class AnalyserController:
         _camera_grabber.prepare_camera()
         intensities = []
         positions = []
-
+        if roi:
+            x, y, w, h = roi
         # First pick a direction which will result in a decrease in intensity
         while True:
             frame = _camera_grabber.snap()
-            intensity = np.mean(frame, axis=(0, 1))
+            if roi:
+                intensity = np.mean(frame[y:y + h, x:x + w], axis=(0, 1))
+            else:
+                intensity = np.mean(frame, axis=(0, 1))
             intensities.append(intensity)
             positions.append(self.position_in_degrees)
             logging.debug(f"intensity: {intensity} at position {self.position_in_degrees} deg")
@@ -107,8 +111,6 @@ class AnalyserController:
             intensity = np.mean(frame, axis=(0, 1))
             intensities.append(intensity)
             positions.append(self.position_in_degrees)
-            logging.debug(f"intensity: {intensity} at position {self.position_in_degrees} deg")
-
             change = intensities[-1] - intensities[-2]
             if abs(change) <= 0.01:
                 # Catch the case where it is as a maximum so can't determine which direction to move.
