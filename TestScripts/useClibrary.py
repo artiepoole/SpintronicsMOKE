@@ -11,7 +11,10 @@ frame = np.ascontiguousarray(np.loadtxt("test_frame.dat").astype(np.int32))
 
 out_frame = equalizeHistogram(frame)
 
+adapter = cv2.createCLAHE(tileGridSize=(1, 1))
+
 cv2.imshow('frame_in', frame.astype(np.uint16))
 cv2.imshow("frame_out", out_frame.astype(np.uint16))
+cv2.imshow("frame_clahe", adapter.apply(frame.astype(np.uint16)))
 cv2.waitKey(0)
 cv2.destroyAllWindows()
