@@ -3,11 +3,6 @@ project(CImageProcessing)
 
 set(CMAKE_CXX_STANDARD 17)
 
-#find_package(Python3 COMPONENTS Development)
-##include_directories(${Boost_INCLUDE_DIRS})
-##target_link_libraries(CLionBoostRegex -static)
-##target_link_libraries(CLionBoostRegex ${Boost_LIBRARIES})
-
 include_directories(../lib)
 add_subdirectory(pybind11)
 #add_library(CImageProcessing SHARED lib/CFrameProcessors.cpp)
