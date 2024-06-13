@@ -403,4 +403,4 @@ class FieldSweepDialog(QDialog):
         self.button_cancel.setText('Close')
         self.button_run.setEnabled(True)
 
-    # TODO: Handle the close event so that the system stops measuring in the background and to handle the clicking of run twice.
+
