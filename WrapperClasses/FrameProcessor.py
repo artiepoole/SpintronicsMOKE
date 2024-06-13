@@ -127,7 +127,6 @@ class FrameProcessor(QtCore.QObject):
             case self.IMAGE_PROCESSING_BASIC:
                 frame = basic_exposure(frame)
             case self.IMAGE_PROCESSING_PERCENTILE:
-                # Fast
                 if sum(self.roi) > 0:
                     x, w, y, h = self.roi
                     frame = numpy_rescale(frame, self.p_low, self.p_high, frame[y:y + h, x:x + w])
@@ -140,8 +139,6 @@ class FrameProcessor(QtCore.QObject):
                 else:
                     return equalizeHistogram(frame)
             case self.IMAGE_PROCESSING_ADAPTEQ:
-
-                # Really slow
                 frame = np.int32(self.adapter.apply(frame.astype(np.uint16)))
             case _:
                 logging.info("FrameProcessor: Unrecognized image processing mode")
