@@ -1089,14 +1089,14 @@ All</string>
             <string notr="true">background-color: rgb(255,255,255)</string>
            </property>
            <property name="text">
-            <string>SampleName</string>
+            <string>MeasurementInfo</string>
            </property>
           </widget>
          </item>
          <item row="3" column="0">
           <widget class="QLabel" name="label_prefix">
            <property name="text">
-            <string>Sample Name:</string>
+            <string>Details:</string>
            </property>
           </widget>
          </item>

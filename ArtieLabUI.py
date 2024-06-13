@@ -177,6 +177,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.scroll_LED_brightness.valueChanged.connect(self.__on_brightness_slider)
         self.scroll_blocker = QtCore.QSignalBlocker(self.scroll_LED_brightness)
         self.scroll_blocker.unblock()
+        # TODO: Add brightness normalisation
 
         # Image Processing Controls
         self.combo_normalisation_selector.currentIndexChanged.connect(self.__on_image_processing_mode_change)
@@ -201,6 +202,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.combo_binning.currentIndexChanged.connect(self.__on_binning_mode_changed)
         self.button_pause_camera.clicked.connect(self.__on_pause_button)
         self.button_display_subtraction.clicked.connect(self.__on_show_subtraction)
+        # TODO: Add record video feature.  think this could just use a signal from the frame procesor for "Processing
+        #  done" or "new frame" or something and a boolean. "If recording video, do something, else don't"
 
         # Data Streams and Signals
         self.camera_grabber.camera_ready.connect(self.__on_camera_ready)
