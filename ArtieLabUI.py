@@ -1537,7 +1537,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.image_timer.stop()
         self.plot_timer.stop()
         self.magnetic_field_timer.stop()
-        if sum(self.roi)>0:
+        if sum(self.roi) > 0:
             self.analyser_controller.find_minimum(self.camera_grabber, roi=self.ROI)
         else:
             self.analyser_controller.find_minimum(self.camera_grabber)
