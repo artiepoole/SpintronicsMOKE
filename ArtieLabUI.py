@@ -125,6 +125,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.LED_control_all = False
         self.exposure_time = 0.05
         self.roi = (0, 0, 0, 0)
+        self.recording = False
+        self.recording_store = None
+        self.recording_meta_data = None
+        self.recording_contents = []
+        self.recording_fields = []
+        self.recording_angles = []
 
         self.__populate_calibration_combobox()
 
@@ -202,6 +208,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.combo_binning.currentIndexChanged.connect(self.__on_binning_mode_changed)
         self.button_pause_camera.clicked.connect(self.__on_pause_button)
         self.button_display_subtraction.clicked.connect(self.__on_show_subtraction)
+        self.button_record.clicked.connect(self.__on_record_button)
+        self.frame_processor.frame_ready_signal.connect(self.__on_frame_processor_new_frame)
         # TODO: Add record video feature.  think this could just use a signal from the frame procesor for "Processing
         #  done" or "new frame" or something and a boolean. "If recording video, do something, else don't"
 
@@ -1069,6 +1077,91 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                                 QtCore.Qt.ConnectionType.QueuedConnection)
                 logging.debug("Camera grabber starting normal mode")
 
+    def __on_record_button(self):
+        if self.button_record.isChecked():
+            self.button_record.setText("Stop")
+            logging.info("Preparing to record")
+            pg.QtGui.QGuiApplication.processEvents()
+            meta_data = {
+                'description': "Video acquired using B204 MOKE owned by the Spintronics Group and University of "
+                               "Nottingham using ArtieLab V0-2024.04.05.",
+                'camera': 'Hamamatsu C11440',
+                'sample': self.line_prefix.text(),
+                'lighting configuration': [self.get_lighting_configuration()],
+                'binning': self.combo_binning.currentText(),
+                'lens': self.combo_lens.currentText(),
+                'magnification': self.combo_magnification.currentText(),
+                'exposure_time': self.spin_exposure_time.value(),
+                'correction': self.line_correction.text(),
+                'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'analyser_postion': self.analyser_controller.position_in_degrees
+            }
+            match self.get_magnet_mode():
+                case 0:
+                    meta_data['magnet_mode'] = None
+                case 1:  # DC
+                    meta_data['magnet_mode'] = 'DC'
+                    meta_data['mag_field'] = self.mag_y[-1]
+                    meta_data['coil_calib'] = self.combo_calib_file.currentText()
+                case 2:  # AC
+                    meta_data['magnet_mode'] = 'AC'
+                    meta_data['mag_field_amp'] = self.spin_mag_amplitude.value()
+                    meta_data['mag_field_freq'] = self.spin_mag_freq.value()
+                    meta_data['mag_field_offset'] = self.spin_mag_offset.value()
+                    meta_data['coil_calib'] = self.combo_calib_file.currentText()
+            if sum(self.frame_processor.roi) > 0:
+                meta_data['roi'] = [self.frame_processor.roi]
+            if self.frame_processor.line_coords is not None:
+                meta_data['line_coords'] = [self.frame_processor.line_coords]
+            file_path = Path(self.line_directory.text()).joinpath(
+                datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + self.line_prefix.text().strip().replace(' ',
+                                                                                                              '_') + '_movie.h5')
+            logging.info("Using " + str(file_path) + ' to store video')
+            try:
+                self.recording_store = pd.HDFStore(str(file_path))
+            except:
+                logging.info(
+                    "Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
+                return
+            self.recording_meta_data = meta_data
+            if self.frame_processor.background is not None:
+                key = 'background_avg'
+                self.recording_contents.append(key)
+                self.recording_store[key] = pd.DataFrame(self.frame_processor.background.astype(np.uint16))
+            self.recording = True
+            pass
+        else:
+
+            self.recording = False
+            logging.info("Stopping recording and closing store.")
+            self.button_record.setText("Record")
+            self.recording_meta_data['contents'] = [self.recording_contents]
+            self.recording_meta_data['fields'] = [self.recording_fields]
+            self.recording_meta_data['angles'] = [self.recording_angles]
+            self.recording_store['meta_data'] = pd.DataFrame(self.recording_meta_data)
+            if "background_avg" in self.recording_contents:
+                logging.info(f"Recording Stopped. Saved {len(self.recording_contents)} frames and background avg.")
+            else:
+                logging.info(f"Recording Stopped. Saved {len(self.recording_contents)} frames.")
+            self.recording_store.close()
+            self.recording_store = None
+            self.recording_meta_data = None
+            self.recording_contents = []
+            self.recording_fields = []
+            self.recording_angles = []
+            self.spin_number_of_recorded_frames.setValue(0)
+
+    def __on_frame_processor_new_frame(self):
+        if self.recording:
+            frame = self.frame_processor.latest_raw_frame.astype(np.uint16)
+            frame_index = self.spin_number_of_recorded_frames.value()
+            key = f"frame_{frame_index}"
+            self.recording_fields.append(self.magnet_controller.get_current_amplitude()[0])
+            self.recording_angles.append(self.analyser_controller.position_in_degrees)
+            self.recording_contents.append(key)
+            self.recording_store[key] = pd.DataFrame(frame)
+            self.spin_number_of_recorded_frames.setValue(frame_index + 1)
+
     def __on_frame_processor_ready(self):
         """
         The frame processor gets paused in order to change the binning mode etc. This allows for the frame processor to
@@ -1673,10 +1766,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 if self.check_save_avg.isChecked():
                     key = 'mean_diff_frame'
                     contents.append(key)
-                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_diff)
+                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_diff.astype(np.uint16))
                 if self.check_save_stack.isChecked():
-                    diff_stack_a = self.frame_processor.diff_frame_stack_a
-                    diff_stack_b = self.frame_processor.diff_frame_stack_b
+                    diff_stack_a = self.frame_processor.diff_frame_stack_a.astype(np.uint16)
+                    diff_stack_b = self.frame_processor.diff_frame_stack_b.astype(np.uint16)
                     n_frames = diff_stack_a.shape[0]
                     # Due to the way the frames overwrite during averaging, this reorders the frames such that index 0
                     # is the oldest frame
@@ -1702,21 +1795,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     logging.info("Stack not saved: measuring in single frame mode")
                 key = 'raw_diff_frame'
                 contents.append(key)
-                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame)
+                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame.astype(np.uint16))
                 key = 'raw_frame_a'
                 contents.append(key)
-                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_a)
+                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_a.astype(np.uint16))
                 key = 'raw_frame_b'
                 contents.append(key)
-                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_b)
+                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_b.astype(np.uint16))
         else:
             if self.button_toggle_averaging.isChecked():
                 if self.check_save_avg.isChecked():
                     key = 'mean_frame'
                     contents.append(key)
-                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_frame)
+                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_frame.astype(np.uint16))
                 if self.check_save_stack.isChecked():
-                    raw_stack = self.frame_processor.raw_frame_stack
+                    raw_stack = self.frame_processor.raw_frame_stack.astype(np.uint16)
                     n_frames = raw_stack.shape[0]
                     # Due to the way the frames overwrite during averaging, this reorders the frames such that index 0
                     # is the oldest frame
@@ -1738,7 +1831,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     logging.info("Stack not saved: measuring in single frame mode")
                 key = 'raw_frame'
                 contents.append(key)
-                store[key] = pd.DataFrame(self.frame_processor.latest_raw_frame)
+                store[key] = pd.DataFrame(self.frame_processor.latest_raw_frame.astype(np.uint16))
 
         if self.check_save_as_seen.isChecked():
             key = 'as_seen'
@@ -1757,13 +1850,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                          f'upper: {self.spin_percentile_upper.value()} ' + \
                                          f'clip: {self.spin_clip.value()}'
             contents.append(key)
-            store[key] = pd.DataFrame(self.frame_processor.latest_processed_frame)
+            store[key] = pd.DataFrame(self.frame_processor.latest_processed_frame.astype(np.uint16))
 
         if self.check_save_background.isChecked():
             if self.frame_processor.background is not None:
                 key = 'background_avg'
                 contents.append(key)
-                store[key] = pd.DataFrame(self.frame_processor.background)
+                store[key] = pd.DataFrame(self.frame_processor.background.astype(np.uint16))
             else:
                 logging.info("Background not saved: no background measured")
         if self.check_save_bkg_stack.isChecked():
@@ -1771,7 +1864,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 for i in range(len(self.frame_processor.background_raw_stack)):
                     key = 'bkg_stack_' + str(i)
                     contents.append(key)
-                    store[key] = pd.DataFrame(self.frame_processor.background_raw_stack[i])
+                    store[key] = pd.DataFrame(self.frame_processor.background_raw_stack[i].astype(np.uint16))
             else:
                 logging.info("Background stack not saved: no background measured")
         meta_data['contents'] = [contents]

@@ -50,6 +50,7 @@ class FrameProcessor(QtCore.QObject):
     IMAGE_PROCESSING_HISTEQ = 3
     IMAGE_PROCESSING_ADAPTEQ = 4
     frame_processor_ready = QtCore.pyqtSignal()
+    frame_ready_signal = QtCore.pyqtSignal()
     mode = 1
     p_low = 0
     p_high = 100
@@ -221,6 +222,7 @@ class FrameProcessor(QtCore.QObject):
                     logging.debug("Got single frame")
                     # Single frame mode
                     self.latest_raw_frame, latest_frame_data = item
+                    self.frame_ready_signal.emit()
                     self.mutex.lock()
                     self.intensities_y.append(np.mean(self.latest_raw_frame, axis=(0, 1)))
                     if sum(self.roi) > 0:

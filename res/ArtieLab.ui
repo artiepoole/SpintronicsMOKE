@@ -1183,25 +1183,25 @@ All</string>
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="line_number_of_recorded_frames">
-             <property name="maximumSize">
-              <size>
-               <width>50</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>0</string>
-             </property>
+            <widget class="QSpinBox" name="spin_number_of_recorded_frames">
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+             <property name="maximum">
+              <number>1000000</number>
              </property>
             </widget>
            </item>
           </layout>
          </item>
          <item row="5" column="1">
-          <widget class="QPushButton" name="pushButton">
+          <widget class="QPushButton" name="button_record">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
