@@ -19,6 +19,7 @@ class AnalyserSweepDialog(QDialog):
         self.start = self.spin_start.value()
         self.stop = self.spin_stop.value()
         self.step_size = self.spin_step.value()
+        self.running = False
 
         self.parent = parent
         self.camera_grabber = self.parent.camera_grabber
@@ -56,7 +57,13 @@ class AnalyserSweepDialog(QDialog):
         self.spin_stop.editingFinished.connect(self.spin_stop_value_changed)
         self.spin_step.editingFinished.connect(self.spin_step_value_changed)
         self.button_run.clicked.connect(self.run)
-        self.button_cancel.clicked.connect(self.close)
+        self.button_cancel.clicked.connect(self.on_cancel)
+
+    def on_cancel(self):
+        if self.running:
+            self.running = False
+        else:
+            self.close()
 
     def spin_start_value_changed(self):
         self.start = self.spin_start.value()
@@ -82,6 +89,11 @@ class AnalyserSweepDialog(QDialog):
         self.line_steps.setText(str(steps))
 
     def run(self):
+        self.button_run.setEnabled(False)
+        self.button_cancel.setText('Stop Sweep')
+        self.running = True
+        pg.QtGui.QGuiApplication.processEvents()
+
         file_path = Path(
             self.parent.line_directory.text()).joinpath(
             datetime.now().strftime("%Y-%m-%d--%H-%M-%S") +
@@ -144,6 +156,7 @@ class AnalyserSweepDialog(QDialog):
             self.analyser_controller.move(self.start)
 
         for i in range(self.steps + 1):
+
             time.sleep(self.parent.exposure_time)
             if self.averaging:
                 frames = self.camera_grabber.snap_n(self.averages)
@@ -154,7 +167,7 @@ class AnalyserSweepDialog(QDialog):
                        (self.parent.frame_processor._process_frame(
                            frame.astype(np.int32)
                        ).astype(np.uint16)
-                       ))
+                        ))
             if self.roi:
                 x, y, w, h = self.roi
                 intensities.append(np.mean(frame[y:y + h, x:x + w], axis=(0, 1)))
@@ -167,6 +180,8 @@ class AnalyserSweepDialog(QDialog):
                 key = f'sweep_frame_{i}'
                 contents.append(key)
                 store[key] = pd.DataFrame(frame)
+            if not self.running:
+                break
             self.analyser_controller.move(self.step_size)
             angle += self.step_size
         print(angles, intensities)
@@ -177,14 +192,24 @@ class AnalyserSweepDialog(QDialog):
         store['meta_data'] = pd.DataFrame(meta_data)
 
         store.close()
-        logging.info("Sweep complete. Data saved to: " + str(file_path))
-        logging.info("Returning to original analyser position")
-        self.analyser_controller.move(-self.stop + self.start_angle)
+
+        if not self.running:
+            logging.info("Sweep not complete. Unfinished data saved to: " + str(file_path))
+        else:
+            logging.info("Sweep complete. Data saved to: " + str(file_path))
+            self.running = False
+
+        logging.info(f"Returning to original analyser position. Moving {-angle}")
+        self.analyser_controller.move(-angle)
+
+        self.button_cancel.setText('Close')
+        self.button_run.setEnabled(True)
 
 
 class FieldSweepDialog(QDialog):
     def __init__(self, parent):
         super().__init__()
+        self.running = False
         uic.loadUi('res/FieldSweep.ui', self)
         self.amplitude = self.spin_amplitude.value()
         self.offset = self.spin_offset.value()
@@ -227,7 +252,13 @@ class FieldSweepDialog(QDialog):
         self.spin_step_size.editingFinished.connect(self.spin_step_size_value_changed)
         self.spin_repeats.editingFinished.connect(self.spin_repeats_value_changed)
         self.button_run.clicked.connect(self.run)
-        self.button_cancel.clicked.connect(self.close)
+        self.button_cancel.clicked.connect(self.on_cancel)
+
+    def on_cancel(self):
+        if self.running:
+            self.running = False
+        else:
+            self.close()
 
     def spin_amplitude_value_changed(self):
         self.amplitude = self.spin_amplitude.value()
@@ -257,6 +288,10 @@ class FieldSweepDialog(QDialog):
         self.line_points.setText(str(steps))
 
     def run(self):
+        self.button_run.setEnabled(False)
+        self.button_cancel.setText('Stop Sweep')
+        self.running = True
+        pg.QtGui.QGuiApplication.processEvents()
         file_path = Path(
             self.parent.line_directory.text()).joinpath(
             datetime.now().strftime("%Y-%m-%d--%H-%M-%S") +
@@ -308,8 +343,9 @@ class FieldSweepDialog(QDialog):
         self.camera_grabber.prepare_camera()
         self.magnet_controller.mode = "DC"
         self.magnet_controller.set_target_field(field + self.offset)
-
         for point, target_field in enumerate(target_fields):
+            if not self.running:
+                break
             self.magnet_controller.set_target_field(target_field)
             field += self.step_size
             time.sleep(self.parent.exposure_time)
@@ -331,7 +367,7 @@ class FieldSweepDialog(QDialog):
                        (self.parent.frame_processor._process_frame(
                            frame.astype(np.int32)
                        ).astype(np.uint16)
-                       )
+                        )
                        )
             cv2.waitKey(1)
             self.line_points.setText(str(self.points - point))
@@ -340,6 +376,10 @@ class FieldSweepDialog(QDialog):
                 key = f'sweep_frame_{point}'
                 contents.append(key)
                 store[key] = pd.DataFrame(frame)
+        if self.check_save_frames.isChecked():
+            key = f'background_avg'
+            contents.append(key)
+            store[key] = pd.DataFrame(self.parent.frame_processor.background)
         self.line_points.setText(str(self.points))
         contents.append('sweep_data')
         data_dict = {'fields (mT)': fields, 'voltages (V)': voltages, 'intensities': intensities}
@@ -349,13 +389,18 @@ class FieldSweepDialog(QDialog):
         store['meta_data'] = pd.DataFrame(meta_data)
 
         store.close()
-        logging.info("Sweep complete. Data saved to: " + str(file_path))
-        # TODO: add number of points remaining text to figure.
-        # Update CV2 plot
+        if not self.running:
+            logging.info("Sweep not complete. Unfinished data saved to: " + str(file_path))
+        else:
+            logging.info("Sweep complete. Data saved to: " + str(file_path))
+            self.running = False
+
+
         logging.info("Setting field to zero and mode to off")
         self.magnet_controller.set_target_field(0)
         self.magnet_controller.mode = None
 
-        # TODO: save background
+        self.button_cancel.setText('Close')
+        self.button_run.setEnabled(True)
 
     # TODO: Handle the close event so that the system stops measuring in the background and to handle the clicking of run twice.
