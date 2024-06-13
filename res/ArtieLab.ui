@@ -1361,10 +1361,10 @@ All</string>
 QWidget{background-color: rgb(255,255,255)}</string>
                </property>
                <property name="currentText">
-                <string>Adaptive EQ</string>
+                <string>Histogram Equalization</string>
                </property>
                <property name="currentIndex">
-                <number>4</number>
+                <number>3</number>
                </property>
                <property name="maxVisibleItems">
                 <number>6</number>
@@ -2700,6 +2700,9 @@ of Points</string>
                </property>
                <property name="maxLength">
                 <number>5</number>
+               </property>
+               <property name="readOnly">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
