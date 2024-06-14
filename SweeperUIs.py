@@ -1,7 +1,7 @@
 import time
 
 from PyQt5.QtWidgets import QDialog
-from PyQt5 import uic
+from PyQt5 import uic, QtCore
 import pyqtgraph as pg
 from datetime import datetime
 from pathlib import Path
@@ -15,6 +15,7 @@ class AnalyserSweepDialog(QDialog):
     def __init__(self, parent):
         super().__init__()
         uic.loadUi('res/AnalyserSweep.ui', self)
+        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
         self.steps = int(self.line_steps.text())
         self.start = self.spin_start.value()
         self.stop = self.spin_stop.value()
@@ -206,9 +207,11 @@ class AnalyserSweepDialog(QDialog):
         self.button_run.setEnabled(True)
 
 
+
 class FieldSweepDialog(QDialog):
     def __init__(self, parent):
         super().__init__()
+        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
         self.running = False
         uic.loadUi('res/FieldSweep.ui', self)
         self.amplitude = self.spin_amplitude.value()
@@ -403,5 +406,4 @@ class FieldSweepDialog(QDialog):
         self.button_cancel.setText('Close')
         self.button_run.setEnabled(True)
 
-# TODO: Catch close events and stop the running instead or do nothing.
 
