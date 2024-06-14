@@ -279,6 +279,16 @@ QWidget{background-color: rgb(255,255,255)}</string>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>spin_amplitude</tabstop>
+  <tabstop>spin_offset</tabstop>
+  <tabstop>spin_step_size</tabstop>
+  <tabstop>spin_repeats</tabstop>
+  <tabstop>line_points</tabstop>
+  <tabstop>check_save_frames</tabstop>
+  <tabstop>button_run</tabstop>
+  <tabstop>button_cancel</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
