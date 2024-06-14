@@ -1550,7 +1550,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         Updates the magnetic field controller.
         :return None:
         """
-        # TODO: got to here when adding documentation
+
         value = self.spin_mag_amplitude.value()
         if self.button_invert_field.isChecked():
             self.magnet_controller.set_target_field(-value)
@@ -1716,6 +1716,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
     def __on_hysteresis_sweep(self):
+        # TODO: got to here when adding documentation
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
             return

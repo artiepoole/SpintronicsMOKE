@@ -2809,20 +2809,31 @@ QWidget{background-color: rgb(255,255,255)}</string>
           </layout>
          </item>
          <item row="8" column="0">
-          <layout class="QGridLayout" name="layout_mag_plot">
-           <property name="leftMargin">
-            <number>5</number>
+          <widget class="QFrame" name="PanelMagPlot">
+           <property name="frameShape">
+            <enum>QFrame::Panel</enum>
            </property>
-           <property name="topMargin">
-            <number>5</number>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
            </property>
-           <property name="rightMargin">
-            <number>5</number>
+           <property name="lineWidth">
+            <number>2</number>
            </property>
-           <property name="bottomMargin">
-            <number>5</number>
-           </property>
-          </layout>
+           <layout class="QGridLayout" name="layout_mag_plot">
+            <property name="leftMargin">
+             <number>5</number>
+            </property>
+            <property name="topMargin">
+             <number>5</number>
+            </property>
+            <property name="rightMargin">
+             <number>5</number>
+            </property>
+            <property name="bottomMargin">
+             <number>5</number>
+            </property>
+           </layout>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -2889,25 +2900,6 @@ QWidget{background-color: rgb(255,255,255)}</string>
          <property name="verticalSpacing">
           <number>15</number>
          </property>
-         <item row="2" column="0">
-          <layout class="QVBoxLayout" name="layout_plots">
-           <property name="sizeConstraint">
-            <enum>QLayout::SetDefaultConstraint</enum>
-           </property>
-           <property name="leftMargin">
-            <number>2</number>
-           </property>
-           <property name="topMargin">
-            <number>2</number>
-           </property>
-           <property name="rightMargin">
-            <number>2</number>
-           </property>
-           <property name="bottomMargin">
-            <number>2</number>
-           </property>
-          </layout>
-         </item>
          <item row="0" column="0">
           <widget class="QFrame" name="horizontalFrame">
            <property name="maximumSize">
@@ -2992,6 +2984,36 @@ of Points</string>
               </property>
              </widget>
             </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QFrame" name="PanelPlots">
+           <property name="frameShape">
+            <enum>QFrame::Panel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="lineWidth">
+            <number>2</number>
+           </property>
+           <layout class="QVBoxLayout" name="layout_plots">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetDefaultConstraint</enum>
+            </property>
+            <property name="leftMargin">
+             <number>2</number>
+            </property>
+            <property name="topMargin">
+             <number>2</number>
+            </property>
+            <property name="rightMargin">
+             <number>2</number>
+            </property>
+            <property name="bottomMargin">
+             <number>2</number>
+            </property>
            </layout>
           </widget>
          </item>
