@@ -403,4 +403,5 @@ class FieldSweepDialog(QDialog):
         self.button_cancel.setText('Close')
         self.button_run.setEnabled(True)
 
+# TODO: Catch close events and stop the running instead or do nothing.
 
