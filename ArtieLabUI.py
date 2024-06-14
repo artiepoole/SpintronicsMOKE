@@ -149,9 +149,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
         self.start_time = time.time()
-        self.image_timer.start(33)  # Maxfps is 30 anyway
-        self.plot_timer.start(200)  # Doesn't need to be so often
-        self.magnetic_field_timer.start(5)  # max frequency of 10Hz detectable but this is performance limited.
+        # Assigned so that restarting these timers can use the same rate. All in ms
+        self.image_timer_rate = 33  # Maxfps is 30 anyway
+        self.plot_timer_rate = 200  # Doesn't need to be so often
+        self.magnetic_field_timer_rate = 5  # max frequency of 10Hz detectable but this is performance limited.
+        self.image_timer.start(self.image_timer_rate)
+        self.plot_timer.start(self.plot_timer_rate)
+        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
         self.button_long_pol.setChecked(True)
         self.__on_long_pol(True)
         self.__on_image_processing_mode_change(3)
@@ -212,8 +216,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_pause_camera.clicked.connect(self.__on_pause_button)
         self.button_display_subtraction.clicked.connect(self.__on_show_subtraction)
         self.button_record.clicked.connect(self.__on_record_button)
-
-
 
         # Data Streams and Signals
         self.camera_grabber.camera_ready.connect(self.__on_camera_ready)
@@ -673,7 +675,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             logging.info('Failed to set ROI')
             self.__on_clear_roi()
 
-        self.image_timer.start(0)
+        self.image_timer.start(self.image_timer_rate)
 
     def __draw_line(self):
         """
@@ -702,7 +704,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         else:
             logging.warning('Failed to set line profile')
             self.__on_clear_line()
-        self.image_timer.start(0)
+        self.image_timer.start(self.image_timer_rate)
         self.button_clear_line.setEnabled(True)
         # cv2.line
 
@@ -1543,6 +1545,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.spin_mag_offset.setSingleStep(0.1)
 
     def __on_change_field_amplitude(self):
+        """
+        Is called whenever the user selects a new field amplitude value and finished editing.
+        Updates the magnetic field controller.
+        :return None:
+        """
         # TODO: got to here when adding documentation
         value = self.spin_mag_amplitude.value()
         if self.button_invert_field.isChecked():
@@ -1551,6 +1558,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.magnet_controller.set_target_field(value)
 
     def __on_change_field_offset(self):
+        """
+        Is called whenever the user selects a new field offset value and finished editing.
+        Updates the magnetic field controller.
+        :return None:
+        """
         value = self.spin_mag_offset.value()
         if self.button_invert_field.isChecked():
             self.magnet_controller.set_target_offset(-value)
@@ -1558,16 +1570,33 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.magnet_controller.set_target_offset(value)
 
     def __on_change_mag_freq(self):
+        """
+        Is called whenever the user selects a new field frequency value and finished editing.
+        Updates the magnetic field controller.
+        :return None:
+        """
         value = self.spin_mag_freq.value()
         self.magnet_controller.set_frequency(value)
 
     def __set_zero_field(self):
+        """
+        Is called whenever the user clicks zero field or deselcts all field modes.
+        Updates the magnetic field controller to set the output amplitude to zero.
+        :return None:
+        """
         logging.info("Setting field output to zero")
         self.spin_mag_offset.setValue(0)
         self.spin_mag_amplitude.setValue(0)
         self.magnet_controller.reset_field()
 
     def __on_DC_field(self, enabled):
+        """
+        Called whenever the DC button is clicked in the magnetic field control group.
+        When enabled, configures the magnetic field controller to supply DC magnetic fields.
+        When disabled, does nothing unless there is no mode remaining.
+        :param bool enabled: Whether the mode is enabled after the click.
+        :return None:
+        """
         if enabled:
             # self.button_DC_field.setChecked(True)
             self.button_AC_field.setChecked(False)
@@ -1585,6 +1614,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__set_zero_field()
 
     def __on_AC_field(self, enabled):
+        """
+        Called whenever the AC button is clicked in the magnetic field control group.
+        When enabled, configures the magnetic field controller to supply AC magnetic fields.
+        When disabled, does nothing unless there is no mode remaining.
+        :param bool enabled: Whether the mode is enabled after the click.
+        :return None:
+        """
         if enabled:
             self.button_DC_field.setChecked(False)
             if self.magnet_controller.mode == "DC":
@@ -1602,6 +1638,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.__set_zero_field()
 
     def __on_invert_field(self, inverted):
+        """
+        Called whenever the Invert button is clicked in the magnetic field control group.
+        When enabled, Flips the sign of the output voltage to the magnet power supply in DC mode.
+        :param bool enabled: Whether the mode is enabled after the click.
+        :return None:
+        """
         if inverted:
             logging.info("Inverting field")
             self.magnet_controller.set_target_field(-self.spin_mag_amplitude.value())
@@ -1612,16 +1654,33 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
 
     def __rotate_analyser_forward(self):
+        """
+        Called whenever the right arrow is clicked in the Analyser Control group.
+        Moves the analyser by number of degrees specified in the move (degrees) spinbox.
+        :return None:
+        """
         amount = self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
     def __rotate_analyser_backward(self):
+        """
+        Called whenever the left arrow is clicked in the Analyser Control group.
+        Moves the analyser by the negative of the number of degrees specified in the move (degrees) spinbox.
+        :return None:
+        """
         amount = -self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
     def __on_find_minimum(self):
+        """
+        Called whenever the user clicks the Minimise Analyser button. This begins a subroutine in which the analyser
+        controller changes the angle of the analyser and measures the mean intensity of singular raw frames. If an ROI
+        is specified, the mean intensity within the ROI is used instead. The angle is adjusted to minimise the mean
+        intensity.
+        :return None:
+        """
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
             return
@@ -1644,17 +1703,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.analyser_controller.find_minimum(self.camera_grabber)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
-        self.image_timer.start(0)
-        self.plot_timer.start(50)
-        self.magnetic_field_timer.start(10)
+        self.image_timer.start(self.image_timer_rate)
+        self.plot_timer.start(self.plot_timer_rate)
+        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
         QtCore.QMetaObject.invokeMethod(
             self.camera_grabber,
             "set_exposure_time",
             QtCore.Qt.ConnectionType.QueuedConnection,
             QtCore.Q_ARG(float, self.exposure_time)
         )
-        # QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
-        #                                 QtCore.Qt.ConnectionType.QueuedConnection)
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
@@ -1683,9 +1740,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         dialog = FieldSweepDialog(self)
         dialog.exec()
         logging.info("Resuming main GUI after Field sweep dialog")
-        self.image_timer.start(0)
-        self.plot_timer.start(50)
-        self.magnetic_field_timer.start(10)
+        self.image_timer.start(self.image_timer_rate)
+        self.plot_timer.start(self.plot_timer_rate)
+        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
         QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
@@ -1713,9 +1770,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         dialog = AnalyserSweepDialog(self)
         dialog.exec()
         logging.info("Resuming main GUI after analyser sweep dialog")
-        self.image_timer.start(0)
-        self.plot_timer.start(50)
-        self.magnetic_field_timer.start(10)
+        self.image_timer.start(self.image_timer_rate)
+        self.plot_timer.start(self.plot_timer_rate)
+        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
         QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
