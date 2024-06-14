@@ -50,7 +50,7 @@ class FrameProcessor(QtCore.QObject):
     IMAGE_PROCESSING_HISTEQ = 3
     IMAGE_PROCESSING_ADAPTEQ = 4
     frame_processor_ready = QtCore.pyqtSignal()
-    frame_ready_signal = QtCore.pyqtSignal()
+    frame_ready_signal = QtCore.pyqtSignal(np.ndarray)
     mode = 1
     p_low = 0
     p_high = 100

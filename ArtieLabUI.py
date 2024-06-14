@@ -449,6 +449,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         Updates the CV2 display(s) with latest frame data.
         :return None:
         """
+        # TODO: this is not actually loading the latest processed frame each time and thats why it looks like it's stuttering.
         frame = self.frame_processor.latest_processed_frame.astype(np.uint16)
         # frame = cv2.applyColorMap((frame//255).astype(np.uint8), cv2.COLORMAP_AUTUMN)
         if sum(self.frame_processor.roi) > 0:
@@ -1151,10 +1152,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.recording_angles = []
             self.spin_number_of_recorded_frames.setValue(0)
 
-    def __on_frame_processor_new_frame(self):
+    def __on_frame_processor_new_frame(self, frame):
         # TODO: figure out why it double saves frames
         if self.recording:
-            frame = self.frame_processor.latest_raw_frame.astype(np.uint16)
+            frame = frame.astype(np.uint16)
             frame_index = self.spin_number_of_recorded_frames.value()
             key = f"frame_{frame_index}"
             self.recording_fields.append(self.magnet_controller.get_current_amplitude()[0])
