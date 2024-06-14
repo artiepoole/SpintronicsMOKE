@@ -50,7 +50,8 @@ class FrameProcessor(QtCore.QObject):
     IMAGE_PROCESSING_HISTEQ = 3
     IMAGE_PROCESSING_ADAPTEQ = 4
     frame_processor_ready = QtCore.pyqtSignal()
-    frame_ready_signal = QtCore.pyqtSignal(np.ndarray)
+    new_raw_frame_signal = QtCore.pyqtSignal(np.ndarray)
+    new_processed_frame_signal = QtCore.pyqtSignal(np.ndarray)
     mode = 1
     p_low = 0
     p_high = 100
@@ -222,7 +223,7 @@ class FrameProcessor(QtCore.QObject):
                     logging.debug("Got single frame")
                     # Single frame mode
                     self.latest_raw_frame, latest_frame_data = item
-                    self.frame_ready_signal.emit()
+                    self.new_raw_frame_signal.emit(self.latest_raw_frame)
                     self.mutex.lock()
                     self.intensities_y.append(np.mean(self.latest_raw_frame, axis=(0, 1)))
                     if sum(self.roi) > 0:
@@ -259,6 +260,7 @@ class FrameProcessor(QtCore.QObject):
                         start, end = self.line_coords
                         self.latest_profile = profile_line(self.latest_processed_frame, start,
                                                            end, linewidth=5)
+                    self.new_processed_frame_signal.emit(self.latest_processed_frame)
                 else:
                     logging.warning(
                         'Incorrect length of contents: Frame processor received neither single frame nor difference frame')

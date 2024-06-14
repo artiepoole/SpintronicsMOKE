@@ -125,6 +125,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.LED_control_all = False
         self.exposure_time = 0.05
         self.roi = (0, 0, 0, 0)
+        self.latest_processed_frame = np.zeros((1024, 1024), dtype=np.uint16)
         self.recording = False
         self.recording_store = None
         self.recording_meta_data = None
@@ -148,9 +149,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
         self.start_time = time.time()
-        self.image_timer.start(0)
-        self.plot_timer.start(50)
-        self.magnetic_field_timer.start(5)
+        self.image_timer.start(33)  # Maxfps is 30 anyway
+        self.plot_timer.start(200)  # Doesn't need to be so often
+        self.magnetic_field_timer.start(5)  # max frequency of 10Hz detectable but this is performance limited.
         self.button_long_pol.setChecked(True)
         self.__on_long_pol(True)
         self.__on_image_processing_mode_change(3)
@@ -196,6 +197,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_clear_roi.clicked.connect(self.__on_clear_roi)
         self.button_clear_line.clicked.connect(self.__on_clear_line)
         self.frame_processor.frame_processor_ready.connect(self.__on_frame_processor_ready)
+        self.frame_processor.new_raw_frame_signal.connect(self.__on_frame_processor_new_raw_frame)
+        self.frame_processor.new_processed_frame_signal.connect(self.__on_frame_processor_new_processed_frame)
 
         # Averaging controls
         self.button_measure_background.clicked.connect(self.__on_get_new_background)
@@ -209,9 +212,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_pause_camera.clicked.connect(self.__on_pause_button)
         self.button_display_subtraction.clicked.connect(self.__on_show_subtraction)
         self.button_record.clicked.connect(self.__on_record_button)
-        self.frame_processor.frame_ready_signal.connect(self.__on_frame_processor_new_frame)
-        # TODO: Add record video feature.  think this could just use a signal from the frame procesor for "Processing
-        #  done" or "new frame" or something and a boolean. "If recording video, do something, else don't"
+
+
 
         # Data Streams and Signals
         self.camera_grabber.camera_ready.connect(self.__on_camera_ready)
@@ -449,8 +451,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         Updates the CV2 display(s) with latest frame data.
         :return None:
         """
-        # TODO: this is not actually loading the latest processed frame each time and thats why it looks like it's stuttering.
-        frame = self.frame_processor.latest_processed_frame.astype(np.uint16)
+        frame = self.latest_processed_frame
         # frame = cv2.applyColorMap((frame//255).astype(np.uint8), cv2.COLORMAP_AUTUMN)
         if sum(self.frame_processor.roi) > 0:
             x, y, w, h = self.frame_processor.roi
@@ -1152,8 +1153,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.recording_angles = []
             self.spin_number_of_recorded_frames.setValue(0)
 
-    def __on_frame_processor_new_frame(self, frame):
-        # TODO: figure out why it double saves frames
+    def __on_frame_processor_new_raw_frame(self, frame):
         if self.recording:
             frame = frame.astype(np.uint16)
             frame_index = self.spin_number_of_recorded_frames.value()
@@ -1163,6 +1163,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.recording_contents.append(key)
             self.recording_store[key] = pd.DataFrame(frame)
             self.spin_number_of_recorded_frames.setValue(frame_index + 1)
+
+    def __on_frame_processor_new_processed_frame(self, frame):
+        self.latest_processed_frame = frame.astype(np.uint16)
 
     def __on_frame_processor_ready(self):
         """
