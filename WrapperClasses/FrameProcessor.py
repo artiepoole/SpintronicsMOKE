@@ -236,7 +236,7 @@ class FrameProcessor(QtCore.QObject):
                         logging.warning("Latest frame is not correct shape. Discarding frame.")
                         continue
                     if self.averaging:
-                        # TODO: assign zeros array of length self.averages and only take mean of filled portion of
+                        # TODO: consider assigning zeros array of length self.averages and only take mean of filled portion of
                         #  array whenever the array is too small.
                         if self.frame_counter % self.averages < len(self.raw_frame_stack):
                             # When the stack is full up to the number of averages, this overwrites the frames in memory.
