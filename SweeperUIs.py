@@ -206,6 +206,9 @@ class AnalyserSweepDialog(QDialog):
         self.button_cancel.setText('Close')
         self.button_run.setEnabled(True)
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape or event.key() == QtCore.Qt.Key_Enter:
+            event.ignore()
 
 
 class FieldSweepDialog(QDialog):
@@ -405,5 +408,10 @@ class FieldSweepDialog(QDialog):
 
         self.button_cancel.setText('Close')
         self.button_run.setEnabled(True)
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape or event.key() == QtCore.Qt.Key_Enter:
+            event.ignore()
+
 
 
