@@ -1152,6 +1152,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.spin_number_of_recorded_frames.setValue(0)
 
     def __on_frame_processor_new_frame(self):
+        # TODO: figure out why it double saves frames
         if self.recording:
             frame = self.frame_processor.latest_raw_frame.astype(np.uint16)
             frame_index = self.spin_number_of_recorded_frames.value()
