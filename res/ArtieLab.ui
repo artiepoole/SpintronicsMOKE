@@ -2103,6 +2103,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                <height>20</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a rectangular ROI for use in sweep tools, analyser minimising and to view the intensity within an ROI as a plot.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Select ROI</string>
              </property>
@@ -2115,6 +2118,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                <width>0</width>
                <height>20</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a line by drawing a rectangle to plot an intensity line profile. The flip button can be used to change its direction.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Draw Line</string>
@@ -2136,6 +2142,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <width>36</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Because the line profile is drawing using an ROI tool, flip swaps the x coordinates between the start and end to allow for opposite corners. A workaround&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>Flip</string>
