@@ -235,6 +235,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Magnetic Field Control
 
         self.combo_calib_file.currentIndexChanged.connect(self.__on_change_calibration)
+        self.calib_file_blocker = QtCore.QSignalBlocker(self.combo_calib_file)
+        self.calib_file_blocker.unblock()
+
         self.spin_mag_amplitude.editingFinished.connect(self.__on_change_field_amplitude)
         self.spin_mag_offset.editingFinished.connect(self.__on_change_field_offset)
         self.spin_mag_freq.editingFinished.connect(self.__on_change_mag_freq)
@@ -243,6 +246,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_DC_field.clicked.connect(self.__on_DC_field)
         self.button_AC_field.clicked.connect(self.__on_AC_field)
         self.button_invert_field.clicked.connect(self.__on_invert_field)
+        self.button_calibration_directory.clicked.connect(self.__on_browse_mag_calib)
 
         # Analyser Controls
         self.button_move_analyser_back.clicked.connect(self.__rotate_analyser_backward)
@@ -375,25 +379,25 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Magnetic field calibration stuff
         if os.path.isfile('res/last_calibration_location.txt'):
             with open('res/last_calibration_location.txt', 'r') as file:
-                dir = file.readline()
+                calib_dir = file.readline()
                 logging.info(f"Previous calibration file directory found.")
         elif os.path.isdir("Coil Calibrations\\"):
-            dir = "Coil Calibrations\\"
-            logging.warning("No calibration location found, trying: " + str(dir))
+            calib_dir = "Coil Calibrations\\"
+            logging.warning("No calibration location found, trying: " + str(calib_dir))
         else:
             logging.warning("Default calib file location not found. Asking for user input.")
-            self.calib_file_dir = QtWidgets.QFileDialog.getExistingDirectory(
+            self.calib_dir = QtWidgets.QFileDialog.getExistingDirectory(
                 None,
                 'Choose Calibration File Directory',
                 QtWidgets.QFileDialog.ShowDirsOnly
             )
-        self.calib_file_dir = dir
-        logging.info(f"Loading calibration files from {dir}")
-        file_names = [f for f in listdir(dir) if isfile(join(dir, f)) and ".txt" in f]
+
+        file_names = [f for f in listdir(calib_dir) if isfile(join(calib_dir, f)) and ".txt" in f]
         if file_names:
+            self.calib_file_dir = calib_dir
+            logging.info(f"Loading calibration files from {calib_dir}")
             self.calibration_dictionary = {i + 1: name for i, name in enumerate(file_names)}
             # +1 because 0 is "None"
-
             strings = [name.replace('.txt', '') for name in file_names]
             strings = [name.replace('_fit', '') for name in strings]
             self.combo_calib_file.clear()
@@ -2061,18 +2065,30 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             QtWidgets.QFileDialog.ShowDirsOnly)
         if dest_dir:
             self.line_directory.setText(str(Path(dest_dir)))
-            self.calib_file_dir = dest_dir
-            logging.info(f"Loading calibration files from {dir}")
-            file_names = [f for f in listdir(dir) if isfile(join(dir, f)) and ".txt" in f]
+
+    def __on_browse_mag_calib(self):
+        dest_dir = QtWidgets.QFileDialog.getExistingDirectory(
+            None,
+            'Choose Calibration File Directory',
+            self.calib_file_dir,
+            QtWidgets.QFileDialog.ShowDirsOnly)
+        if dest_dir:
+            logging.info(f"Loading calibration files from {dest_dir}")
+            file_names = [f for f in listdir(dest_dir) if isfile(join(dest_dir, f)) and ".txt" in f]
             if file_names:
+                self.calib_file_dir = dest_dir
                 self.calibration_dictionary = {i + 1: name for i, name in enumerate(file_names)}
                 # +1 because 0 is "None"
 
                 strings = [name.replace('.txt', '') for name in file_names]
                 strings = [name.replace('_fit', '') for name in strings]
+                self.calib_file_blocker.reblock()
                 self.combo_calib_file.clear()
                 self.combo_calib_file.addItem("None")
                 self.combo_calib_file.addItems(strings)
+                self.combo_calib_file.setCurrentIndex(0)
+                self.calib_file_blocker.unblock()
+                self.__on_change_calibration(0)
                 with open('res/last_calibration_location.txt', 'w') as file:
                     file.write(dest_dir)
                     logging.info(f"Calibration file directory updated.")

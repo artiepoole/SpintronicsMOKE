@@ -50,7 +50,6 @@ class MagnetController:
         self.field_from_volts = field_from_volts
         self.currents = currents
         self.field_from_currents = field_from_currents
-        logging.info("Calibration Updated")
 
     def interpolate_voltage(self, target_field):
         """
