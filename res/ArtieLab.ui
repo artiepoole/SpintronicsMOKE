@@ -100,6 +100,9 @@
            </property>
            <item row="0" column="0">
             <widget class="QToolButton" name="button_long_pol">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enables top pair constant illumination for detecting vertical polarisation changes. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="styleSheet">
               <string notr="true"/>
              </property>
@@ -130,6 +133,9 @@
            </item>
            <item row="0" column="1">
             <widget class="QToolButton" name="button_trans_pol">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enables left pair constant illumination for detecting horizontal polarisation changes. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="styleSheet">
               <string notr="true"/>
              </property>
@@ -157,6 +163,9 @@
            </item>
            <item row="0" column="2">
             <widget class="QToolButton" name="button_polar">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enables central vertical LEDs as an opposing pair in constant illumination for detecting polar polarisation changes. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="styleSheet">
               <string notr="true"/>
              </property>
@@ -184,6 +193,9 @@
            </item>
            <item row="1" column="0">
             <widget class="QToolButton" name="button_long_trans">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enables difference imaging by flickering the left and top pairs on and syncrhonising measurement. Fixes exposure time to 50ms.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="styleSheet">
               <string notr="true"/>
              </property>
@@ -211,6 +223,9 @@
            </item>
            <item row="1" column="1">
             <widget class="QToolButton" name="button_pure_long">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enables difference imaging by flickering the top and bottom pairs on and syncrhonising measurement. Fixes exposure time to 50ms.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="styleSheet">
               <string notr="true"/>
              </property>
@@ -238,6 +253,9 @@
            </item>
            <item row="1" column="2">
             <widget class="QToolButton" name="button_pure_trans">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enables difference imaging by flickering the left and right pairs on and syncrhonising measurement. Fixes exposure time to 50ms.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="styleSheet">
               <string notr="true"/>
              </property>
@@ -332,6 +350,9 @@
                   <height>50</height>
                  </size>
                 </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle LED 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="styleSheet">
                  <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
@@ -377,6 +398,9 @@ border:  none;</string>
                   <width>50</width>
                   <height>50</height>
                  </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle LED 6&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">background-color: rgba(255, 255, 255, 0);
@@ -424,6 +448,9 @@ border:  none;</string>
                   <height>50</height>
                  </size>
                 </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle LED 5&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="styleSheet">
                  <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
@@ -470,6 +497,9 @@ border:  none;</string>
                   <height>50</height>
                  </size>
                 </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle LED 7&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="styleSheet">
                  <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
@@ -509,6 +539,9 @@ border:  none;</string>
                   <width>50</width>
                   <height>50</height>
                  </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle LED 2&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">background-color: rgba(255, 255, 255, 0);
@@ -550,6 +583,9 @@ border:  none;</string>
                   <height>50</height>
                  </size>
                 </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Disable all LEDs and turn off all lighting modes.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="styleSheet">
                  <string notr="true"/>
                 </property>
@@ -581,6 +617,9 @@ border:  none;</string>
                   <width>50</width>
                   <height>50</height>
                  </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle LED 8&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">background-color: rgba(255, 255, 255, 0);
@@ -628,6 +667,9 @@ border:  none;</string>
                   <height>50</height>
                  </size>
                 </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle LED 1&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="styleSheet">
                  <string notr="true">background-color: rgba(255, 255, 255, 0);
 border:  none;</string>
@@ -667,6 +709,9 @@ border:  none;</string>
                   <width>50</width>
                   <height>50</height>
                  </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle LED 4&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">background-color: rgba(255, 255, 255, 0);
@@ -731,6 +776,9 @@ border:  none;</string>
                   <height>16777215</height>
                  </size>
                 </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Not Implemented: Equalise Vertical all vertical LEDs&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="text">
                  <string>Equalise
 Vert</string>
@@ -753,6 +801,9 @@ Vert</string>
                   <width>50</width>
                   <height>16777215</height>
                  </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Not Implemented: Equalise all horizontal LEDs&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
                  <string>Equalise
@@ -777,6 +828,9 @@ Horz</string>
                   <height>16777215</height>
                  </size>
                 </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Not Implemented: Equalise all enabled LEDs&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="text">
                  <string>Equalise
 Selected</string>
@@ -800,6 +854,9 @@ Selected</string>
                   <height>16777215</height>
                  </size>
                 </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Not Implemented: Equalise each LED in within a pair?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="text">
                  <string>Equalise
 Pairs</string>
@@ -813,6 +870,9 @@ Pairs</string>
                   <width>50</width>
                   <height>40</height>
                  </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle between controll all brightnesses with the slider, and controlling only selected LED brightnesses&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
                  <string>Control
@@ -830,6 +890,9 @@ All</string>
                   <width>50</width>
                   <height>40</height>
                  </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reset all LEDs to max brightness&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
                  <string>Reset 
@@ -872,6 +935,9 @@ All</string>
                  <font>
                   <pointsize>12</pointsize>
                  </font>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;Brightness slider&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="autoFillBackground">
                  <bool>false</bool>
@@ -935,6 +1001,9 @@ All</string>
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Program Log. Backed up to ArtieLabUI.log&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="autoFillBackground">
             <bool>false</bool>
@@ -1038,6 +1107,9 @@ All</string>
             </property>
             <item>
              <widget class="QCheckBox" name="check_save_avg">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Save the average of the raw stack?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>Save AVG?</string>
               </property>
@@ -1048,6 +1120,9 @@ All</string>
             </item>
             <item>
              <widget class="QCheckBox" name="check_save_stack">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Save the raw stack of frames used in averaging?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>Save stack?</string>
               </property>
@@ -1058,6 +1133,9 @@ All</string>
             </item>
             <item>
              <widget class="QCheckBox" name="check_save_as_seen">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Save what is seen in the preview window after processing&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>Save as seen?</string>
               </property>
@@ -1065,6 +1143,9 @@ All</string>
             </item>
             <item>
              <widget class="QCheckBox" name="check_save_background">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Save the mean of the background stack?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>Save BKG?</string>
               </property>
@@ -1075,6 +1156,9 @@ All</string>
             </item>
             <item>
              <widget class="QCheckBox" name="check_save_bkg_stack">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Save the raw stack of background frames used to calculate the mean background?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>Save BKG Stack?</string>
               </property>
@@ -1085,6 +1169,9 @@ All</string>
          </item>
          <item row="4" column="0">
           <widget class="QLineEdit" name="line_prefix">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Files will be saved with the following form, if the contents of this box are &amp;lt;details&amp;gt;:&lt;/p&gt;&lt;p&gt;HDF5 Package: &amp;quot;YYYY-MM-DD--HH-MM-SS_&amp;lt;details&amp;gt;.h5&lt;/p&gt;&lt;p&gt;Recording: &amp;quot;YYYY-MM-DD--HH-MM-SS_&amp;lt;details&amp;gt;_movie.h5&lt;/p&gt;&lt;p&gt;Save Single: &amp;quot;YYYY-MM-DD--HH-MM-SS_&amp;lt;details&amp;gt;_&amp;lt;type&amp;gt;.h5 where &amp;lt;type&amp;gt; is autogenerated to explain how the image was acquire&lt;/p&gt;&lt;p&gt;Hysteresis Sweep Data:  &amp;quot;YYYY-MM-DD--HH-MM-SS_FieldSweep_&amp;lt;details&amp;gt;.h5&lt;/p&gt;&lt;p&gt;Analyser Sweep Data:  &amp;quot;YYYY-MM-DD--HH-MM-SS_AnalyserSweep_&amp;lt;details&amp;gt;.h5&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="styleSheet">
             <string notr="true">background-color: rgb(255,255,255)</string>
            </property>
@@ -1109,6 +1196,9 @@ All</string>
          </item>
          <item row="2" column="0">
           <widget class="QLineEdit" name="line_directory">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;All files will be saved in this directory&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>C:\Users\User\Desktop\USERS</string>
            </property>
@@ -1119,6 +1209,9 @@ All</string>
          </item>
          <item row="7" column="1">
           <widget class="QPushButton" name="button_save_package">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Will save all the infomormation selected by the check boxes to the left as one HDF5 package with the metadata containing the contents. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>Save HDF5 Package</string>
            </property>
@@ -1130,6 +1223,9 @@ All</string>
          </item>
          <item row="2" column="1">
           <widget class="QPushButton" name="button_dir_browse">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Choose the directory to which all files will be saved.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>Browse</string>
            </property>
@@ -1141,6 +1237,9 @@ All</string>
          </item>
          <item row="4" column="1">
           <widget class="QPushButton" name="button_save_single">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Save exactly what is seen on the camera preview as a 16bit B/W Tiff file. The suffix will be autogenerated to quickly summarise what was taken, e.g. with background subtraction and 16 averages.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>Save As Seen</string>
            </property>
@@ -1207,6 +1306,9 @@ All</string>
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Begin a recording of raw frames which will be saved as an hfd5 package. This metadata will contain the field and angle data associated with each frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string>Record</string>
@@ -1290,6 +1392,9 @@ All</string>
              </property>
              <item row="1" column="1">
               <widget class="QSpinBox" name="spin_foreground_averages">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Number of frames used to take calculate the mean frame, used to generate the preview. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
@@ -1316,6 +1421,9 @@ All</string>
              </item>
              <item row="1" column="0">
               <widget class="QSpinBox" name="spin_background_averages">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Number of frames to used to calculate the mean background.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">QWidget{background-color: rgb(255,255,255)}</string>
                </property>
@@ -1355,6 +1463,9 @@ All</string>
              </property>
              <item row="1" column="0">
               <widget class="QComboBox" name="combo_normalisation_selector">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;None: Literally no processing&lt;/p&gt;&lt;p&gt;Basic: Divides the frame by the highest brightness and rescales to all values to a uint16 value (0 to 65535)&lt;/p&gt;&lt;p&gt;Contast Stretching: Rescales the brightness histogram, pushing anyting below the the %min percentile to be zero and anything above the %max percentile to be 65535. If ROI is selected, the percentiles are calculated using pixels within the ROI only.&lt;/p&gt;&lt;p&gt;Histogram Eq: Simpler Histogram Equalisation algorithm which maximises contrast without applying any flattening. Ideal for domain contrast. &lt;/p&gt;&lt;p&gt;Adaptive Histogram Eq: Uses an algorithm called CLAHE to adjust the contrast of tiled regions such that the whole image has the same contrast. This flattens the resulting image (removing bright regions) but in doing so often obscures domain contrast. Ideal for checking focus and imaging non-magnetic features.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">QComboBox{color: rgb(0,0,0)}
 
@@ -1407,6 +1518,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lower percentile value used in contrast stretching.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
@@ -1425,6 +1539,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Upper percentile value used in contrast stretching.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
@@ -1479,6 +1596,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&amp;quot;clip limit&amp;quot; used in Histogram Equalization algorithm. Redistributes brightness values with counts above this value to new brightness values, further stretching the contrast.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
@@ -1531,6 +1651,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                <height>120</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Measure the number of specified frames and calculate the mean. By default this background is then subtracted from the raw frames to generate the preview. This can be disabled by the button to the right.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Get Background (F1)</string>
              </property>
@@ -1558,6 +1681,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                <width>200</width>
                <height>120</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle background subtraction. Background subtraction is on when depressed (and text shows &amp;quot;Ignore Background (F2)&amp;quot;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Ignore Background (F2)</string>
@@ -1604,6 +1730,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <height>120</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle averaging. Bar to the right fills as averages are measured to show progress. The average is calculated in a rolling fashion, in which new frames replace the oldest once the stack is full.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
                 <string>Enable Averaging (F3)</string>
                </property>
@@ -1622,6 +1751,11 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <width>10</width>
                  <height>50</height>
                 </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QProgressBar::chunk {
+     background-color: #40C057;
+ }</string>
                </property>
                <property name="value">
                 <number>0</number>
@@ -1702,6 +1836,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
              </property>
              <item row="3" column="0">
               <widget class="QComboBox" name="combo_binning">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Binning physically combines pixels within the camera to improve intensity resolution, while reducing spacial resolution. &lt;/p&gt;&lt;p&gt;None: no binning, resulting image is 2048x2048. This is rescaled to 1024x1024 for display purposes.&lt;/p&gt;&lt;p&gt;2x2: Each brightness values is the result of 4 pixels on the camera giving 1024x1024 frames.&lt;/p&gt;&lt;p&gt;4x4: Each brightness values is the result of 416 pixels on the camera giving 512x512 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">QComboBox{color: rgb(0,0,0)}
 
@@ -1760,6 +1897,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Correction value. Only used in Meta Data&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
@@ -1806,6 +1946,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
              </item>
              <item row="1" column="0">
               <widget class="QComboBox" name="combo_lens">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Currently Installed lens. Only used in Meta Data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">QComboBox{color: rgb(0,0,0)}
 
@@ -1866,6 +2009,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
              </item>
              <item row="1" column="1">
               <widget class="QComboBox" name="combo_magnification">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Intermediary magnification setting. Only used in Meta Data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">QComboBox{color: rgb(0,0,0)}
 
@@ -1908,6 +2054,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Readout of the real FPS measured by ArtieLab. This is measured as 1 divided by the average of the difference in frame times between the most recent 10 frames.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -1915,6 +2064,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
              </item>
              <item row="3" column="1">
               <widget class="QDoubleSpinBox" name="spin_exposure_time">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Exposure time of the camera in seconds. Minimum value of 3ms (0.003) and maximum of 10s. The maximum frame rate from the camera is 30fps regardless of how low the exposure time is, and the readout (line by line from centre outwards) is distributed throughout the resulting 33ms even at 3ms exposure times. 50ms default gives 20fps.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">QComboBox{color: rgb(0,0,0)}
 
@@ -2097,6 +2249,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open the Hystersis Sweep tool to measure intensity as a function of magnetic field. Must select a magnet calibration file before opening. &lt;/p&gt;&lt;p&gt;Please specify directory, details and all image processing options and , if necessary, a ROI beforehand.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
                 <string>Hystersis Sweep</string>
                </property>
@@ -2122,6 +2277,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <width>120</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open the Anaylser Sweep tool to measure intensity as a function of analyser angle. &lt;/p&gt;&lt;p&gt;Please specify directory, details and all image processing options and , if necessary, a ROI beforehand.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>Analyser Sweep</string>
@@ -2214,6 +2372,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically find the analyser angle which provides minimum brightness. Do not click if the analyser is not in place and connected to the breakout box. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
                 <string>Minimise Analyser</string>
                </property>
@@ -2240,6 +2401,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Amount to rotate analyser.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
@@ -2259,6 +2423,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
              </item>
              <item>
               <widget class="QToolButton" name="button_move_analyser_back">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move &amp;quot;backward&amp;quot; by specified amount.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
                 <string>backward</string>
                </property>
@@ -2270,6 +2437,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
              </item>
              <item>
               <widget class="QToolButton" name="button_move_analyser_for">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move &amp;quot;forward&amp;quot; by specified amount.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
                 <string>forward</string>
                </property>
@@ -2293,6 +2463,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <width>50</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Analyser position relative to last found minimum.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>0.00</string>
@@ -2390,6 +2563,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Most recent field value after conversion.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -2415,6 +2591,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
                  <width>50</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Measured field value (target field) before conversion.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="readOnly">
                 <bool>true</bool>
@@ -2444,6 +2623,9 @@ of Points</string>
              </item>
              <item>
               <widget class="QSpinBox" name="spin_mag_point_count">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Number of magnetic field points to plot.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
@@ -2477,6 +2659,9 @@ of Points</string>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle DC magnet mode. Only uses Amplitude value.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
                 <string>DC
 (F8)</string>
@@ -2499,6 +2684,9 @@ of Points</string>
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle AC magnet mode.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>AC
@@ -2523,6 +2711,9 @@ of Points</string>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Not Implemented: Decaying DC/AC field.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
                 <string>Decay
 (F10)</string>
@@ -2543,6 +2734,9 @@ of Points</string>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle swapping positive and negative field values.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
                 <string>Invert
 (F11)</string>
@@ -2559,6 +2753,9 @@ of Points</string>
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set output amplitude and offset to zero.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>Zero
@@ -2695,6 +2892,9 @@ of Points</string>
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Largest field value from selected calibration file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
                <property name="text">
                 <string>10.0</string>
                </property>
@@ -2751,6 +2951,9 @@ of Points</string>
                <height>25</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select magnet calibration file. Automatically loads list from default/chosen directory.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="styleSheet">
               <string notr="true">QComboBox{color: rgb(0,0,0)}
 
@@ -2769,7 +2972,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
            <item>
             <widget class="QToolButton" name="button_calibration_directory">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Choose Calibration Directory&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Choose Calibration Directory&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string/>
@@ -2927,6 +3130,9 @@ QWidget{background-color: rgb(255,255,255)}</string>
             </item>
             <item>
              <widget class="QPushButton" name="button_reset_plots">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear plot data for intensity plots and magnetic field plots&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>Reset plots</string>
               </property>
@@ -2966,6 +3172,9 @@ of Points</string>
                 <width>16777215</width>
                 <height>30</height>
                </size>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Number of past frame to use data from in plots.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="styleSheet">
                <string notr="true">background-color: rgb(255,255,255)</string>
