@@ -1714,6 +1714,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         )
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
+        # TODO: track the analyser position by saving to file
+        # TODO: load last known analyser position on restart.
 
     def __on_hysteresis_sweep(self):
         # TODO: got to here when adding documentation
@@ -2008,7 +2010,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'Choose Save Directory',
             starting_dir,
             QtWidgets.QFileDialog.ShowDirsOnly)
-        self.line_directory.setText(str(Path(dest_dir)))
+        if dest_dir:
+            self.line_directory.setText(str(Path(dest_dir)))
 
     def closeEvent(self, event):
         self.close_event = event
