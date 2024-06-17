@@ -19,10 +19,8 @@ py::array_t<int> equalizeHistogram(const py::array_t<int> &frame_in) {
     vector<int> hist(n_bins, 0);
 
     #pragma omp parallel for
-    for (ssize_t i = 0; i < width; ++i) {
-        for (ssize_t j = 0; j < height; ++j) {
-            hist[frame_in.at(i, j)]++;
-        }
+    for (int ij = 0; ij < total; ++ij){
+        hist[frame_in.at(ij / height, ij % height)]++;
     }
     // Calculates a new brightness based on the histogram such that the cumulative distribution function is as linear as possible.
     long sum = 0;
@@ -33,16 +31,49 @@ py::array_t<int> equalizeHistogram(const py::array_t<int> &frame_in) {
 
     // Assigns new brightness based on original brightness and the new CDF
     #pragma omp parallel for
-    for (int i = 0; i < width; ++i) {
-        for (int j = 0; j < height; ++j)
-            frame_out.mutable_at(i, j) = new_level[frame_in.at(i, j)];
+    for (int ij = 0; ij < total; ++ij){
+        frame_out.mutable_at(ij / height, ij % height) = new_level[frame_in.at(ij / height, ij % height)];
+    }
+    return frame_out;
+}
+
+py::array_t<int> integer_mean(const py::array_t<int> &stack_in) {
+    const int n_frames = stack_in.shape(0);
+    const py::ssize_t width = stack_in.shape(1);
+    const py::ssize_t height = stack_in.shape(2);
+    auto frame_out = py::array_t<int>({width, height});
+
+    #pragma omp parallel for
+    for (int ij = 0; ij < width*height; ++ij){
+        int sum = 0;
+        for (int frame = 0; frame < n_frames; ++frame) {
+            sum += stack_in.at(frame, ij/height, ij%height);
+        }
+        frame_out.mutable_at(ij/height, ij%height) += sum / n_frames;
+    }
+
+    return frame_out;
+}
+
+py::array_t<int> basic_exposure(const py::array_t<int> &frame_in, const int &frame_max) {
+    constexpr int type_max = 65535;
+    py::ssize_t width = frame_in.shape(0);
+    py::ssize_t height = frame_in.shape(1);
+    auto frame_out = py::array_t<int>({width, height});
+
+    #pragma omp parallel for
+    for (int ij = 0; ij < width*height; ++ij){
+            frame_out.mutable_at(ij/height, ij%height) = frame_in.at(ij/height, ij%height) * (type_max / frame_max);
     }
     return frame_out;
 }
 
 
-
 PYBIND11_MODULE(CImageProcessing, m) {
     m.def("equalizeHistogram", &equalizeHistogram,
-          "py::array_t<int> equalizeHistogram(const py::array_t<int> & frame_in)");
+          "py::array_t<int> & equalizeHistogram(const py::array_t<int> & frame_in)");
+    m.def("integer_mean", &integer_mean,
+          "py::array_t<int> & integer_mean(const py::array_t<int> & frame_in)");
+    m.def("basic_exposure", &basic_exposure,
+          "py::array_t<int> & basic_exposure(const py::array_t<int> & frame_in, const int &frame_max)");
 }
