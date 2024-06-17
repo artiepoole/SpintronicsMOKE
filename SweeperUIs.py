@@ -12,6 +12,10 @@ import cv2
 
 
 class AnalyserSweepDialog(QDialog):
+    """
+    Dialog window for measuring image intensity as a function of analyser angle. Must be opened via ArtieLabUI
+    (or similar)
+    """
     def __init__(self, parent):
         super().__init__()
         uic.loadUi('res/AnalyserSweep.ui', self)
@@ -212,6 +216,10 @@ class AnalyserSweepDialog(QDialog):
 
 
 class FieldSweepDialog(QDialog):
+    """
+    Dialog window for measuring image intensity as a function of applied magnetic field. Must be opened via ArtieLabUI
+    (or similar)
+    """
     def __init__(self, parent):
         super().__init__()
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
@@ -412,6 +420,5 @@ class FieldSweepDialog(QDialog):
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape or event.key() == QtCore.Qt.Key_Enter:
             event.ignore()
-
 
 

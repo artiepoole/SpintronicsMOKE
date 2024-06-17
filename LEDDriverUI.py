@@ -5,6 +5,9 @@ import time
 
 
 class LEDDriverUI(QtWidgets.QMainWindow):
+    """
+    Standalone GUI for lighting control.
+    """
     def __init__(self):
         super(LEDDriverUI, self).__init__()  # Call the inherited classes __init__ method
         uic.loadUi(r'C:\Users\User\PycharmProjects\SpintronicsMOKE\res\LED_driver_UI.ui', self)  # Load the .ui file

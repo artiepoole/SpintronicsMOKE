@@ -10,6 +10,9 @@ from WrapperClasses.MagnetController import MagnetController
 
 
 class MagnetDriverUI(QtWidgets.QMainWindow):
+    """
+    Standalone GUI for magnet control.
+    """
     def __init__(self):
         super(MagnetDriverUI, self).__init__()  # Call the inherited classes __init__ method
         uic.loadUi(r'res\Magnet_driver_UI.ui', self)  # Load the .ui file

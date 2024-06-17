@@ -29,6 +29,9 @@ pg.setConfigOption('foreground', 'k')
 
 
 class ArtieLabUI(QtWidgets.QMainWindow):
+    """
+    The main GUI class for ArtieLab which encompasses all working functionality of the MOKE system.
+    """
     def __init__(self):
         # Loads the UI file and sets it to full screen
         super(ArtieLabUI, self).__init__()
