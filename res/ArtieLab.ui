@@ -1210,7 +1210,7 @@ All</string>
          <item row="7" column="1">
           <widget class="QPushButton" name="button_save_package">
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Will save all the infomormation selected by the check boxes to the left as one HDF5 package with the metadata containing the contents. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Will save all the infomormation selected by the check boxes to the left as one HDF5 package with the metadata containing the contents. If nothing is selected, saves only the latest raw frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string>Save HDF5 Package</string>
@@ -1878,7 +1878,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </widget>
              </item>
              <item row="1" column="2">
-              <widget class="QLineEdit" name="line_correction">
+              <widget class="QLineEdit" name="line_field_dir">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -1898,7 +1898,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
                 </size>
                </property>
                <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Correction value. Only used in Meta Data&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Field direction eg horizontal or vertical. Only used in Meta Data&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="styleSheet">
                 <string notr="true">background-color: rgb(255,255,255)</string>
@@ -1914,7 +1914,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
                 </size>
                </property>
                <property name="text">
-                <string>Correction</string>
+                <string>Field Dir</string>
                </property>
               </widget>
              </item>
@@ -3253,7 +3253,7 @@ of Points</string>
   <tabstop>spin_foreground_averages</tabstop>
   <tabstop>combo_lens</tabstop>
   <tabstop>combo_magnification</tabstop>
-  <tabstop>line_correction</tabstop>
+  <tabstop>line_field_dir</tabstop>
   <tabstop>combo_binning</tabstop>
   <tabstop>spin_exposure_time</tabstop>
   <tabstop>spin_analyser_move_amount</tabstop>

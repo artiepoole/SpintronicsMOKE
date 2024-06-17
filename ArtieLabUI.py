@@ -1099,7 +1099,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 'lens': self.combo_lens.currentText(),
                 'magnification': self.combo_magnification.currentText(),
                 'exposure_time': self.spin_exposure_time.value(),
-                'correction': self.line_correction.text(),
+                'field_direction': self.line_field_dir.text(),
                 'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 'analyser_postion': self.analyser_controller.position_in_degrees
             }
@@ -1810,7 +1810,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'lens': self.combo_lens.currentText(),
             'magnification': self.combo_magnification.currentText(),
             'exposure_time': self.spin_exposure_time.value(),
-            'correction': self.line_correction.text(),
+            'field_direction': self.line_field_dir.text(),
             'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'analyser_postion': self.analyser_controller.position_in_degrees
         }
@@ -1971,7 +1971,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'lens': self.combo_lens.currentText(),
             'magnification': self.combo_magnification.currentText(),
             'exposure_time': self.spin_exposure_time.value(),
-            'correction': self.line_correction.text(),
+            'field_direction': self.line_field_dir.text(),
             'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'normalisation': f'type: {self.combo_normalisation_selector.currentText()} ' +
                              f'lower: {self.spin_percentile_lower.value()} ' +
