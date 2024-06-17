@@ -7,10 +7,12 @@ import pandas as pd
 import tifffile
 from PyQt5 import uic
 import cv2
-
+import os
 import pyqtgraph as pg
 
 from SweeperUIs import AnalyserSweepDialog, FieldSweepDialog
+os.add_dll_directory(r"C:\Program Files\JetBrains\CLion 2024.1.1\bin\mingw\bin")
+from CImageProcessing import integer_mean
 from WrapperClasses import *
 
 import os.path
@@ -128,7 +130,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.LED_control_all = False
         self.exposure_time = 0.05
         self.roi = (0, 0, 0, 0)
-        self.latest_processed_frame = np.zeros((1024, 1024), dtype=np.uint16)
+        self.latest_processed_frame = np.zeros((1024, 1024), dtype=np.int32)
         self.recording = False
         self.recording_store = None
         self.recording_meta_data = None
@@ -477,7 +479,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 thickness=2
             )
 
-        cv2.imshow(self.stream_window, frame)
+        cv2.imshow(self.stream_window, frame.astype(np.uint16))
         cv2.waitKey(1)
 
     def __update_field_measurement(self):
@@ -1073,7 +1075,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             # Can't invoke method because of
             frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
             self.frame_processor.background_raw_stack = frames
-            self.frame_processor.background = int_mean(frames, axis=0)
+            self.frame_processor.background = integer_mean(frames)
         if not self.paused:
             if self.flickering:
                 QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_difference_mode",
@@ -1181,9 +1183,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         logging.debug("Frame processor ready received")
         self.mutex.lock()
         self.frame_processor.frame_counter = 0
-        self.frame_processor.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
-        self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
-        self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        self.frame_processor.raw_frame_stack = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
+        self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
+        self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
         self.frame_processor.background = None
         self.frame_processor.background_raw_stack = None
         self.mutex.unlock()
@@ -1438,9 +1440,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.averaging = True
 
             self.frame_processor.frame_counter = 0
-            self.frame_processor.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
-            self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
-            self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+            self.frame_processor.raw_frame_stack = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
+            self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
+            self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
             self.mutex.unlock()
         else:
             self.button_toggle_averaging.setText("Enable Averaging (F3)")
@@ -1892,7 +1894,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     contents.append(key)
                     store[key] = pd.DataFrame(self.frame_processor.latest_mean_frame.astype(np.uint16))
                 if self.check_save_stack.isChecked():
-                    raw_stack = self.frame_processor.raw_frame_stack.astype(np.uint16)
+                    raw_stack = self.frame_processor.raw_frame_stack.astype(np.int32)
                     n_frames = raw_stack.shape[0]
                     # Due to the way the frames overwrite during averaging, this reorders the frames such that index 0
                     # is the oldest frame
