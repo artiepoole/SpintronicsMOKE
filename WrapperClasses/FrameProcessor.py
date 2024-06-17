@@ -42,7 +42,7 @@ def basic_exposure(image):
     :return: Image with rescaled brightness.
     :rtype: np.ndarray[int, int]
     """
-    return (image * (UINT16_MAX // np.amax(image)))
+    return image * (UINT16_MAX // np.amax(image))
 
 
 class FrameProcessor(QtCore.QObject):
