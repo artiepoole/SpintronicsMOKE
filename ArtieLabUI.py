@@ -139,6 +139,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.recording_angles = []
 
         self.__populate_calibration_combobox()
+        self.__populate_analyser_position()
 
         self.__connect_signals()
         self.__prepare_views()
@@ -400,6 +401,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.combo_calib_file.addItems(strings)
         else:
             logging.warning(" No magnet calibration files found.")
+
+    def __populate_analyser_position(self):
+        if os.path.isfile('res/last_analyser_position.txt'):
+            with open('res/last_analyser_position.txt', 'r') as file:
+                val = file.readline()
+                logging.info(f"Previous analyser position loaded: {val}")
+                self.line_current_angle.setText(str(round(float(val), 3)))
+
 
     def __update_plots(self):
         """
@@ -1378,7 +1387,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.__on_camera_ready call which restarts the camera.
         :return:
         """
-        # TODO: this causes a memory issue, probably threading related.
         match binning_idx:
             case 0:
                 value = 1
@@ -1667,6 +1675,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         amount = self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
+        with open('res/last_analyser_position.txt', 'w') as file:
+            file.write(str(round(self.analyser_controller.position_in_degrees, 5)))
+            logging.debug(f"Last analyser position file updated.")
 
     def __rotate_analyser_backward(self):
         """
@@ -1677,6 +1688,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         amount = -self.spin_analyser_move_amount.value()
         self.analyser_controller.move(amount)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
+        with open('res/last_analyser_position.txt', 'w') as file:
+            file.write(str(round(self.analyser_controller.position_in_degrees, 5)))
+            logging.debug(f"Last analyser position file updated.")
 
     def __on_find_minimum(self):
         """
@@ -1719,8 +1733,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         )
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
-        # TODO: track the analyser position by saving to file
-        # TODO: load last known analyser position on restart.
+        with open('res/last_analyser_position.txt', 'w') as file:
+            file.write(str(0.0))
+            logging.debug(f"Last analyser position file updated.")
 
     def __on_hysteresis_sweep(self):
         """
@@ -1728,7 +1743,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         Opens the hysteresis sweep tool window. This tool uses main GUI settings such as processing mode and ROI.
         :return None:
         """
-        # TODO: got to here when adding documentation
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
             return
@@ -2047,6 +2061,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             QtWidgets.QFileDialog.ShowDirsOnly)
         if dest_dir:
             self.line_directory.setText(str(Path(dest_dir)))
+            self.calib_file_dir = dest_dir
+            logging.info(f"Loading calibration files from {dir}")
+            file_names = [f for f in listdir(dir) if isfile(join(dir, f)) and ".txt" in f]
+            if file_names:
+                self.calibration_dictionary = {i + 1: name for i, name in enumerate(file_names)}
+                # +1 because 0 is "None"
+
+                strings = [name.replace('.txt', '') for name in file_names]
+                strings = [name.replace('_fit', '') for name in strings]
+                self.combo_calib_file.clear()
+                self.combo_calib_file.addItem("None")
+                self.combo_calib_file.addItems(strings)
+                with open('res/last_calibration_location.txt', 'w') as file:
+                    file.write(dest_dir)
+                    logging.info(f"Calibration file directory updated.")
+            else:
+                logging.warning(" No magnet calibration files found.")
+
 
     def closeEvent(self, event):
         """
