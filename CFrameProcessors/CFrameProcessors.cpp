@@ -40,7 +40,9 @@ py::array_t<int> equalizeHistogram(const py::array_t<int> &frame_in) {
     return frame_out;
 }
 
+
+
 PYBIND11_MODULE(CImageProcessing, m) {
     m.def("equalizeHistogram", &equalizeHistogram,
-          "py::array_t<int> & equalizeHistogram(const py::array_t<int> & frame_in)");
+          "py::array_t<int> equalizeHistogram(const py::array_t<int> & frame_in)");
 }

@@ -3,13 +3,12 @@ project(CImageProcessing)
 
 set(CMAKE_CXX_STANDARD 17)
 
-include_directories(../lib)
 add_subdirectory(pybind11)
 
 find_package(OpenMP REQUIRED)
 
 #add_library(CImageProcessing SHARED lib/CFrameProcessors.cpp)
-pybind11_add_module(CImageProcessing lib/CFrameProcessors.cpp)
+pybind11_add_module(CImageProcessing CFrameProcessors.cpp)
 target_compile_definitions(CImageProcessing
         PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
 #if (OPENMP_FOUND)
