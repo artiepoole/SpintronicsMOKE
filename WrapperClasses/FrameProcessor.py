@@ -12,18 +12,7 @@ INT16_MAX = 65535 // 2
 import os
 
 os.add_dll_directory(r"C:\Program Files\JetBrains\CLion 2024.1.1\bin\mingw\bin")
-from CImageProcessing import equalizeHistogram
-
-
-def int_mean(image_stack, axis=0):
-    """
-    integer math version of mean to speed up averaging of stacks.
-    :param np.ndarray[int, int, int] image_stack: stack of integer frames to be meaned along specified axis.
-    :param int axis: axis along which the stack will be meaned. default 0.
-    :return mean: 2D mean of the 3D array.
-    :rtype: np.ndarray[int, int]
-    """
-    return np.sum(image_stack, axis=axis) // image_stack.shape[0]
+from CImageProcessing import equalizeHistogram, integer_mean
 
 
 def numpy_rescale(image, low, high, roi=None):
@@ -201,8 +190,8 @@ class FrameProcessor(QtCore.QObject):
                             self.diff_frame_stack_a = self.diff_frame_stack_a[-self.averages:]
                             self.diff_frame_stack_b = self.diff_frame_stack_b[-self.averages:]
                         self.frame_counter += 1
-                        mean_a = int_mean(self.diff_frame_stack_a, axis=0)
-                        mean_b = int_mean(self.diff_frame_stack_b, axis=0)
+                        mean_a = integer_mean(self.diff_frame_stack_a)
+                        mean_b = integer_mean(self.diff_frame_stack_b)
                         self.latest_mean_diff = mean_a - mean_b
                         # diff_frame = ((sweep_3_frames[i] - sweep_2_frames[i]) / (sweep_3_frames[i] + sweep_2_frames[i]))
                         # cv2.imshow(str(sweep_2_data[i]),
@@ -252,7 +241,7 @@ class FrameProcessor(QtCore.QObject):
                             # excess frames.
                             self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
                         self.frame_counter += 1
-                        self.latest_mean_frame = int_mean(self.raw_frame_stack, axis=0)
+                        self.latest_mean_frame = integer_mean(self.raw_frame_stack)
                         self.latest_processed_frame = self._process_frame(self.latest_mean_frame)
                     else:
                         self.latest_processed_frame = self._process_frame(self.latest_raw_frame)
@@ -307,7 +296,7 @@ class FrameProcessor(QtCore.QObject):
                         # excess frames.
                         self.raw_frame_stack = self.raw_frame_stack[-self.averages:]
                     self.frame_counter += 1
-                    self.latest_mean_frame = int_mean(self.raw_frame_stack)
+                    self.latest_mean_frame = integer_mean(self.raw_frame_stack)
                     self.latest_processed_frame = self._process_frame(self.latest_mean_frame)
                 else:
                     self.latest_processed_frame = self._process_frame(self.latest_raw_frame)
@@ -326,6 +315,7 @@ if __name__ == "__main__":
         """
         Used for performance profiling.
         """
+
         def __init__(self):
             self.BUFFER_SIZE = 1600  # max 100 stacks
             self.binning = 2
@@ -335,7 +325,7 @@ if __name__ == "__main__":
             self.frame_processor = FrameProcessor(self)
 
         def benchmarking(self, number_of_stacks):
-            modes = [2, 3, 4]
+            modes = [3]
             averaging = [False, True]
             averages = [16]
             frames = np.loadtxt("../TestScripts/test_stack.dat", delimiter="\t").astype(np.int32).reshape(16, 1024,
@@ -367,4 +357,4 @@ if __name__ == "__main__":
 
 
     testing_container = TestingContainer()
-    testing_container.benchmarking(1)  # max 100
+    testing_container.benchmarking(20)  # max 100
