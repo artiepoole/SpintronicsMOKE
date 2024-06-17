@@ -79,7 +79,6 @@ class LampController:
 
     def enable_assortment_pairs(self, pairs):
         """
-
         :param dict pairs: dictionary of booleans containing "left", "right", "up", "down".
         :return:
         """
@@ -215,6 +214,11 @@ class LampController:
         self.SPI_stream.write_one_sample_port_byte(self.__resting_state_SPI)
 
     def continuous_flicker(self, mode):
+        """
+        Enables the continuous flicking between two lighting modes for difference imaging applications.
+        :param int mode: 0 uses left and top pair. 1 uses top and bottom pair. 2 uses left and right pair.
+        :return:
+        """
         self.disable_spi()
         self.TTL_output_task.stop()
         logging.info("Enabling LED flicker mode with mode: " + str(mode))
@@ -249,12 +253,22 @@ class LampController:
         self.TTL_stream.write_many_sample_port_byte(out_array.astype(np.uint8))
 
     def stop_flicker(self):
+        """
+        Disable flicker mode.
+        :return None:
+        """
         logging.info("Stopping LED flicker mode")
         self.TTL_output_task.stop()
         self.TTL_output_task.timing.samp_timing_type = SampleTimingType.ON_DEMAND
         self.TTL_stream.write_one_sample_port_byte(0)
 
     def pause_flicker(self, paused):
+        """
+        Pauses and resumes flicker mode by disabling "trigger mode" and instead enabling "SPI mode" without stopping
+        the output stream from the DAQ card. Just makes the lamp box ignore these inputs.
+        :param bool paused:
+        :return:
+        """
         logging.info("Pausing LED flicker")
         if paused:
             self.enable_spi()

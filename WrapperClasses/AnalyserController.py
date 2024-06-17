@@ -36,6 +36,12 @@ class AnalyserController:
         self.stepper_stream = DigitalSingleChannelWriter(self.stepper_task.out_stream, True)
 
     def _step_forward(self, steps: int, fine=False):
+        """
+        Moves the analyser by the specified number of steps in the arbitrarily defined forward direction
+        :param steps: Number of steps to move
+        :param fine: If enabled, the steps are smaller by a factor of 8.
+        :return None:
+        """
         logging.debug(f"moving {steps} steps")
         data = [self.FINE * fine + self.CLOCK, self.FINE * fine]
         for i in range(steps):
@@ -43,10 +49,20 @@ class AnalyserController:
             time.sleep(2e-3)
             self.stepper_stream.write_one_sample_port_byte(data[1])
             time.sleep(2e-3)
-            self.position_in_steps += 1
-            self.position_in_degrees += 1 / self.STEPS_PER_DEGREE
+            if fine:
+                self.position_in_steps += 1/8
+                self.position_in_degrees += (1 / 8) / self.STEPS_PER_DEGREE
+            else:
+                self.position_in_steps += 1
+                self.position_in_degrees += 1 / self.STEPS_PER_DEGREE
 
     def _step_backward(self, steps: int, fine=False):
+        """
+        Moves the analyser by the specified number of steps in the arbitrarily defined backward direction
+        :param steps: Number of steps to move
+        :param fine: If enabled, the steps are smaller by a factor of 8.
+        :return None:
+        """
         logging.debug(f"moving -{steps} steps")
         data = [self.FINE * fine + self.CLOCK + self.DIR, self.FINE * fine + self.DIR]
         for i in range(steps):
@@ -54,13 +70,17 @@ class AnalyserController:
             time.sleep(2e-3)
             self.stepper_stream.write_one_sample_port_byte(data[1])
             time.sleep(2e-3)
-            self.position_in_steps -= 1
-            self.position_in_degrees -= 1 / self.STEPS_PER_DEGREE
+            if fine:
+                self.position_in_steps -= 1/8
+                self.position_in_degrees -= (1 / 8) / self.STEPS_PER_DEGREE
+            else:
+                self.position_in_steps -= 1
+                self.position_in_degrees -= 1 / self.STEPS_PER_DEGREE
 
     def move(self, degrees: float, force_fine=False):
         """
         Rotate the polariser a number of degrees (positive or negative). Rate of movement is approx 1 degree per second.
-        :param force_fine: It is possible to move the
+        :param force_fine: force the fine mode even for movements larger than fine movements.
         :param degrees: number of degrees to rotate
         :return None:
         """

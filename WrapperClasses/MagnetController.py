@@ -38,6 +38,14 @@ class MagnetController:
         self.mode = None
 
     def set_calibration(self, voltages, field_from_volts, currents, field_from_currents):
+        """
+        Update the calibration data, usually from file.
+        :param np.ndarray[float] voltages: Applied voltage values
+        :param np.ndarray[float] field_from_volts: Measured field values
+        :param np.ndarray[float] currents: Applied current values
+        :param np.ndarray[float] field_from_currents: measured field values
+        :return:
+        """
         self.voltages = voltages
         self.field_from_volts = field_from_volts
         self.currents = currents
@@ -69,8 +77,12 @@ class MagnetController:
         )
 
     def update_output(self):
-        # If the mode is None then this simply doesn't ever start the task but allows the values to be updated so that
-        # when DC or AC is clicked, the output will happen.
+        """
+        Updates the data on the DAQ card to set the desired output.
+        If the mode is None then this simply doesn't ever start the task but allows the values to be updated so that
+        when DC or AC is clicked, the output will happen.
+        :return:
+        """
         self.analogue_output_task.stop()
         if self.mode == "DC":
             n_samples = 100
@@ -119,15 +131,33 @@ class MagnetController:
             logging.debug(f"Set voltage to {self.target_voltage} VDC")
 
     def get_current_amplitude(self):
+        """
+        Gets the latest field measurement from the PSU via the DAQ card.
+        :return: field after calibration and raw voltage from PSU.
+        :rtype: tuple[float, float]
+        """
+
         voltage = self.analogue_input_task.read()
         field = self.interpolate_field(voltage)
         return field, voltage
 
     def set_target_field(self, new_value):
+        """
+        Attempts to set the target field by converting this to a voltage value from the
+        calibration file.
+        :param float new_value: Target field value in mT
+        :return:
+        """
         self.target_voltage = self.interpolate_voltage(new_value)
         self.update_output()
 
     def set_target_offset(self, new_value):
+        """
+        Attempts to set the target offset field by converting this to a voltage value from the
+        calibration file.
+        :param float new_value: Target field value in mT
+        :return:
+        """
         self.target_offset_voltage = self.interpolate_voltage(new_value)
         self.update_output()
 

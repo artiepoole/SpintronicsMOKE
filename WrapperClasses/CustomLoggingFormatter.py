@@ -6,8 +6,10 @@ logging.addLevelName(ATTENTION_LEVEL, "ATTENTION")
 logging.ATTENTION = ATTENTION_LEVEL
 
 
-
 class CustomLoggingFormatter(logging.Formatter):
+    """
+    A logging formatter which outputs HTML messages which include colour infromation for use with HTMLBasedColorLogger
+    """
     FORMATS = {
         logging.ERROR: ("[%(levelname)s] %(module)s [%(filename)s:%(lineno)d] - %(message)s", QtGui.QColor("red")),
         logging.DEBUG: ("[%(levelname)s] [%(filename)s:%(lineno)d] - %(message)s", QtGui.QColor("green")),
@@ -31,6 +33,10 @@ class CustomLoggingFormatter(logging.Formatter):
 
 
 class HTMLBasedColorLogger(logging.Handler):
+    """
+    A logging handler which expands PyQt to enable a textedit to act as a log box, but which also handles colour using
+    html
+    """
     def __init__(self, parent=None):
         super().__init__()
         self.widget = QtWidgets.QPlainTextEdit(parent)

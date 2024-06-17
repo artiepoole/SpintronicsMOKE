@@ -16,10 +16,25 @@ from CImageProcessing import equalizeHistogram
 
 
 def int_mean(image_stack, axis=0):
+    """
+    integer math version of mean to speed up averaging of stacks.
+    :param np.ndarray[int, int, int] image_stack: stack of integer frames to be meaned along specified axis.
+    :param int axis: axis along which the stack will be meaned. default 0.
+    :return mean: 2D mean of the 3D array.
+    :rtype: np.ndarray[int, int]
+    """
     return np.sum(image_stack, axis=axis) // image_stack.shape[0]
 
 
 def numpy_rescale(image, low, high, roi=None):
+    """
+    Rescales the image using percentile values. Must faster than scipy rescaling.
+    :param np.ndarray[int,int,int] image: Input frame
+    :param int low: lower percentile value
+    :param int high: upper percentile value
+    :param tuple[int, int, int, int]|None roi: Region of Interest (x,y,w,h) or None
+    :return:
+    """
     if roi is not None:
         px_low, px_high = np.percentile(roi, (low, high))
     else:
@@ -31,14 +46,13 @@ def numpy_rescale(image, low, high, roi=None):
     return (image - px_low) * UINT16_MAX // (px_high - px_low)
 
 
-# Cast to int32 is twice as fast as cast to float64
-
-def numpy_equ(image):
-    img_cdf, bin_centers = exposure.cumulative_distribution(image, nbins=UINT16_MAX)
-    return (np.interp(image, bin_centers, img_cdf) * UINT16_MAX)
-
-
 def basic_exposure(image):
+    """
+    Rescales an image between 0 and max brightness.
+    :param np.ndarray[int, int] image: Input frame.
+    :return: Image with rescaled brightness.
+    :rtype: np.ndarray[int, int]
+    """
     return (image * (UINT16_MAX // np.amax(image)))
 
 
@@ -98,28 +112,6 @@ class FrameProcessor(QtCore.QObject):
         '''
         self.mode, self.p_low, self.p_high, self.clip = settings
 
-    # def set_mode(self, new_mode):
-    #     if new_mode in [0, 1, 2, 3, 4]:
-    #         self.mode = new_mode
-    #     else:
-    #         logging.info("FrameProcessor: Invalid mode")
-
-    # def set_percentile_lower(self, new_percentile):
-    #     if new_percentile < self.p_high:
-    #         self.p_low = new_percentile
-    #     else:
-    #         logging.info("FrameProcessor: Please raise % max to avoid overlap")
-
-    # def set_percentile_upper(self, new_percentile):
-    #     if new_percentile > self.p_low:
-    #         self.p_high = new_percentile
-    #     else:
-    #         logging.info("FrameProcessor: Please reduce lower % min to avoid overlap")
-
-    # def set_clip_limit(self, new_clip_limit):
-    #     self.adapter.setClipLimit(new_clip_limit)
-    #     self.clip = new_clip_limit
-
     def _process_frame(self, frame):
         if self.subtracting and self.background is not None:
             frame = (frame - self.background + UINT16_MAX) // 2
@@ -127,20 +119,24 @@ class FrameProcessor(QtCore.QObject):
             case self.IMAGE_PROCESSING_NONE:
                 pass
             case self.IMAGE_PROCESSING_BASIC:
+                # Divide by max and rescale.
                 frame = basic_exposure(frame)
             case self.IMAGE_PROCESSING_PERCENTILE:
+                # Percentile rescaling
                 if sum(self.roi) > 0:
                     x, y, w, h = self.roi
                     frame = numpy_rescale(frame, self.p_low, self.p_high, frame[y:y + h, x:x + w])
                 else:
                     frame = numpy_rescale(frame, self.p_low, self.p_high)
             case self.IMAGE_PROCESSING_HISTEQ:
+                # Uses Artie's own C++ histogram equalisation because openCV HistEq doesn't support uint16 or int32.
                 if not frame.flags.c_contiguous:
                     logging.warning('Not contiguous')
                     return equalizeHistogram(np.ascontiguousarray(frame))
                 else:
                     return equalizeHistogram(frame)
             case self.IMAGE_PROCESSING_ADAPTEQ:
+                # Uses openCV CLAHE algorithm which doesn't support int32.
                 frame = np.int32(self.adapter.apply(frame.astype(np.uint16)))
             case _:
                 logging.info("FrameProcessor: Unrecognized image processing mode")
@@ -148,6 +144,11 @@ class FrameProcessor(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def start_processing(self):
+        """
+        Constantly acquires frames from buffer and processes them. Handles storing of frames into stacks and difference
+        calulations etc.
+        :return None:
+        """
         self.running = True
         self.closing = False
         self.waiting = False
@@ -269,6 +270,11 @@ class FrameProcessor(QtCore.QObject):
             self.frame_processor_ready.emit()  # This restarts the frame processor after binning mode changes.
 
     def _process_buffer(self):
+        """
+        A tool which can be used to process a supplied buffer which is used in performance profiling but not in normal
+        use.
+        :return None:
+        """
         self.running = True
         while self.running:
             got = self.parent.item_semaphore.tryAcquire(1, 1)
@@ -317,6 +323,9 @@ class FrameProcessor(QtCore.QObject):
 if __name__ == "__main__":
 
     class TestingContainer:
+        """
+        Used for performance profiling.
+        """
         def __init__(self):
             self.BUFFER_SIZE = 1600  # max 100 stacks
             self.binning = 2

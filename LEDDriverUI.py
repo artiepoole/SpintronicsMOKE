@@ -10,6 +10,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         uic.loadUi(r'C:\Users\User\PycharmProjects\SpintronicsMOKE\res\LED_driver_UI.ui', self)  # Load the .ui file
         self.show()
 
+        # Define enums
         self.led_binary_enum = {
             "left1": 2,
             "left2": 1,
@@ -55,6 +56,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
 
         self.control_all = False
 
+        # Connect Signals
         self.button_left_led1.clicked.connect(self.__on_individual_led)
         self.button_right_led1.clicked.connect(self.__on_individual_led)
         self.button_up_led1.clicked.connect(self.__on_individual_led)
@@ -77,6 +79,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         self.scroll_blocker = QtCore.QSignalBlocker(self.scroll_LED_brightness)
         self.scroll_blocker.unblock()
 
+        # Start the LED control
         self.lamp_controller = LampController()
         self.lamp_controller.disable_all()
 

@@ -1718,6 +1718,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # TODO: load last known analyser position on restart.
 
     def __on_hysteresis_sweep(self):
+        """
+        Called when the user clicks the hysteresis sweep button. Pauses main GUI function (is blocking) and
+        Opens the hysteresis sweep tool window. This tool uses main GUI settings such as processing mode and ROI.
+        :return None:
+        """
         # TODO: got to here when adding documentation
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
@@ -1752,6 +1757,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
     def __on_analyser_sweep(self):
+        """
+        Called when the user clicks the analyser sweep button. Pauses main GUI function (is blocking) and
+        Opens the analyser sweep tool window. This tool uses main GUI settings such as processing mode and ROI.
+        :return None:
+        """
         if self.flickering:
             logging.error("Cannot run analyser while using difference mode imaging.")
             return
@@ -1782,6 +1792,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                         QtCore.Qt.ConnectionType.QueuedConnection)
 
     def __on_save(self):
+        """
+        Called when the user clicks Save HDF5 Package. Assembles the metadata page, collects all data to be saved and
+        adds each necessary frame to the store. If nothing is selected, it simply saves the latest frame.
+        :return None:
+        """
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
@@ -1822,7 +1837,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         try:
             store = pd.HDFStore(str(file_path))
         except:
-            logging.info(
+            logging.error(
                 "Cannot save to this file/location: " + file_path + '. Does it exist? Do you have write permissions?')
             return
 
@@ -1855,9 +1870,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     store[key] = pd.DataFrame(np.array(self.frame_processor.frame_times)[-n_frames:])
             else:
                 if self.check_save_avg.isChecked():
-                    logging.info("Average not saved: measuring in single frame mode")
+                    logging.warning("Average not saved: measuring in single frame mode")
                 if self.check_save_stack.isChecked():
-                    logging.info("Stack not saved: measuring in single frame mode")
+                    logging.warning("Stack not saved: measuring in single frame mode")
                 key = 'raw_diff_frame'
                 contents.append(key)
                 store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame.astype(np.uint16))
@@ -1891,9 +1906,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     store[key] = pd.DataFrame(np.array(self.frame_processor.frame_times)[-n_frames:])
             else:
                 if self.check_save_avg.isChecked():
-                    logging.info("Average not saved: measuring in single frame mode")
+                    logging.warning("Average not saved: measuring in single frame mode")
                 if self.check_save_stack.isChecked():
-                    logging.info("Stack not saved: measuring in single frame mode")
+                    logging.warning("Stack not saved: measuring in single frame mode")
                 key = 'raw_frame'
                 contents.append(key)
                 store[key] = pd.DataFrame(self.frame_processor.latest_raw_frame.astype(np.uint16))
@@ -1923,7 +1938,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 contents.append(key)
                 store[key] = pd.DataFrame(self.frame_processor.background.astype(np.uint16))
             else:
-                logging.info("Background not saved: no background measured")
+                logging.warning("Background not saved: no background measured")
         if self.check_save_bkg_stack.isChecked():
             if self.frame_processor.background is not None:
                 for i in range(len(self.frame_processor.background_raw_stack)):
@@ -1931,13 +1946,18 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     contents.append(key)
                     store[key] = pd.DataFrame(self.frame_processor.background_raw_stack[i].astype(np.uint16))
             else:
-                logging.info("Background stack not saved: no background measured")
+                logging.warning("Background stack not saved: no background measured")
         meta_data['contents'] = [contents]
         store['meta_data'] = pd.DataFrame(meta_data)
         store.close()
         logging.info("Saving done. Contents: " + str(contents))
 
-    def __on_save_single(self, event):
+    def __on_save_single(self):
+        """
+        Called when the user clicks Save as Seen. Saves the latest processed frame as a tiff tile with metadata.
+        The file name sums up what processing was used to achieve this image.
+        :return None:
+        """
         # Assemble metadata
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of Nottingham using ArtieLab V0-2024.04.05.",
@@ -1995,15 +2015,25 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.line_prefix.text().strip().replace(' ', '_') +
             '.tiff')
         # file_path.mkdir(parents=True, exist_ok=True)
-
-        tifffile.imwrite(
-            str(file_path),
-            self.frame_processor.latest_processed_frame.astype(np.uint16),
-            photometric='minisblack',
-            metadata=meta_data)
+        try:
+            tifffile.imwrite(
+                str(file_path),
+                self.frame_processor.latest_processed_frame.astype(np.uint16),
+                photometric='minisblack',
+                metadata=meta_data)
+        except:
+            logging.error(
+                "Cannot save to this file/location: " + str(
+                    file_path) + '. Does the folder exist? Do you have write permissions?')
+            return
         logging.info("Saved file as " + str(file_path))
 
-    def __on_browse(self, event):
+    def __on_browse(self):
+        """
+        Called when the user clicks the browse button in the saving control block.
+        Allows the user to select a folder to save everything into.
+        :return None:
+        """
         starting_dir = str(Path(r'C:\Users\User\Desktop\USERS'))
         dest_dir = QtWidgets.QFileDialog.getExistingDirectory(
             None,
@@ -2014,6 +2044,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.line_directory.setText(str(Path(dest_dir)))
 
     def closeEvent(self, event):
+        """
+        Called whenever the user clicks the red close button. postpones the close event so that it can be called when
+        all threads/running processes are stopped.
+        :param event:
+        :return:
+        """
         self.close_event = event
         event.ignore()
         self.image_timer.stop()
@@ -2029,9 +2065,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.closing = True
         self.frame_processor.running = False
         self.mutex.unlock()
-        cv2.destroyAllWindows()
+
 
     def __on_quit_ready(self):
+        """
+        Is activated by the camera_grabber once it is finished closing. This finishes closing things and then incites
+        the postponed close event.
+        :return None:
+        """
+        cv2.destroyAllWindows()
         time.sleep(0.1)
         logging.info("Closing threads and exiting")
         self.camera_thread.quit()
@@ -2041,6 +2083,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
 
 if __name__ == '__main__':
+    """
+    Runs the GUI and sets up error catching so that errors caused by other threads can sometimes be printed instead of 
+    just giving an OS error.
+    """
     # Back up the reference to the exceptionhook
     sys._excepthook = sys.excepthook
 

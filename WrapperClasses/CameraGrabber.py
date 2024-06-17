@@ -75,18 +75,44 @@ class CameraGrabber(QtCore.QObject):
         self.cam.start_acquisition()
 
     def get_detector_size(self):
+        """
+        Get camera detector size (in pixels) as a tuple (width, height)
+        :return size: size of detector in pixels (2048x2048 in our camera)
+        :rtype: tuple[int,int]
+        """
         return self.cam.get_detector_size()
 
     def get_data_dims(self):
+        """
+        Get camera frame size (in pixels) as a tuple (width, height)
+        :return size: size of detector divided by binning amount.
+        :rtype: tuple[int,int]|None
+        """
         return self.cam.get_data_dimensions()
 
     def snap(self):
+        """
+        Grabs a single frame from the camera without needing to prepare the camera.
+        :return frame: frame
+        :rtype: np.ndarray[np.uint16, np.uint16] | None
+        """
         return self.cam.snap()
 
     def snap_n(self, n_frames):
+        """
+        Grabs a stack of frames from the camera without needing to prepare the camera.
+        :return frame: frame
+        :rtype: np.ndarray[np.int32, np.int32, np.int32] | None
+        """
         return np.array(self.cam.grab(n_frames), dtype='int32')
 
     def grab_n_frames(self, n_frames):
+        """
+        Grabs a stack of frames from the camera but requires preparing the camera.
+        :return frame: frame
+        :rtype: np.ndarray[np.int32, np.int32, np.int32] | None
+        """
+        return np.array(self.cam.grab(n_frames), dtype='int32')
         prev_mode = self.difference_mode
         self.difference_mode = False
         self.prepare_camera()
@@ -97,7 +123,11 @@ class CameraGrabber(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def start_live_single_frame(self):
-
+        """
+        Starts a continuous measurement loop of single frames, for use with constant lighting modes.
+        Appends data to a buffer when the buffer has space. Buffer is held by the parent object, typically ArtieLab.
+        :return:
+        """
         self.mutex.lock()
         self.running = True
         self.waiting = False
@@ -131,6 +161,11 @@ class CameraGrabber(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def start_live_difference_mode(self):
+        """
+        Starts a continuous measurement loop of difference frames, for use with flickering lighting modes.
+        Appends data to a buffer when the buffer has space. Buffer is held by the parent object, typically ArtieLab.
+        :return:
+        """
         self.mutex.lock()
         self.running = True
         self.waiting = False
@@ -208,7 +243,6 @@ if __name__ == "__main__":
     # camera_grabber.cam.set_attribute_value('TRIGGER ACTIVE', 1)  # Edge
     # camera_grabber.cam.set_attribute_value('TRIGGER POLARITY', 1)  # Falling
     # camera_grabber.cam.set_attribute_value('TRIGGER TIMES', 1)  # One frame per trigger signal
-
 
     camera_grabber.prepare_camera()
     while True:
