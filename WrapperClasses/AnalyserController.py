@@ -4,6 +4,7 @@ import nidaqmx as nidaq
 import numpy as np
 from nidaqmx.stream_writers import DigitalSingleChannelWriter
 import time
+import sys
 
 from WrapperClasses import CameraGrabber, LampController
 
@@ -16,7 +17,11 @@ class AnalyserController:
         """
         logging.info("Initialising AnalyserController")
 
-        self.dev = nidaq.system.device.Device('Dev1')
+        try:
+            self.dev = nidaq.system.device.Device('Dev1')
+        except:
+            logging.error("Failed to connect to DAQ card. Is it on?")
+            sys.exit(-1)
 
         self.FINE = 8
         self.DIR = 2

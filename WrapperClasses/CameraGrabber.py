@@ -4,6 +4,7 @@ import numpy as np
 from PyQt5 import QtCore
 from pylablib.devices import DCAM
 import logging
+import sys
 
 
 class CameraGrabber(QtCore.QObject):
@@ -16,8 +17,12 @@ class CameraGrabber(QtCore.QObject):
         super().__init__()
         self.parent = parent
         logging.info("Initializing CameraGrabber...")
+        try:
+            self.cam = DCAM.DCAMCamera(idx=0)
+        except DCAM.DCAMError:
+            logging.error("Failed to connect to camera. Is it on or in use?")
+            sys.exit(-1)
 
-        self.cam = DCAM.DCAMCamera(idx=0)
         exposure_time = 0.05
         self.cam.set_trigger_mode('int')
         self.cam.set_attribute_value("EXPOSURE TIME", exposure_time)
@@ -90,21 +95,29 @@ class CameraGrabber(QtCore.QObject):
         """
         return self.cam.get_data_dimensions()
 
-    def snap(self):
+    def snap(self, info=False):
         """
         Grabs a single frame from the camera without needing to prepare the camera.
         :return frame: frame
         :rtype: np.ndarray[np.uint16, np.uint16] | None
         """
-        return self.cam.snap()
+        if info:
+            return self.cam.snap(return_info=True)
+        else:
+            return self.cam.snap()
 
-    def snap_n(self, n_frames):
+    def snap_n(self, n_frames, info=False):
         """
         Grabs a stack of frames from the camera without needing to prepare the camera.
         :return frame: frame
-        :rtype: np.ndarray[np.int32, np.int32, np.int32] | None
+        :rtype: np.ndarray[np.int32, np.int32, np.int32] | tuple[np.ndarray[np.int32, np.int32, np.int32], info] | None
         """
-        return np.array(self.cam.grab(n_frames), dtype='int32')
+        if info:
+            frames, info = self.cam.grab(n_frames, return_info=True)
+            return np.array(frames, dtype='int32'), info
+        else:
+            return np.array(self.cam.grab(n_frames), dtype='int32')
+
 
     def grab_n_frames(self, n_frames):
         """

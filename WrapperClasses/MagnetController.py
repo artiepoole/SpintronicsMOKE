@@ -2,6 +2,7 @@ import nidaqmx as nidaq
 import numpy as np
 import logging
 from nidaqmx.constants import AcquisitionType
+import sys
 
 from math import log10, floor
 
@@ -17,7 +18,11 @@ class MagnetController:
         self.target_voltage = 0.0
         self.target_offset_voltage = 0.0
         logging.info("Initialising MagnetController")
-        self.dev = nidaq.system.device.Device('Dev1')
+        try:
+            self.dev = nidaq.system.device.Device('Dev1')
+        except:
+            logging.error("Failed to connect to DAQ card. Is it on?")
+            sys.exit(-1)
         if reset:
             logging.info("Resetting DAQ card")
             self.dev.reset_device()

@@ -244,7 +244,7 @@ class LEDDriverUI(QtWidgets.QMainWindow):
         value = 0
         for key in keys:
             value += self.led_binary_enum[key] * self.enabled_leds_spi[key]
-        self.lamp_controller.enable_leds(value)
+        self.lamp_controller.enable_leds_using_SPI(value)
 
     def __on_control_change(self, control_all):
         self.control_all = control_all
