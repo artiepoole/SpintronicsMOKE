@@ -124,7 +124,7 @@ class LampController:
         """
         if not self.__SPI_enabled:
             self.enable_spi()
-        logging.info("Sum of enabled LED binary values: " + str(led_byte))
+        logging.debug("Sum of enabled LED binary values: " + str(led_byte))
         self._write_spi(int('0xA0', 16), led_byte)
 
     def set_all_brightness(self, brightness: int):
