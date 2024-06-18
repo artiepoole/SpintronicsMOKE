@@ -1345,12 +1345,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         Called when the user clicks the equalise selected button and equalises all selected LEDs
         :return:
         """
+
         selected_leds = [key for key, value in self.enabled_leds_spi.items() if value is True]
         if selected_leds:
             self.__equalise_specific_LEDs(selected_leds)
         else:
             logging.error("No LEDs selected.")
             return
+        self.__set_leds_checked(selected_leds)
+        self.__update_controller_spi()
 
     def __equalise_vertical_leds(self):
         """
@@ -1358,8 +1361,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         flicker mode.
         :return:
         """
+        previous_leds = [key for key, value in self.enabled_leds_spi.items() if value is True]
         selected_leds = ["up1", "up2", "down1", "down2"]
         self.__equalise_specific_LEDs(selected_leds)
+        self.__set_leds_checked(previous_leds)
+        self.__update_controller_spi()
 
     def __equalise_horizontal_leds(self):
         """
@@ -1367,16 +1373,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         flicker mode.
         :return:
         """
+        previous_leds = [key for key, value in self.enabled_leds_spi.items() if value is True]
         selected_leds = ["left1", "left2", "right1", "right2"]
         self.__equalise_specific_LEDs(selected_leds)
+        self.__set_leds_checked(previous_leds)
+        self.__update_controller_spi()
 
     def __equalise_pairs(self):
         """
         Called when the user clicks the Equalise Long Trans button and equalises the LEDs used in that flicker mode.
         :return:
         """
+        previous_leds = [key for key, value in self.enabled_leds_spi.items() if value is True]
         selected_leds = ["up1", "up2", "left1", "left2"]
         self.__equalise_specific_LEDs(selected_leds)
+        for key in previous_leds:
+            self.enabled_leds_spi[key] = True
+        self.__set_leds_checked(previous_leds)
+        self.__update_controller_spi()
 
     def __equalise_specific_LEDs(self, leds_to_eq):
         """
@@ -1396,6 +1410,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         for led_name in leds_to_eq:
             self.lamp_controller.enable_leds_using_SPI(self.led_binary_enum[led_name])
+            self.__set_led_checked(led_name)
             time.sleep(self.exposure_time)
             if self.frame_processor.averaging:
                 frames = self.camera_grabber.snap_n(self.averages)
@@ -1415,6 +1430,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         for led_name in leds_to_eq:
             if led_name != dimmest_led:
                 self.lamp_controller.enable_leds_using_SPI(self.led_binary_enum[led_name])
+                self.__set_led_checked(led_name)
                 intensity = UINT16_MAX
                 brightness = 180
                 while intensity > dimmest_intensity and brightness > 0:
@@ -1454,6 +1470,62 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                         f"LED {self.led_id_enum[led_name]} set to brightness {brightness} " +
                         f"with mean intensity {intensity}")
         self.__resume_updates()
+
+    def __set_no_leds_checked(self):
+        self.button_up_led1.setChecked(False)
+        self.button_up_led2.setChecked(False)
+        self.button_down_led1.setChecked(False)
+        self.button_down_led2.setChecked(False)
+        self.button_left_led1.setChecked(False)
+        self.button_left_led2.setChecked(False)
+        self.button_right_led1.setChecked(False)
+        self.button_right_led2.setChecked(False)
+
+    def __set_led_checked(self, led_name):
+        self.__set_no_leds_checked()
+        match led_name:
+            case "left1":
+                self.button_left_led1.setChecked(True)
+            case "left2":
+                self.button_left_led2.setChecked(True)
+            case "up1":
+                self.button_up_led1.setChecked(True)
+            case "up2":
+                self.button_up_led2.setChecked(True)
+            case "right1":
+                self.button_right_led1.setChecked(True)
+            case "right2":
+                self.button_right_led2.setChecked(True)
+            case "down1":
+                self.button_down_led1.setChecked(True)
+            case "down2":
+                self.button_down_led2.setChecked(True)
+            case _:
+                pass
+        pg.QtGui.QGuiApplication.processEvents()
+
+    def __set_leds_checked(self, led_names):
+        self.__set_no_leds_checked()
+        for led_name in led_names:
+            match led_name:
+                case "left1":
+                    self.button_left_led1.setChecked(True)
+                case "left2":
+                    self.button_left_led2.setChecked(True)
+                case "up1":
+                    self.button_up_led1.setChecked(True)
+                case "up2":
+                    self.button_up_led2.setChecked(True)
+                case "right1":
+                    self.button_right_led1.setChecked(True)
+                case "right2":
+                    self.button_right_led2.setChecked(True)
+                case "down1":
+                    self.button_down_led1.setChecked(True)
+                case "down2":
+                    self.button_down_led2.setChecked(True)
+                case _:
+                    pass
 
     def __pause_updates(self):
         self.mutex.lock()
