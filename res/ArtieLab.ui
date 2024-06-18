@@ -762,7 +762,7 @@ border:  none;</string>
               <item>
                <widget class="QPushButton" name="button_eq_vertical">
                 <property name="enabled">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
@@ -781,14 +781,15 @@ border:  none;</string>
                 </property>
                 <property name="text">
                  <string>Equalise
-Vert</string>
+Vert
+Pairs</string>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QPushButton" name="button_eq_horizontal">
                 <property name="enabled">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
@@ -807,7 +808,8 @@ Vert</string>
                 </property>
                 <property name="text">
                  <string>Equalise
-Horz</string>
+Horz
+Pairs</string>
                 </property>
                </widget>
               </item>
@@ -840,7 +842,7 @@ Selected</string>
               <item>
                <widget class="QPushButton" name="button_eq_pairs">
                 <property name="enabled">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
@@ -859,7 +861,8 @@ Selected</string>
                 </property>
                 <property name="text">
                  <string>Equalise
-Pairs</string>
+Long
+Trans</string>
                 </property>
                </widget>
               </item>
@@ -2639,13 +2642,13 @@ of Points</string>
                 <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
                <property name="minimum">
-                <number>10</number>
+                <number>100</number>
                </property>
                <property name="maximum">
-                <number>10000</number>
+                <number>100000</number>
                </property>
                <property name="value">
-                <number>100</number>
+                <number>10000</number>
                </property>
               </widget>
              </item>
@@ -2859,10 +2862,19 @@ of Points</string>
                 <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
                <property name="decimals">
-                <number>1</number>
+                <number>2</number>
+               </property>
+               <property name="minimum">
+                <double>0.010000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.100000000000000</double>
+               </property>
+               <property name="value">
+                <double>1.000000000000000</double>
                </property>
               </widget>
              </item>
@@ -3033,16 +3045,19 @@ QWidget{background-color: rgb(255,255,255)}</string>
            </property>
            <layout class="QGridLayout" name="layout_mag_plot">
             <property name="leftMargin">
-             <number>5</number>
+             <number>0</number>
             </property>
             <property name="topMargin">
-             <number>5</number>
+             <number>0</number>
             </property>
             <property name="rightMargin">
-             <number>5</number>
+             <number>0</number>
             </property>
             <property name="bottomMargin">
-             <number>5</number>
+             <number>0</number>
+            </property>
+            <property name="spacing">
+             <number>0</number>
             </property>
            </layout>
           </widget>
@@ -3217,20 +3232,23 @@ of Points</string>
             <number>2</number>
            </property>
            <layout class="QVBoxLayout" name="layout_plots">
+            <property name="spacing">
+             <number>0</number>
+            </property>
             <property name="sizeConstraint">
              <enum>QLayout::SetDefaultConstraint</enum>
             </property>
             <property name="leftMargin">
-             <number>2</number>
+             <number>0</number>
             </property>
             <property name="topMargin">
-             <number>2</number>
+             <number>0</number>
             </property>
             <property name="rightMargin">
-             <number>2</number>
+             <number>0</number>
             </property>
             <property name="bottomMargin">
-             <number>2</number>
+             <number>0</number>
             </property>
            </layout>
           </widget>
