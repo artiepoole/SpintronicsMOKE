@@ -18,5 +18,5 @@
 /ArtieLabUI.log.*
 /CFrameProcessors/cmake-build-default/
 /CFrameProcessors/cmake-build-release/*
-/CFrameProcessors/pybind11/*
+
 
