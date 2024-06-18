@@ -4,9 +4,9 @@ This repositry contains three main GUIs:
 - **LEDDriverUI**: A lamp controller which is meant to be used as a standlone method to enable focussing (and other simple operations) without the need for the camera to be running. This controls a 8-channel LED source from Leistungselektronik JENA GmbH. This actually controls the LED source using an NI DAQ card. This is necessary because there is no front panel operation for this light source. This is also an interface for the LampController class.
 - **MagnetDriverUI**: A magnet controller which is used to independantly control the magnet power supply using an NI DAQ card analog in/out connections. This is necessary in order to have a known calibration between supplied power and the resulting field strength. This is also an interface for the MagnetController class.
 # ArtieLabUI
-
+Left screen (camera live feed after processing)
 ![Left Hand Screen](https://github.com/stupoole/SpintronicsMOKE/blob/main/res/readme/lhs.png?raw=true)
-
+Right screen (GUI controls)
 ![Right Hand Screen](https://github.com/stupoole/SpintronicsMOKE/blob/main/res/readme/rhs.png?raw=true)
 
 # Equipment
