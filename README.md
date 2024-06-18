@@ -7,6 +7,16 @@ This repositry contains three main GUIs:
 
 This was developed at the University of Nottingham in collboration with the Spintronics Group, School of Physics and Astronomy.
 
+# Equipment
+- Hamamatsu C11440-42U40 scientific CMOS camera
+- Lighting and Electronics Jena Luxyr LQ-LED 8-KANAL fibre lamp system
+- Piezosystem jena CV40 3CLE
+- Evico Magnetics GmbH breakout for NI DAQ PCIe-6321 DAQ card
+- Kepco Bipolar Power Supply BOP100-4DL
+- Zeiss Scope.A1 and associated optics (polariser, aperture, crosshair, lenses, etc.)
+- Assortment of Evico Magnetics GmbH sample holders, a cryostat and associated cryogenic systems and electromagnets.
+
 # Tools:
-pybind11 and OpenMP were used to write a few image processing functions in c++
-pylablib was used for camera interfacing and nidaqmx were used for the rest.
+- pybind11 and OpenMP were used to write a few image processing functions in c++.
+- PyLabLib was used for camera interfacing 
+- NIDAQmx was used for the rest since it's all connected to the provided NIDAQ card breakout box.
