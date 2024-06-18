@@ -814,7 +814,7 @@ Horz</string>
               <item>
                <widget class="QPushButton" name="button_eq_selected">
                 <property name="enabled">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">

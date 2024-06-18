@@ -11,6 +11,7 @@ import os
 import pyqtgraph as pg
 
 from SweeperUIs import AnalyserSweepDialog, FieldSweepDialog
+
 os.add_dll_directory(r"C:\Program Files\JetBrains\CLion 2024.1.1\bin\mingw\bin")
 from CImageProcessing import integer_mean
 from WrapperClasses import *
@@ -34,6 +35,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
     """
     The main GUI class for ArtieLab which encompasses all working functionality of the MOKE system.
     """
+
     def __init__(self):
         # Loads the UI file and sets it to full screen
         super(ArtieLabUI, self).__init__()
@@ -105,19 +107,20 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         }
 
         # Create controller objects and threads
+        self.camera_grabber = CameraGrabber(self)
+        self.camera_thread = QtCore.QThread()
+        self.camera_grabber.moveToThread(self.camera_thread)
+
+        self.frame_processor = FrameProcessor(self)
+        self.frame_processor_thread = QtCore.QThread()
+        self.frame_processor.moveToThread(self.frame_processor_thread)
+
         self.lamp_controller = LampController(reset=True)
         self.magnet_controller = MagnetController()
         self.analyser_controller = AnalyserController()
         self.lamp_controller.disable_all()
 
-        self.frame_processor = FrameProcessor(self)
-        self.frame_processor_thread = QtCore.QThread()
-        self.frame_processor.moveToThread(self.frame_processor_thread)
         self.frame_processor_thread.start()
-
-        self.camera_grabber = CameraGrabber(self)
-        self.camera_thread = QtCore.QThread()
-        self.camera_grabber.moveToThread(self.camera_thread)
         self.camera_thread.start()
 
         self.height, self.width = self.camera_grabber.get_data_dims()
@@ -194,7 +197,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.scroll_LED_brightness.valueChanged.connect(self.__on_brightness_slider)
         self.scroll_blocker = QtCore.QSignalBlocker(self.scroll_LED_brightness)
         self.scroll_blocker.unblock()
-        # TODO: Add brightness normalisation
+        # LED equalisation
+        self.button_eq_selected.clicked.connect(self.__equalise_selected_leds)
+        self.button_eq_vertical.clicked.connect(self.__equalise_vertical_leds)
+        self.button_eq_horizontal.clicked.connect(self.__equalise_horizontal_leds)
+        self.button_eq_pairs.clicked.connect(self.__equalise_pairs)
 
         # Image Processing Controls
         self.combo_normalisation_selector.currentIndexChanged.connect(self.__on_image_processing_mode_change)
@@ -413,7 +420,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 logging.info(f"Previous analyser position loaded: {val}")
                 self.line_current_angle.setText(str(round(float(val), 3)))
 
-
     def __update_plots(self):
         """
         Updates all the graph axes. Is called by a continuously running timer: self.plot_timer
@@ -423,8 +429,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         length = min([self.frame_processor.frame_times.__len__(), self.frame_processor.intensities_y.__len__()])
         if length > 0:
             self.intensity_line.setData(
-                np.array(self.frame_processor.frame_times)[0:length] - np.min(self.frame_processor.frame_times),
-                list(self.frame_processor.intensities_y)[0:length]
+                np.array(self.frame_processor.frame_times)[-length:] - np.min(self.frame_processor.frame_times),
+                list(self.frame_processor.intensities_y)[-length:]
             )
 
         self.hist_line.setData(
@@ -1285,7 +1291,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 + self.enabled_leds_spi["up2"] * 16 \
                 + self.enabled_leds_spi["down1"] * 128 \
                 + self.enabled_leds_spi["down2"] * 64
-        self.lamp_controller.enable_leds(value)
+        self.lamp_controller.enable_leds_using_SPI(value)
 
     def __on_control_change(self, control_all):
         """
@@ -1330,6 +1336,146 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.scroll_blocker.unblock()
             # self.__update_brightness(brightest_val)
 
+    def __equalise_selected_leds(self):
+        """
+        Called when the user clicks the equalise selected button and equalises all selected LEDs
+        :return:
+        """
+        selected_leds = [key for key, value in self.enabled_leds_spi.items() if value is True]
+        if selected_leds:
+            self.__equalise_specific_LEDs(selected_leds)
+        else:
+            logging.error("No LEDs selected.")
+            return
+
+    def __equalise_vertical_leds(self):
+        """
+        Called when the user clicks the equalise vertical pairs button and equalises the LEDs used in pure long
+        flicker mode.
+        :return:
+        """
+        selected_leds = ["up1", "up2", "down1", "down2"]
+        self.__equalise_specific_LEDs(selected_leds)
+
+    def __equalise_horizontal_leds(self):
+        """
+        Called when the user clicks the equalise horizontal pairs button and equalises the LEDs used in pure trans
+        flicker mode.
+        :return:
+        """
+        selected_leds = ["left1", "left2", "right1", "right2"]
+        self.__equalise_specific_LEDs(selected_leds)
+
+    def __equalise_pairs(self):
+        """
+        Called when the user clicks the Equalise Long Trans button and equalises the LEDs used in that flicker mode.
+        :return:
+        """
+        selected_leds = ["up1", "up2", "left1", "left2"]
+        self.__equalise_specific_LEDs(selected_leds)
+
+
+    def __equalise_specific_LEDs(self, leds_to_eq):
+        """
+        This loops through turning each supplied LED on and measures the mean brightness, only within the ROI if
+        present. The LED resulting in the dimmest image is found and then all other LEDs are reduced in brightness until they are the same as this brightness.
+        :param list leds_to_eq: List of LED names (i.e. "left1") to be considered in equalisation
+        :return:
+        """
+        self.__reset_brightness()
+        logging.debug("active LED keys: " + str(leds_to_eq))
+        if self.flickering:
+            logging.error("Cannot run equalisation while using difference mode imaging.")
+            return
+        self.__pause_updates()
+        dimmest_led = None
+        dimmest_intensity = UINT16_MAX
+
+        for led_name in leds_to_eq:
+            self.lamp_controller.enable_leds_using_SPI(self.led_binary_enum[led_name])
+            time.sleep(self.exposure_time)
+            if self.frame_processor.averaging:
+                frames = self.camera_grabber.snap_n(self.averages)
+                frame = integer_mean(frames)
+            else:
+                frame = self.camera_grabber.snap()
+            if sum(self.roi) > 0:
+                x, y, w, h = self.roi
+                intensity = np.mean(frame[y:y + h, x:x + w], axis=(0, 1))
+            else:
+                intensity = np.mean(frame, axis=(0, 1))
+            if intensity < dimmest_intensity:
+                dimmest_intensity = intensity
+                dimmest_led = led_name
+        logging.info(f"Dimmest led: {self.led_id_enum[dimmest_led]} with mean brightness: {dimmest_intensity}")
+        pg.QtGui.QGuiApplication.processEvents()
+        for led_name in leds_to_eq:
+            if led_name != dimmest_led:
+                self.lamp_controller.enable_leds_using_SPI(self.led_binary_enum[led_name])
+                intensity = UINT16_MAX
+                brightness = 180
+                while intensity > dimmest_intensity and brightness > 0:
+                    brightness = brightness - 1
+                    self.lamp_controller.set_one_brightness(brightness, self.led_id_enum[led_name])
+                    time.sleep(self.exposure_time)
+                    if self.frame_processor.averaging:
+                        frames, infos = self.camera_grabber.snap_n(self.averages)
+                        frame_time = infos[0].timestamp_us * 1e-6
+                        frame = integer_mean(frames)
+                    else:
+                        frame, info = self.camera_grabber.snap(info=True)
+                        frame_time = info.timestamp_us * 1e-6
+                    cv2.imshow(self.stream_window,
+                               (self.frame_processor._process_frame(
+                                   frame.astype(np.int32)
+                               ).astype(np.uint16)
+                                )
+                               )
+                    cv2.waitKey(1)
+                    if sum(self.roi) > 0:
+                        x, y, w, h = self.roi
+                        intensity = np.mean(frame[y:y + h, x:x + w], axis=(0, 1))
+                    else:
+                        intensity = np.mean(frame, axis=(0, 1))
+                    self.frame_processor.intensities_y.append(intensity)
+                    self.frame_processor.frame_times.append(frame_time)
+                    self.__update_plots()
+                    pg.QtGui.QGuiApplication.processEvents()
+                if brightness == 0:
+                    logging.error(f"Cannot equalise LED {self.led_id_enum[led_name]}" +
+                                  f", minimum brightness is still too bright.")
+                    self.lamp_controller.set_one_brightness(180, self.led_binary_enum[led_name])
+                    break
+                else:
+                    logging.info(
+                        f"LED {self.led_id_enum[led_name]} set to brightness {brightness} " +
+                        f"with mean intensity {intensity}")
+        self.__resume_updates()
+
+    def __pause_updates(self):
+        self.mutex.lock()
+        self.camera_grabber.waiting = True
+        self.camera_grabber.running = False
+        self.frame_processor.waiting = True
+        self.frame_processor.running = False
+        self.mutex.unlock()
+        self.image_timer.stop()
+        self.plot_timer.stop()
+        self.magnetic_field_timer.stop()
+
+    def __resume_updates(self):
+        self.image_timer.start(self.image_timer_rate)
+        self.plot_timer.start(self.plot_timer_rate)
+        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
+        QtCore.QMetaObject.invokeMethod(
+            self.camera_grabber,
+            "set_exposure_time",
+            QtCore.Qt.ConnectionType.QueuedConnection,
+            QtCore.Q_ARG(float, self.exposure_time)
+        )
+        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
+                                        QtCore.Qt.ConnectionType.QueuedConnection)
+
     def __update_brightness(self, value):
         """
         Sets the brightness of the appropriate LEDs based on the state of button_LED_control_all and the currently
@@ -1337,7 +1483,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         :param int value: New brightness value
         :return:
         """
-
         if self.LED_control_all:
             keys = self.LED_brightnesses.keys()
         else:
@@ -1658,7 +1803,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         """
         Called whenever the Invert button is clicked in the magnetic field control group.
         When enabled, Flips the sign of the output voltage to the magnet power supply in DC mode.
-        :param bool enabled: Whether the mode is enabled after the click.
+        :param bool inverted: Whether the mode is enabled after the click.
         :return None:
         """
         if inverted:
@@ -1711,32 +1856,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             logging.error("Cannot run analyser without lights.")
             return
         logging.info("Pausing main GUI for usage with Analyser")
-        self.mutex.lock()
-        self.camera_grabber.waiting = True
-        self.camera_grabber.running = False
-        self.frame_processor.waiting = True
-        self.frame_processor.running = False
-        self.mutex.unlock()
-        self.image_timer.stop()
-        self.plot_timer.stop()
-        self.magnetic_field_timer.stop()
+        self.__pause_updates()
         if sum(self.roi) > 0:
             self.analyser_controller.find_minimum(self.camera_grabber, roi=self.ROI)
         else:
             self.analyser_controller.find_minimum(self.camera_grabber)
         self.line_current_angle.setText(str(round(self.analyser_controller.position_in_degrees, 3)))
 
-        self.image_timer.start(self.image_timer_rate)
-        self.plot_timer.start(self.plot_timer_rate)
-        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
-        QtCore.QMetaObject.invokeMethod(
-            self.camera_grabber,
-            "set_exposure_time",
-            QtCore.Qt.ConnectionType.QueuedConnection,
-            QtCore.Q_ARG(float, self.exposure_time)
-        )
-        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
-                                        QtCore.Qt.ConnectionType.QueuedConnection)
+        self.__resume_updates()
         with open('res/last_analyser_position.txt', 'w') as file:
             file.write(str(0.0))
             logging.debug(f"Last analyser position file updated.")
@@ -1758,26 +1885,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             return
 
         logging.info("Pausing main GUI for Field sweep dialog")
-        self.mutex.lock()
-        self.camera_grabber.waiting = True
-        self.camera_grabber.running = False
-        self.frame_processor.waiting = True
-        self.frame_processor.running = False
-        self.mutex.unlock()
-        self.image_timer.stop()
-        self.plot_timer.stop()
-        self.magnetic_field_timer.stop()
+        self.__pause_updates()
 
         dialog = FieldSweepDialog(self)
         dialog.exec()
         logging.info("Resuming main GUI after Field sweep dialog")
-        self.image_timer.start(self.image_timer_rate)
-        self.plot_timer.start(self.plot_timer_rate)
-        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
-        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
-                                        QtCore.Qt.ConnectionType.QueuedConnection)
-        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
-                                        QtCore.Qt.ConnectionType.QueuedConnection)
+        self.__resume_updates()
 
     def __on_analyser_sweep(self):
         """
@@ -1793,26 +1906,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             return
 
         logging.info("Pausing main GUI for analyser sweep dialog")
-        self.mutex.lock()
-        self.camera_grabber.waiting = True
-        self.camera_grabber.running = False
-        self.frame_processor.waiting = True
-        self.frame_processor.running = False
-        self.mutex.unlock()
-        self.image_timer.stop()
-        self.plot_timer.stop()
-        self.magnetic_field_timer.stop()
+        self.__pause_updates()
 
         dialog = AnalyserSweepDialog(self)
         dialog.exec()
         logging.info("Resuming main GUI after analyser sweep dialog")
-        self.image_timer.start(self.image_timer_rate)
-        self.plot_timer.start(self.plot_timer_rate)
-        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
-        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
-                                        QtCore.Qt.ConnectionType.QueuedConnection)
-        QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
-                                        QtCore.Qt.ConnectionType.QueuedConnection)
+        self.__resume_updates()
 
     def __on_save(self):
         """
@@ -1820,6 +1919,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         adds each necessary frame to the store. If nothing is selected, it simply saves the latest frame.
         :return None:
         """
+        logging.info("Pausing GUI to save hdf5 package")
+        self.__pause_updates()
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
@@ -1973,7 +2074,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         meta_data['contents'] = [contents]
         store['meta_data'] = pd.DataFrame(meta_data)
         store.close()
+
         logging.info("Saving done. Contents: " + str(contents))
+        logging.info("Resuming GUI after saving hdf5 package")
+        self.__resume_updates()
 
     def __on_save_single(self):
         """
@@ -1981,6 +2085,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         The file name sums up what processing was used to achieve this image.
         :return None:
         """
+        logging.info("Pausing GUI to save as seen")
+        self.__pause_updates()
         # Assemble metadata
         meta_data = {
             'description': "Image acquired using B204 MOKE owned by the Spintronics Group and University of Nottingham using ArtieLab V0-2024.04.05.",
@@ -2050,6 +2156,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     file_path) + '. Does the folder exist? Do you have write permissions?')
             return
         logging.info("Saved file as " + str(file_path))
+        logging.info("Resuming GUI after save as seen")
+        self.__resume_updates()
 
     def __on_browse(self):
         """
@@ -2095,7 +2203,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             else:
                 logging.warning(" No magnet calibration files found.")
 
-
     def closeEvent(self, event):
         """
         Called whenever the user clicks the red close button. postpones the close event so that it can be called when
@@ -2118,7 +2225,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.closing = True
         self.frame_processor.running = False
         self.mutex.unlock()
-
 
     def __on_quit_ready(self):
         """

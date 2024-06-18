@@ -7,6 +7,7 @@ from nidaqmx.stream_writers import DigitalSingleChannelWriter
 from itertools import chain
 import math
 import time
+import sys
 
 flatten = chain.from_iterable
 
@@ -29,7 +30,11 @@ class LampController:
         self.__MODE_CONST = 16
         self.__resting_state_noSPI = self.__DATA_CONST + self.__SS_CONST
         self.__resting_state_SPI = self.__DATA_CONST + self.__SS_CONST + self.__MODE_CONST
-        self.dev = nidaq.system.device.Device('Dev1')
+        try:
+            self.dev = nidaq.system.device.Device('Dev1')
+        except:
+            logging.error("Failed to connect to DAQ card. Is it on?")
+            sys.exit(-1)
 
         self.frame_rate = 20
 
@@ -111,10 +116,15 @@ class LampController:
         time.sleep(50e-3)
         self.__SPI_enabled = False
 
-    def enable_leds(self, led_byte: int):
+    def enable_leds_using_SPI(self, led_byte: int):
+        """
+        Enable LEDs specified by their binary values.
+        :param int led_byte: Takes the sum of the LED binary values to be enabled.
+        :return:
+        """
         if not self.__SPI_enabled:
             self.enable_spi()
-        logging.info("Enabling SPI: " + str(led_byte))
+        logging.info("Sum of enabled LED binary values: " + str(led_byte))
         self._write_spi(int('0xA0', 16), led_byte)
 
     def set_all_brightness(self, brightness: int):
@@ -141,15 +151,15 @@ class LampController:
         enabled = self.__SPI_enabled
         if not self.__SPI_enabled:
             self.enable_spi()
-        logging.info(f" Setting LED: {led} to Brightness: {brightness}")
+        logging.debug(f" Setting LED: {led} to Brightness: {brightness}")
         self._write_spi(int('0xA0', 16) + led, brightness)
         if not enabled:
             self.disable_spi()
 
     def set_some_brightness(self, brightnesses: list, leds: list):
         """
-        Set the brightness of one LED at a time
-        :param brightness: the brightness between 0 and 180
+        Set the brightness of several LEDs at a time
+        :param brightnesses: the brightness between 0 and 180
         :param led: Integer value for LEDS from 1 to 8
         :return:
         """
