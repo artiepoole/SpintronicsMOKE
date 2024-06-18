@@ -18,5 +18,6 @@
 /ArtieLabUI.log.*
 /CFrameProcessors/cmake-build-default/
 /CFrameProcessors/cmake-build-release/*
+/res/last_analyser_position.txt
 
 
