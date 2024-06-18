@@ -31,6 +31,13 @@ class MagnetController:
         in_chan = self.analogue_input_task.ai_channels.add_ai_voltage_chan('Dev1/ai0')
         in_chan.ai_rng_low = -10
         in_chan.ai_rng_high = 10
+        self.analogue_input_task.timing.cfg_samp_clk_timing(
+            1000,
+            sample_mode=AcquisitionType.CONTINUOUS,
+            samps_per_chan=1000,
+        )
+        self.analogue_input_stream = self.analogue_input_task.in_stream
+
         self.analogue_input_task.start()
 
         self.analogue_output_task = nidaq.Task()
@@ -145,6 +152,24 @@ class MagnetController:
         field = self.interpolate_field(voltage)
         return field, voltage
 
+    def get_amplitude_values(self):
+        """
+        Gets the latest field measurement from the PSU via the DAQ card.
+        :return: field after calibration and raw voltage from PSU.
+        :rtype: tuple[float, float]
+        """
+        try:
+            voltages = self.analogue_input_task.read(nidaq.constants.READ_ALL_AVAILABLE)
+        except nidaq.errors.DaqReadError:
+            logging.warning("DAQmx hates you for not reading the magnetic field data for too long.")
+            self.analogue_input_task.stop()
+            self.analogue_input_task.start()
+            return [], []
+
+
+        fields = [self.interpolate_field(voltage) for voltage in voltages]
+        return fields, voltages
+
     def set_target_field(self, new_value):
         """
         Attempts to set the target field by converting this to a voltage value from the
@@ -176,7 +201,44 @@ class MagnetController:
 
     def close(self, reset):
         logging.info(f"Closing magnet controller")
+        self.analogue_input_task.stop()
         self.analogue_output_task.close()
         self.analogue_input_task.close()
         if reset:
             self.dev.reset_device()
+
+    def pause_instream(self):
+        self.analogue_input_task.stop()
+
+
+    def resume_instream(self):
+        self.analogue_input_task.start()
+
+
+
+if __name__ == '__main__':
+    import time
+    import matplotlib.pyplot as plt
+    from collections import deque
+    data_queue = deque(maxlen=10000)
+    controller = MagnetController(reset=True)
+    controller.mode = "AC"
+    controller.set_target_field(0)
+    controller.set_frequency(0.7)
+    time.sleep(1.1)
+    data = controller.get_amplitude_values()
+    plt.figure()
+    plt.plot(data[0])
+    data_queue.append(data)
+    time.sleep(0.01)
+    data = controller.get_amplitude_values()
+    plt.figure()
+    plt.plot(data[0])
+    new = np.setdiff1d(np.array(data_queue), np.array(data))
+    print(len(new))
+    plt.figure()
+    plt.plot(new)
+    plt.pause(1)
+    print(len(data[0]))
+    controller.close(True)
+    plt.show()
