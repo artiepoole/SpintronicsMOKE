@@ -161,7 +161,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Assigned so that restarting these timers can use the same rate. All in ms
         self.image_timer_rate = 33  # Maxfps is 30 anyway
         self.plot_timer_rate = 200  # Doesn't need to be so often
-        self.magnetic_field_timer_rate = 5  # max frequency of 10Hz detectable but this is performance limited.
+        self.magnetic_field_timer_rate = 50  # max frequency of 10Hz detectable but this is performance limited.
         self.image_timer.start(self.image_timer_rate)
         self.plot_timer.start(self.plot_timer_rate)
         self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
@@ -375,8 +375,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             left="Field (mT)",
             bottom="time (s)"
         )
-        self.mag_y = deque(maxlen=100)
-        self.mag_t = deque(maxlen=100)
+        self.mag_y = deque([0.], maxlen=10000)
+        self.mag_t = deque([0.], maxlen=10000)
         self.mag_line = self.mag_plot.plot(self.mag_t, self.mag_y, pen="k")
 
     def __populate_calibration_combobox(self):
@@ -508,11 +508,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.magnetic_field_timer. This updates more often than the plot is updated to improve performance
         :return None:
         """
-        field, voltage = self.magnet_controller.get_current_amplitude()
-        self.line_measured_field.setText("{:0.4f}".format(field))
-        self.line_measured_voltage.setText("{:0.4f}".format(voltage))
-        self.mag_y.append(field)
-        self.mag_t.append(time.time() - self.start_time)
+        fields, voltages = self.magnet_controller.get_amplitude_values()
+        if len(fields) > 0:
+            self.line_measured_field.setText("{:0.4f}".format(fields[-1]))
+            self.line_measured_voltage.setText("{:0.4f}".format(voltages[-1]))
+            [self.mag_y.append(field) for field in fields]
+            last_time = self.mag_t[-1]
+            times = [(val / 1000)+last_time for val in list(range(len(voltages)))]
+            [self.mag_t.append(time) for time in times]
 
     def __on_reset_plots(self):
         """
@@ -1375,7 +1378,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         selected_leds = ["up1", "up2", "left1", "left2"]
         self.__equalise_specific_LEDs(selected_leds)
 
-
     def __equalise_specific_LEDs(self, leds_to_eq):
         """
         This loops through turning each supplied LED on and measures the mean brightness, only within the ROI if
@@ -1459,6 +1461,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_grabber.running = False
         self.frame_processor.waiting = True
         self.frame_processor.running = False
+        self.magnet_controller.pause_instream()
         self.mutex.unlock()
         self.image_timer.stop()
         self.plot_timer.stop()
@@ -1468,6 +1471,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.image_timer.start(self.image_timer_rate)
         self.plot_timer.start(self.plot_timer_rate)
         self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
+        self.magnet_controller.resume_instream()
         QtCore.QMetaObject.invokeMethod(
             self.camera_grabber,
             "set_exposure_time",
@@ -1716,9 +1720,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
         value = self.spin_mag_amplitude.value()
         if self.button_invert_field.isChecked():
-            self.magnet_controller.set_target_field(-value)
-        else:
             self.magnet_controller.set_target_field(value)
+        else:
+            self.magnet_controller.set_target_field(-value)
 
     def __on_change_field_offset(self):
         """
@@ -1728,9 +1732,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         """
         value = self.spin_mag_offset.value()
         if self.button_invert_field.isChecked():
-            self.magnet_controller.set_target_offset(-value)
-        else:
             self.magnet_controller.set_target_offset(value)
+        else:
+            self.magnet_controller.set_target_offset(-value)
 
     def __on_change_mag_freq(self):
         """
