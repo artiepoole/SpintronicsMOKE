@@ -11,7 +11,7 @@ Right screen (GUI controls)
 
 # Equipment
 - Hamamatsu C11440-42U40 scientific CMOS camera
-- Lighting and Electronics Jena Luxyr LQ-LED 8-KANAL fibre lamp system
+- Lighting and Electronics Jena Luxyr LQ-LED 8-Channel fibre lamp system
 - Evico Magnetics GmbH breakout for NI DAQ PCIe-6321 DAQ card
 - Kepco Bipolar Power Supply BOP100-4DL
 - Piezosystem jena CV40 3CLE
