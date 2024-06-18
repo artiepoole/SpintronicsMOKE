@@ -254,6 +254,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_AC_field.clicked.connect(self.__on_AC_field)
         self.button_invert_field.clicked.connect(self.__on_invert_field)
         self.button_calibration_directory.clicked.connect(self.__on_browse_mag_calib)
+        # TODO: add DC to AC decay for demagnetisation.
 
         # Analyser Controls
         self.button_move_analyser_back.clicked.connect(self.__rotate_analyser_backward)
