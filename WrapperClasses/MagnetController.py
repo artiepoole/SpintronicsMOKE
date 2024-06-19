@@ -17,6 +17,7 @@ class MagnetController:
         self.frequency = 0.01
         self.target_voltage = 0.0
         self.target_offset_voltage = 0.0
+        self.decay_time = 1.0
         logging.info("Initialising MagnetController")
         try:
             self.dev = nidaq.system.device.Device('Dev1')
@@ -96,17 +97,18 @@ class MagnetController:
         """
         self.analogue_output_task.stop()
         if self.mode == "DC":
-            n_samples = 100
+            n_samples = int(-np.log(0.001) * self.decay_time * 1000)
+            # Specifies length of buffer to enable Decay mode to work starting and ending with a DC offset.
             self.analogue_output_task.timing.cfg_samp_clk_timing(
                 self.sample_rate,
-                sample_mode=AcquisitionType.CONTINUOUS,
+                sample_mode=AcquisitionType.FINITE,
                 samps_per_chan=n_samples,
             )
-
-            data = np.ones(n_samples) * self.target_voltage
-            self.analogue_output_task.write(data, auto_start=False)
+            data = np.ones(5) * self.target_offset_voltage  # just has to be above 1 value
             self.analogue_output_task.start()
-            logging.debug(f"Set voltage to {self.target_voltage} VDC")
+            self.analogue_output_task.write(data)
+
+            logging.debug(f"Set voltage to {self.target_offset_voltage} VDC")
         elif self.mode == "AC":
             n_samples = int(round(
                 1 / self.frequency,
@@ -166,7 +168,6 @@ class MagnetController:
             self.analogue_input_task.start()
             return [], []
 
-
         fields = [self.interpolate_field(voltage) for voltage in voltages]
         return fields, voltages
 
@@ -194,6 +195,10 @@ class MagnetController:
         self.frequency = new_value
         self.update_output()
 
+    def set_decay_time(self, new_value):
+        self.decay_time = new_value
+        self.update_output()
+
     def reset_field(self):
         self.target_voltage = 0.0
         self.target_offset_voltage = 0.0
@@ -210,16 +215,22 @@ class MagnetController:
     def pause_instream(self):
         self.analogue_input_task.stop()
 
-
     def resume_instream(self):
         self.analogue_input_task.start()
 
+    def start_decay(self):
+        t_max = - np.log(0.001) * self.decay_time
+        times = np.arange(0, t_max, 1 / self.sample_rate)
+        data = self.target_voltage * np.exp(-times / self.decay_time) * np.sin(
+            2 * np.pi * self.frequency * times) + self.target_offset_voltage
+        self.analogue_output_task.write(data)
 
 
 if __name__ == '__main__':
     import time
     import matplotlib.pyplot as plt
     from collections import deque
+
     data_queue = deque(maxlen=10000)
     controller = MagnetController(reset=True)
     controller.mode = "AC"

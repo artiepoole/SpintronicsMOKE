@@ -254,6 +254,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_AC_field.clicked.connect(self.__on_AC_field)
         self.button_invert_field.clicked.connect(self.__on_invert_field)
         self.button_calibration_directory.clicked.connect(self.__on_browse_mag_calib)
+        self.button_decay_field.clicked.connect(self.__on_decay)
         # TODO: add DC to AC decay for demagnetisation.
 
         # Analyser Controls
@@ -514,7 +515,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.line_measured_voltage.setText("{:0.4f}".format(voltages[-1]))
             [self.mag_y.append(field) for field in fields]
             last_time = self.mag_t[-1]
-            times = [(val / 1000)+last_time for val in list(range(len(voltages)))]
+            times = [(val / 1000) + last_time for val in list(range(len(voltages)))]
             [self.mag_t.append(time) for time in times]
 
     def __on_reset_plots(self):
@@ -1752,8 +1753,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 calibration_array[:, 3]
             )
             max_field = np.amax(calibration_array[:, 1])
-            self.label_amplitude.setText("Amplitude (mT)")
-            self.label_offset.setText("Offset (mT)")
+            self.label_amplitude.setText("AC Amplitude (mT)")
+            self.label_offset.setText("DC / Offset (mT)")
             self.label_measured_field.setText("Field (mT)")
             self.label_max_field.setText("Max Field (mT)")
             self.line_max_field.setText(str(round(max_field, 5)))
@@ -1771,8 +1772,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 defaults,
                 defaults
             )
-            self.label_amplitude.setText("Amplitude (V)")
-            self.label_offset.setText("Offset (V)")
+            self.label_amplitude.setText("AC Amplitude (V)")
+            self.label_offset.setText("DC / Offset (V)")
             self.label_measured_field.setText("Field (V)")
             self.label_max_field.setText("Max Field (V)")
             self.line_max_field.setText(str(10))
@@ -1816,6 +1817,26 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         """
         value = self.spin_mag_freq.value()
         self.magnet_controller.set_frequency(value)
+
+    def __on_change_decay_time(self):
+        value = self.spin_mag_decay.value()
+        self.magnet_controller.set_decay_time(value)
+
+    def __on_decay(self):
+
+        if self.magnet_controller.mode != "DC":
+            logging.error("DC magnet mode must be enabled in order to perform AC decay.")
+            return
+        if self.spin_mag_amplitude.value() < 0.0001:
+            logging.error("Please specify an AC field amplitude above zero.")
+            return
+        if self.spin_mag_amplitude.value() + self.spin_mag_offset.value() > float(self.line_max_field.text()):
+            logging.error("DC offset + AC amplitude is above maximum field. Please adjust these values.")
+            return
+        logging.info("Starting decay mode.")
+        self.magnet_controller.start_decay()
+
+
 
     def __set_zero_field(self):
         """
