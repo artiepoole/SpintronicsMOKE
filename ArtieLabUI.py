@@ -245,9 +245,64 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.calib_file_blocker = QtCore.QSignalBlocker(self.combo_calib_file)
         self.calib_file_blocker.unblock()
 
+
+        # Replace spin boxes with improved spinboxes. Inherits settings from qtDesigner file
+        self.MAGSPINFORM.removeWidget(self.spin_mag_offset_old)
+        self.MAGSPINFORM.removeWidget(self.spin_mag_amplitude_old)
+        self.MAGSPINFORM.removeWidget(self.spin_mag_freq_old)
+        self.MAGSPINFORM.removeWidget(self.spin_mag_decay_old)
+        self.spin_mag_offset = SpinBox(
+            self.spin_mag_offset_old.minimum(),
+            self.spin_mag_offset_old.maximum(),
+            self.spin_mag_offset_old.singleStep(),
+            self.spin_mag_offset_old.value(),
+            self.spin_mag_offset_old.decimals()
+        )
+        self.spin_mag_amplitude = SpinBox(
+            self.spin_mag_amplitude_old.minimum(),
+            self.spin_mag_amplitude_old.maximum(),
+            self.spin_mag_amplitude_old.singleStep(),
+            self.spin_mag_amplitude_old.value(),
+            self.spin_mag_amplitude_old.decimals()
+        )
+
+        self.spin_mag_freq = SpinBox(
+            self.spin_mag_freq_old.minimum(),
+            self.spin_mag_freq_old.maximum(),
+            self.spin_mag_freq_old.singleStep(),
+            self.spin_mag_freq_old.value(),
+            self.spin_mag_freq_old.decimals()
+        )
+        self.spin_mag_decay = SpinBox(
+            self.spin_mag_decay_old.minimum(),
+            self.spin_mag_decay_old.maximum(),
+            self.spin_mag_decay_old.singleStep(),
+            self.spin_mag_decay_old.value(),
+            self.spin_mag_decay_old.decimals()
+        )
+        self.spin_mag_offset_old.close()
+        self.spin_mag_amplitude_old.close()
+        self.spin_mag_freq_old.close()
+        self.spin_mag_decay_old.close()
+        # QtWidgets.QGridLayout.addItem()
+        self.MAGSPINFORM.addWidget(self.spin_mag_offset, 1, 0, 1, 1)
+        self.MAGSPINFORM.addWidget(self.spin_mag_amplitude, 1, 1, 1, 1)
+        self.MAGSPINFORM.addWidget(self.spin_mag_freq, 1, 2, 1, 1)
+        self.MAGSPINFORM.addWidget(self.spin_mag_decay, 1, 3, 1, 1)
+
         self.spin_mag_amplitude.editingFinished.connect(self.__on_change_field_amplitude)
+        self.spin_mag_amplitude.stepChanged.connect(self.__on_change_field_amplitude)
         self.spin_mag_offset.editingFinished.connect(self.__on_change_field_offset)
+        self.spin_mag_offset.stepChanged.connect(self.__on_change_field_offset)
         self.spin_mag_freq.editingFinished.connect(self.__on_change_mag_freq)
+        self.spin_mag_freq.stepChanged.connect(self.__on_change_mag_freq)
+        self.spin_mag_decay.editingFinished.connect(self.__on_change_decay_time)
+        self.spin_mag_decay.stepChanged.connect(self.__on_change_decay_time)
+
+        self.spin_dc_step.valueChanged.connect(self.__on_change_field_offset_step)
+        self.spin_ac_step.valueChanged.connect(self.__on_change_field_amp_step)
+        self.spin_freq_step.valueChanged.connect(self.__on_change_field_freq_step)
+        self.spin_decay_step.valueChanged.connect(self.__on_change_field_decay_time_step)
 
         self.button_zero_field.clicked.connect(self.__set_zero_field)
         self.button_DC_field.clicked.connect(self.__on_DC_field)
@@ -255,7 +310,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_invert_field.clicked.connect(self.__on_invert_field)
         self.button_calibration_directory.clicked.connect(self.__on_browse_mag_calib)
         self.button_decay_field.clicked.connect(self.__on_decay)
-        # TODO: add DC to AC decay for demagnetisation.
 
         # Analyser Controls
         self.button_move_analyser_back.clicked.connect(self.__rotate_analyser_backward)
@@ -1435,7 +1489,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 intensity = UINT16_MAX
                 brightness = 180
                 while intensity > dimmest_intensity and brightness > 0:
-                    brightness = brightness - 1
+                    # Can change how many brightness values per step here
+                    brightness = brightness - 3
                     self.lamp_controller.set_one_brightness(brightness, self.led_id_enum[led_name])
                     time.sleep(self.exposure_time)
                     if self.frame_processor.averaging:
@@ -1758,12 +1813,15 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.label_measured_field.setText("Field (mT)")
             self.label_max_field.setText("Max Field (mT)")
             self.line_max_field.setText(str(round(max_field, 5)))
+            # Update step sizes and ranges
             self.spin_mag_amplitude.setValue(0.0)
             self.spin_mag_amplitude.setRange(-max_field, max_field)
             self.spin_mag_amplitude.setSingleStep(round(max_field / 200, 1))
             self.spin_mag_offset.setValue(0.0)
             self.spin_mag_offset.setRange(-max_field, max_field)
             self.spin_mag_offset.setSingleStep(round(max_field / 200, 1))
+            self.spin_dc_step.setValue(round(max_field / 200, 1))
+            self.spin_ac_step.setValue(round(max_field / 200, 1))
         else:
             defaults = np.linspace(-10, 10, 100)
             self.magnet_controller.set_calibration(
@@ -1796,6 +1854,34 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.magnet_controller.set_target_field(value)
         else:
             self.magnet_controller.set_target_field(-value)
+
+    def __on_change_field_amp_step(self, value):
+        """
+        Is called whenever the user selects a new field amplitude step value
+        :return None:
+        """
+        self.spin_mag_amplitude.setSingleStep(value)
+
+    def __on_change_field_offset_step(self, value):
+        """
+        Is called whenever the user selects a new field offset step value
+        :return None:
+        """
+        self.spin_mag_offset.setSingleStep(value)
+
+    def __on_change_field_freq_step(self, value):
+        """
+        Is called whenever the user selects a new field freq step value
+        :return None:
+        """
+        self.spin_mag_freq.setSingleStep(value)
+
+    def __on_change_field_decay_time_step(self, value):
+        """
+        Is called whenever the user selects a new field freq step value
+        :return None:
+        """
+        self.spin_mag_decay.setSingleStep(value)
 
     def __on_change_field_offset(self):
         """
@@ -1835,8 +1921,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             return
         logging.info("Starting decay mode.")
         self.magnet_controller.start_decay()
-
-
 
     def __set_zero_field(self):
         """
@@ -1906,12 +1990,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         """
         if inverted:
             logging.info("Inverting field")
-            self.magnet_controller.set_target_field(-self.spin_mag_amplitude.value())
-            self.magnet_controller.set_target_offset(-self.spin_mag_offset.value())
-        else:
-            logging.info("Un-inverting field")
             self.magnet_controller.set_target_field(self.spin_mag_amplitude.value())
             self.magnet_controller.set_target_offset(self.spin_mag_offset.value())
+        else:
+            logging.info("Un-inverting field")
+            self.magnet_controller.set_target_field(-self.spin_mag_amplitude.value())
+            self.magnet_controller.set_target_offset(-self.spin_mag_offset.value())
 
     def __rotate_analyser_forward(self):
         """
@@ -2337,6 +2421,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor_thread.quit()
         super(ArtieLabUI, self).closeEvent(self.close_event)
         sys.exit()
+
+
 
 
 if __name__ == '__main__':
