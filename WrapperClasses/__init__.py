@@ -4,4 +4,5 @@ from .FrameProcessor import *
 from .MagnetController import *
 from .AnalyserController import *
 from .CustomLoggingFormatter import *
+from .SpinBox import *
 
