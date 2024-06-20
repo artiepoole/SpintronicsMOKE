@@ -225,8 +225,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.spin_foreground_averages_old.close()
         self.spin_foreground_averages.editingFinished.connect(self.__on_average_changed)
 
-        # Todo replace exposure time with new spinbox
-
         # Camera Controls
         # self.combo_targetfps.currentIndexChanged.connect(self.__on_exposure_time_changed)
         self.spin_exposure_time = DoubleSpinBox(self.spin_exposure_time_old)
