@@ -328,8 +328,8 @@ if __name__ == "__main__":
             modes = [3]
             averaging = [False, True]
             averages = [16]
-            frames = np.loadtxt("../TestScripts/test_stack.dat", delimiter="\t").astype(np.int32).reshape(16, 1024,
-                                                                                                          1024)
+            frames = np.loadtxt("../devscripts/test_stack.dat", delimiter="\t").astype(np.int32).reshape(16, 1024,
+                                                                                                         1024)
             self.frame_processor.raw_frame_stack = (
                 np.array([], dtype=np.int32).
                 reshape(0, frames.shape[1], frames.shape[1]))
