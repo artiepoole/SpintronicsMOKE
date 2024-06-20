@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1479</width>
-    <height>802</height>
+    <height>812</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1394,7 +1394,7 @@ All</string>
               <number>5</number>
              </property>
              <item row="1" column="1">
-              <widget class="QSpinBox" name="spin_foreground_averages">
+              <widget class="QSpinBox" name="spin_foreground_averages_old">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Number of frames used to take calculate the mean frame, used to generate the preview. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
@@ -2066,7 +2066,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </widget>
              </item>
              <item row="3" column="1">
-              <widget class="QDoubleSpinBox" name="spin_exposure_time">
+              <widget class="QDoubleSpinBox" name="spin_exposure_time_old">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Exposure time of the camera in seconds. Minimum value of 3ms (0.003) and maximum of 10s. The maximum frame rate from the camera is 30fps regardless of how low the exposure time is, and the readout (line by line from centre outwards) is distributed throughout the resulting 33ms even at 3ms exposure times. 50ms default gives 20fps.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
@@ -2634,7 +2634,7 @@ of Points</string>
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="spin_mag_point_count">
+              <widget class="QSpinBox" name="spin_mag_point_count_old">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Number of magnetic field points to plot.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
@@ -2646,6 +2646,9 @@ of Points</string>
                </property>
                <property name="maximum">
                 <number>100000</number>
+               </property>
+               <property name="singleStep">
+                <number>100</number>
                </property>
                <property name="value">
                 <number>10000</number>
@@ -3122,7 +3125,10 @@ QWidget{background-color: rgb(255,255,255)}</string>
             <number>0</number>
            </property>
            <item>
-            <widget class="QLabel" name="label">
+            <widget class="QLabel" name="label_magcontrol">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
                <horstretch>0</horstretch>
@@ -3238,7 +3244,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
           <number>15</number>
          </property>
          <item row="0" column="0">
-          <widget class="QFrame" name="horizontalFrame">
+          <widget class="QFrame" name="RHSTopFrame">
            <property name="maximumSize">
             <size>
              <width>16777215</width>
@@ -3300,7 +3306,7 @@ of Points</string>
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="spin_number_of_points">
+             <widget class="QSpinBox" name="spin_number_of_points_old">
               <property name="maximumSize">
                <size>
                 <width>16777215</width>
@@ -3378,20 +3384,20 @@ of Points</string>
   <tabstop>spin_percentile_upper</tabstop>
   <tabstop>spin_clip</tabstop>
   <tabstop>spin_background_averages</tabstop>
-  <tabstop>spin_foreground_averages</tabstop>
+  <tabstop>spin_foreground_averages_old</tabstop>
   <tabstop>combo_lens</tabstop>
   <tabstop>combo_magnification</tabstop>
   <tabstop>line_field_dir</tabstop>
   <tabstop>combo_binning</tabstop>
-  <tabstop>spin_exposure_time</tabstop>
+  <tabstop>spin_exposure_time_old</tabstop>
   <tabstop>spin_analyser_move_amount</tabstop>
   <tabstop>combo_calib_file</tabstop>
   <tabstop>spin_mag_offset_old</tabstop>
   <tabstop>spin_mag_amplitude_old</tabstop>
   <tabstop>spin_mag_freq_old</tabstop>
   <tabstop>spin_mag_decay_old</tabstop>
-  <tabstop>spin_mag_point_count</tabstop>
-  <tabstop>spin_number_of_points</tabstop>
+  <tabstop>spin_mag_point_count_old</tabstop>
+  <tabstop>spin_number_of_points_old</tabstop>
   <tabstop>button_long_pol</tabstop>
   <tabstop>button_trans_pol</tabstop>
   <tabstop>button_polar</tabstop>

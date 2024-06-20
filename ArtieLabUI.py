@@ -220,11 +220,20 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         # Averaging controls
         self.button_measure_background.clicked.connect(self.__on_get_new_background)
         self.button_toggle_averaging.clicked.connect(self.__on_averaging)
+        self.spin_foreground_averages = SpinBox(self.spin_foreground_averages_old)
+        self.AVERAGESELECTGRID.replaceWidget(self.spin_foreground_averages_old, self.spin_foreground_averages)
+        self.spin_foreground_averages_old.close()
         self.spin_foreground_averages.editingFinished.connect(self.__on_average_changed)
+
+        # Todo replace exposure time with new spinbox
 
         # Camera Controls
         # self.combo_targetfps.currentIndexChanged.connect(self.__on_exposure_time_changed)
+        self.spin_exposure_time = DoubleSpinBox(self.spin_exposure_time_old)
+        self.METADATAGRID.replaceWidget(self.spin_exposure_time_old, self.spin_exposure_time)
+        self.spin_exposure_time_old.close()
         self.spin_exposure_time.editingFinished.connect(self.__on_exposure_time_changed)
+
         self.combo_binning.currentIndexChanged.connect(self.__on_binning_mode_changed)
         self.button_pause_camera.clicked.connect(self.__on_pause_button)
         self.button_display_subtraction.clicked.connect(self.__on_show_subtraction)
@@ -246,24 +255,24 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.calib_file_blocker.unblock()
 
         # Replace spin boxes with improved spinboxes. Inherits settings from qtDesigner file
-        self.spin_mag_offset = SpinBox(self.spin_mag_offset_old)
-        self.spin_mag_amplitude = SpinBox(self.spin_mag_amplitude_old)
-        self.spin_mag_freq = SpinBox(self.spin_mag_freq_old)
-        self.spin_mag_decay = SpinBox(self.spin_mag_decay_old)
+        self.spin_mag_offset = DoubleSpinBox(self.spin_mag_offset_old)
+        self.spin_mag_amplitude = DoubleSpinBox(self.spin_mag_amplitude_old)
+        self.spin_mag_freq = DoubleSpinBox(self.spin_mag_freq_old)
+        self.spin_mag_decay = DoubleSpinBox(self.spin_mag_decay_old)
 
         self.MAGSPINFORM.replaceWidget(self.spin_mag_offset_old, self.spin_mag_offset)
         self.MAGSPINFORM.replaceWidget(self.spin_mag_amplitude_old, self.spin_mag_amplitude)
         self.MAGSPINFORM.replaceWidget(self.spin_mag_freq_old, self.spin_mag_freq)
         self.MAGSPINFORM.replaceWidget(self.spin_mag_decay_old, self.spin_mag_decay)
+        self.spin_mag_offset_old.close()
+        self.spin_mag_amplitude_old.close()
+        self.spin_mag_freq_old.close()
+        self.spin_mag_decay_old.close()
 
         self.spin_mag_amplitude.editingFinished.connect(self.__on_change_field_amplitude)
-        self.spin_mag_amplitude.stepChanged.connect(self.__on_change_field_amplitude)
         self.spin_mag_offset.editingFinished.connect(self.__on_change_field_offset)
-        self.spin_mag_offset.stepChanged.connect(self.__on_change_field_offset)
         self.spin_mag_freq.editingFinished.connect(self.__on_change_mag_freq)
-        self.spin_mag_freq.stepChanged.connect(self.__on_change_mag_freq)
         self.spin_mag_decay.editingFinished.connect(self.__on_change_decay_time)
-        self.spin_mag_decay.stepChanged.connect(self.__on_change_decay_time)
 
         self.spin_dc_step.valueChanged.connect(self.__on_change_field_offset_step)
         self.spin_ac_step.valueChanged.connect(self.__on_change_field_amp_step)
@@ -290,6 +299,12 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.magnetic_field_timer.timeout.connect(self.__update_field_measurement)
         self.plot_timer.timeout.connect(self.__update_plots)
         self.image_timer.timeout.connect(self.__update_images)
+        self.spin_number_of_points = SpinBox(self.spin_number_of_points_old)
+        self.spin_mag_point_count = SpinBox(self.spin_mag_point_count_old)
+        self.layout_plot_header.replaceWidget(self.spin_number_of_points_old, self.spin_number_of_points)
+        self.layout_magmeas.replaceWidget(self.spin_mag_point_count_old, self.spin_mag_point_count)
+        self.spin_number_of_points_old.close()
+        self.spin_mag_point_count_old.close()
         self.spin_number_of_points.editingFinished.connect(self.__on_change_plot_count)
         self.spin_mag_point_count.editingFinished.connect(self.__on_change_mag_plot_count)
         self.button_reset_plots.clicked.connect(self.__on_reset_plots)
