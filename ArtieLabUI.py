@@ -245,50 +245,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.calib_file_blocker = QtCore.QSignalBlocker(self.combo_calib_file)
         self.calib_file_blocker.unblock()
 
-
         # Replace spin boxes with improved spinboxes. Inherits settings from qtDesigner file
-        self.MAGSPINFORM.removeWidget(self.spin_mag_offset_old)
-        self.MAGSPINFORM.removeWidget(self.spin_mag_amplitude_old)
-        self.MAGSPINFORM.removeWidget(self.spin_mag_freq_old)
-        self.MAGSPINFORM.removeWidget(self.spin_mag_decay_old)
-        self.spin_mag_offset = SpinBox(
-            self.spin_mag_offset_old.minimum(),
-            self.spin_mag_offset_old.maximum(),
-            self.spin_mag_offset_old.singleStep(),
-            self.spin_mag_offset_old.value(),
-            self.spin_mag_offset_old.decimals()
-        )
-        self.spin_mag_amplitude = SpinBox(
-            self.spin_mag_amplitude_old.minimum(),
-            self.spin_mag_amplitude_old.maximum(),
-            self.spin_mag_amplitude_old.singleStep(),
-            self.spin_mag_amplitude_old.value(),
-            self.spin_mag_amplitude_old.decimals()
-        )
+        self.spin_mag_offset = SpinBox(self.spin_mag_offset_old)
+        self.spin_mag_amplitude = SpinBox(self.spin_mag_amplitude_old)
+        self.spin_mag_freq = SpinBox(self.spin_mag_freq_old)
+        self.spin_mag_decay = SpinBox(self.spin_mag_decay_old)
 
-        self.spin_mag_freq = SpinBox(
-            self.spin_mag_freq_old.minimum(),
-            self.spin_mag_freq_old.maximum(),
-            self.spin_mag_freq_old.singleStep(),
-            self.spin_mag_freq_old.value(),
-            self.spin_mag_freq_old.decimals()
-        )
-        self.spin_mag_decay = SpinBox(
-            self.spin_mag_decay_old.minimum(),
-            self.spin_mag_decay_old.maximum(),
-            self.spin_mag_decay_old.singleStep(),
-            self.spin_mag_decay_old.value(),
-            self.spin_mag_decay_old.decimals()
-        )
-        self.spin_mag_offset_old.close()
-        self.spin_mag_amplitude_old.close()
-        self.spin_mag_freq_old.close()
-        self.spin_mag_decay_old.close()
-        # QtWidgets.QGridLayout.addItem()
-        self.MAGSPINFORM.addWidget(self.spin_mag_offset, 1, 0, 1, 1)
-        self.MAGSPINFORM.addWidget(self.spin_mag_amplitude, 1, 1, 1, 1)
-        self.MAGSPINFORM.addWidget(self.spin_mag_freq, 1, 2, 1, 1)
-        self.MAGSPINFORM.addWidget(self.spin_mag_decay, 1, 3, 1, 1)
+        self.MAGSPINFORM.replaceWidget(self.spin_mag_offset_old, self.spin_mag_offset)
+        self.MAGSPINFORM.replaceWidget(self.spin_mag_amplitude_old, self.spin_mag_amplitude)
+        self.MAGSPINFORM.replaceWidget(self.spin_mag_freq_old, self.spin_mag_freq)
+        self.MAGSPINFORM.replaceWidget(self.spin_mag_decay_old, self.spin_mag_decay)
 
         self.spin_mag_amplitude.editingFinished.connect(self.__on_change_field_amplitude)
         self.spin_mag_amplitude.stepChanged.connect(self.__on_change_field_amplitude)
@@ -2421,8 +2387,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor_thread.quit()
         super(ArtieLabUI, self).closeEvent(self.close_event)
         sys.exit()
-
-
 
 
 if __name__ == '__main__':
