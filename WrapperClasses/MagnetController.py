@@ -95,7 +95,11 @@ class MagnetController:
         when DC or AC is clicked, the output will happen.
         :return:
         """
-        self.analogue_output_task.stop()
+        try:
+            self.analogue_output_task.stop()
+        except:
+            logging.error("Failed to stop analogue output")
+
         if self.mode == "DC":
             n_samples = int(-np.log(0.001) * self.decay_time * 1000)
             # Specifies length of buffer to enable Decay mode to work starting and ending with a DC offset.
@@ -105,8 +109,7 @@ class MagnetController:
                 samps_per_chan=n_samples,
             )
             data = np.ones(5) * self.target_offset_voltage  # just has to be above 1 value
-            self.analogue_output_task.start()
-            self.analogue_output_task.write(data)
+            self.analogue_output_task.write(data, auto_start=True)
 
             logging.debug(f"Set voltage to {self.target_offset_voltage} VDC")
         elif self.mode == "AC":
