@@ -1,5 +1,5 @@
-/TestScripts/test_stack.dat
-/TestScripts/Semaphore_example/SemaphoreUI.log
+/devscripts/test_stack.dat
+/devscripts/Semaphore_example/SemaphoreUI.log
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/.gitignore
 /.idea/misc.xml
@@ -9,9 +9,9 @@
 /ArtieLabUI.log
 /intensity vs steps flipped.dat
 /test
-/TestScripts/intensity vs steps.dat
-/TestScripts/intensity vs steps1.dat
-/TestScripts/test_frame.dat
+/devscripts/intensity vs steps.dat
+/devscripts/intensity vs steps1.dat
+/devscripts/test_frame.dat
 /CFrameProcessors/.idea/*
 /CFrameProcessors/cmake-build-debug/*
 /CFrameProcessors/playing/cmake-build-debug/*
