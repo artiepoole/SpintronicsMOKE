@@ -5,6 +5,8 @@ from nidaqmx.constants import AcquisitionType
 import sys
 
 from math import log10, floor
+# import warnings
+# warnings.filterwarnings("error")
 
 
 class MagnetController:
@@ -43,6 +45,7 @@ class MagnetController:
 
         self.analogue_output_task = nidaq.Task()
         self.analogue_output_task.ao_channels.add_ao_voltage_chan('Dev1/ao0')
+        self.analogue_output_stream = self.analogue_output_task.out_stream
 
         self.voltages = np.linspace(-10, 10, 100)
         self.field_from_volts = np.linspace(-10, 10, 100)
@@ -95,22 +98,28 @@ class MagnetController:
         when DC or AC is clicked, the output will happen.
         :return:
         """
-        try:
-            self.analogue_output_task.stop()
-        except:
-            logging.error("Failed to stop analogue output")
-            # TODO: catch the warning and ignore if it is buffer ending warning.
+        # try:
+        #     self.analogue_output_task.stop()
+        # except nidaq.DaqWarning:
+        #     self.analogue_output_task.stop()
+        # except Exception as error:
+        #     logging.error("Failed to stop analogue output")
+        #     # TODO: catch the warning and ignore if it is buffer ending warning.
+        self.analogue_output_task.stop()
 
         if self.mode == "DC":
-            n_samples = int(-np.log(0.001) * self.decay_time * 1000)
+            # n_samples = int(-np.log(0.001) * self.decay_time * 1000) + 10
             # Specifies length of buffer to enable Decay mode to work starting and ending with a DC offset.
             self.analogue_output_task.timing.cfg_samp_clk_timing(
                 self.sample_rate,
                 sample_mode=AcquisitionType.FINITE,
-                samps_per_chan=n_samples,
+                samps_per_chan=5,
             )
             data = np.ones(5) * self.target_offset_voltage  # just has to be above 1 value
+
             self.analogue_output_task.write(data, auto_start=True)
+            # self.analogue_output_task.start()
+
 
             logging.debug(f"Set voltage to {self.target_offset_voltage} VDC")
         elif self.mode == "AC":
@@ -135,7 +144,7 @@ class MagnetController:
 
             logging.debug(f"Outputting AC Waveform with Peak to Peak voltage of: {self.target_voltage}")
         elif self.mode == None:
-            n_samples = 100
+            n_samples = 5
             self.analogue_output_task.timing.cfg_samp_clk_timing(
                 self.sample_rate,
                 sample_mode=AcquisitionType.CONTINUOUS,
@@ -143,8 +152,7 @@ class MagnetController:
             )
 
             data = np.zeros(n_samples)
-            self.analogue_output_task.write(data, auto_start=False)
-            self.analogue_output_task.start()
+            self.analogue_output_task.write(data, auto_start=True)
             logging.debug(f"Set voltage to {self.target_voltage} VDC")
 
     def get_current_amplitude(self):
@@ -167,7 +175,7 @@ class MagnetController:
         try:
             voltages = self.analogue_input_task.read(nidaq.constants.READ_ALL_AVAILABLE)
         except nidaq.errors.DaqReadError:
-            logging.warning("DAQmx hates you for not reading the magnetic field data for too long.")
+            logging.warning("DAQmx raised an error becasuse magnetic field data was not read for too long.")
             self.analogue_input_task.stop()
             self.analogue_input_task.start()
             return [], []
@@ -182,8 +190,11 @@ class MagnetController:
         :param float new_value: Target field value in mT
         :return:
         """
-        self.target_voltage = self.interpolate_voltage(new_value)
-        self.update_output()
+        new_target_voltage = self.interpolate_voltage(new_value)
+        # Compare floats to see if value has changed
+        if abs(self.target_voltage - new_target_voltage) > 0.001:
+            self.target_voltage = self.interpolate_voltage(new_value)
+            self.update_output()
 
     def set_target_offset(self, new_value):
         """
@@ -192,16 +203,21 @@ class MagnetController:
         :param float new_value: Target field value in mT
         :return:
         """
-        self.target_offset_voltage = self.interpolate_voltage(new_value)
-        self.update_output()
+        new_target_voltage = self.interpolate_voltage(new_value)
+        # Compare floats to see if value has changed
+        if abs(self.target_offset_voltage - new_target_voltage) > 0.001:
+            self.target_offset_voltage = self.interpolate_voltage(new_value)
+            self.update_output()
 
     def set_frequency(self, new_value):
-        self.frequency = new_value
-        self.update_output()
+        if new_value != self.frequency:
+            self.frequency = new_value
+            self.update_output()
 
     def set_decay_time(self, new_value):
-        self.decay_time = new_value
-        self.update_output()
+        if new_value != self.decay_time:
+            self.decay_time = new_value
+            self.update_output()
 
     def reset_field(self):
         self.target_voltage = 0.0
@@ -223,11 +239,18 @@ class MagnetController:
         self.analogue_input_task.start()
 
     def start_decay(self):
+        self.analogue_output_task.stop()
+
         t_max = - np.log(0.001) * self.decay_time
         times = np.arange(0, t_max, 1 / self.sample_rate)
         data = self.target_voltage * np.exp(-times / self.decay_time) * np.sin(
             2 * np.pi * self.frequency * times) + self.target_offset_voltage
-        self.analogue_output_task.write(data)
+        self.analogue_output_task.timing.cfg_samp_clk_timing(
+            self.sample_rate,
+            sample_mode=AcquisitionType.FINITE,
+            samps_per_chan=len(data),
+        )
+        self.analogue_output_task.write(data, auto_start=True)
 
 
 if __name__ == '__main__':
