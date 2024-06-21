@@ -98,13 +98,6 @@ class MagnetController:
         when DC or AC is clicked, the output will happen.
         :return:
         """
-        # try:
-        #     self.analogue_output_task.stop()
-        # except nidaq.DaqWarning:
-        #     self.analogue_output_task.stop()
-        # except Exception as error:
-        #     logging.error("Failed to stop analogue output")
-        #     # TODO: catch the warning and ignore if it is buffer ending warning.
         self.analogue_output_task.stop()
 
         if self.mode == "DC":
