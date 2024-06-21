@@ -138,7 +138,6 @@ class FrameProcessor(QtCore.QObject):
         calulations etc.
         :return None:
         """
-        # TODO: Figure out how to do everything with uint16 values to save significant memory and processing.
         self.running = True
         self.closing = False
         self.waiting = False
@@ -202,18 +201,19 @@ class FrameProcessor(QtCore.QObject):
                                                        ).astype(np.uint16)
 
                     else:
-                        self.latest_diff_frame = self.latest_diff_frame_a.astype(np.int32) - self.latest_diff_frame_b.astype(np.int32)
+                        self.latest_diff_frame = self.latest_diff_frame_a.astype(
+                            np.int32) - self.latest_diff_frame_b.astype(np.int32)
                         # diff_frame = ((sweep_3_frames[i] - sweep_2_frames[i]) / (sweep_3_frames[i] + sweep_2_frames[i]))
                         # cv2.imshow(str(sweep_2_data[i]),
                         #            (diff_frame - diff_frame.min()) / (diff_frame.max() - diff_frame.min()))
-                        self.latest_processed_frame = (self._process_frame(
-                            self.latest_diff_frame + UINT16_MAX) // 2
-                                                       ).astype(np.uint16)
+                        self.latest_processed_frame = self._process_frame(
+                            ((self.latest_diff_frame + UINT16_MAX) // 2).astype(np.uint16))
                     self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
                     if self.line_coords is not None:
                         start, end = self.line_coords
                         self.latest_profile = profile_line(self.latest_processed_frame, start,
                                                            end, linewidth=5)
+                    self.new_processed_frame_signal.emit(self.latest_processed_frame)
                 elif len(item) == 2:
                     logging.debug("Got single frame")
                     # Single frame mode
@@ -334,7 +334,7 @@ if __name__ == "__main__":
             averaging = [False, True]
             averages = [16]
             frames = np.loadtxt("../devscripts/test_stack.dat", delimiter="\t").astype(np.uint16).reshape(16, 1024,
-                                                                                                         1024)
+                                                                                                          1024)
             self.frame_processor.raw_frame_stack = (
                 np.array([], dtype=np.uint16).
                 reshape(0, frames.shape[1], frames.shape[1]))

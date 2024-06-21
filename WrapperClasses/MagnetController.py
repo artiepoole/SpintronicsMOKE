@@ -229,7 +229,10 @@ class MagnetController:
         self.analogue_input_task.stop()
 
     def resume_instream(self):
-        self.analogue_input_task.start()
+        try:
+            self.analogue_input_task.start()
+        except:
+            pass
 
     def start_decay(self):
         self.analogue_output_task.stop()

@@ -983,6 +983,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         :param bool checked: The state of button_long_trans after clicking.
         :return None:
         """
+        # There is a difference in operation between turning off all modes and switching back to non-flicker modes.
         if checked:
             if not self.flickering:
                 self.__prepare_for_flicker_mode()
@@ -1090,6 +1091,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_display_subtraction.setEnabled(False)
 
         self.flickering = True
+        self.camera_grabber.waiting = True
         self.camera_grabber.running = False
         QtCore.QMetaObject.invokeMethod(
             self.camera_grabber,
@@ -1239,9 +1241,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         logging.debug("Frame processor ready received")
         self.mutex.lock()
         self.frame_processor.frame_counter = 0
-        self.frame_processor.raw_frame_stack = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
-        self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
-        self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
+        self.frame_processor.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+        self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
         self.frame_processor.background = None
         self.frame_processor.background_raw_stack = None
         self.mutex.unlock()
@@ -1255,17 +1257,18 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         :return:
         """
         logging.info("Resetting after flicker mode")
+        self.mutex.lock()
+        self.flickering = False
+        self.camera_grabber.waiting = True
+        self.camera_grabber.running = False
+        self.mutex.unlock()
         self.item_semaphore = QtCore.QSemaphore(0)
         self.spaces_semaphore = QtCore.QSemaphore(self.BUFFER_SIZE)
         self.frame_buffer = deque(maxlen=self.BUFFER_SIZE)
-
-        self.mutex.lock()
-        self.flickering = False
-        self.camera_grabber.running = False
-        self.mutex.unlock()
         self.button_measure_background.setEnabled(True)
         self.button_display_subtraction.setEnabled(True)
         self.frame_processor.subtracting = self.button_display_subtraction.isChecked()
+
         QtCore.QMetaObject.invokeMethod(
             self.camera_grabber,
             "set_exposure_time",
@@ -1482,9 +1485,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                         frame, info = self.camera_grabber.snap(info=True)
                         frame_time = info.timestamp_us * 1e-6
                     cv2.imshow(self.stream_window,
-                               (self.frame_processor._process_frame(
-                                   frame.astype(np.int32)
-                               ).astype(np.uint16)
+                               (self.frame_processor._process_frame(frame)
                                 )
                                )
                     cv2.waitKey(1)
@@ -1574,17 +1575,18 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_grabber.running = False
         self.frame_processor.waiting = True
         self.frame_processor.running = False
+        self.magnetic_field_timer.stop()
         self.magnet_controller.pause_instream()
         self.mutex.unlock()
         self.image_timer.stop()
         self.plot_timer.stop()
-        self.magnetic_field_timer.stop()
+
 
     def __resume_updates(self):
         self.image_timer.start(self.image_timer_rate)
         self.plot_timer.start(self.plot_timer_rate)
-        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
         self.magnet_controller.resume_instream()
+        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
         QtCore.QMetaObject.invokeMethod(
             self.camera_grabber,
             "set_exposure_time",
@@ -1715,9 +1717,9 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.averaging = True
 
             self.frame_processor.frame_counter = 0
-            self.frame_processor.raw_frame_stack = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
-            self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
-            self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.int32).reshape(0, self.height, self.width)
+            self.frame_processor.raw_frame_stack = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+            self.frame_processor.diff_frame_stack_a = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
+            self.frame_processor.diff_frame_stack_b = np.array([], dtype=np.uint16).reshape(0, self.height, self.width)
             self.mutex.unlock()
         else:
             self.button_toggle_averaging.setText("Enable Averaging (F3)")
@@ -2145,10 +2147,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 if self.check_save_avg.isChecked():
                     key = 'mean_diff_frame'
                     contents.append(key)
-                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_diff.astype(np.uint16))
+                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_diff)
                 if self.check_save_stack.isChecked():
-                    diff_stack_a = self.frame_processor.diff_frame_stack_a.astype(np.uint16)
-                    diff_stack_b = self.frame_processor.diff_frame_stack_b.astype(np.uint16)
+                    diff_stack_a = self.frame_processor.diff_frame_stack_a
+                    diff_stack_b = self.frame_processor.diff_frame_stack_b
                     n_frames = diff_stack_a.shape[0]
                     # Due to the way the frames overwrite during averaging, this reorders the frames such that index 0
                     # is the oldest frame
@@ -2174,21 +2176,21 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     logging.warning("Stack not saved: measuring in single frame mode")
                 key = 'raw_diff_frame'
                 contents.append(key)
-                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame.astype(np.uint16))
+                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame)
                 key = 'raw_frame_a'
                 contents.append(key)
-                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_a.astype(np.uint16))
+                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_a)
                 key = 'raw_frame_b'
                 contents.append(key)
-                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_b.astype(np.uint16))
+                store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_b)
         else:  # Not difference mode
             if self.button_toggle_averaging.isChecked():
                 if self.check_save_avg.isChecked():
                     key = 'mean_frame'
                     contents.append(key)
-                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_frame.astype(np.uint16))
+                    store[key] = pd.DataFrame(self.frame_processor.latest_mean_frame)
                 if self.check_save_stack.isChecked():
-                    raw_stack = self.frame_processor.raw_frame_stack.astype(np.uint16)
+                    raw_stack = self.frame_processor.raw_frame_stack
                     n_frames = raw_stack.shape[0]
                     # Due to the way the frames overwrite during averaging, this reorders the frames such that index 0
                     # is the oldest frame
@@ -2210,7 +2212,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     logging.warning("Stack not saved: measuring in single frame mode")
                 key = 'raw_frame'
                 contents.append(key)
-                store[key] = pd.DataFrame(self.frame_processor.latest_raw_frame.astype(np.uint16))
+                store[key] = pd.DataFrame(self.frame_processor.latest_raw_frame)
 
         if self.check_save_as_seen.isChecked():
             key = 'as_seen'
@@ -2229,7 +2231,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                                          f'upper: {self.spin_percentile_upper.value()} ' + \
                                          f'clip: {self.spin_clip.value()}'
             contents.append(key)
-            store[key] = pd.DataFrame(self.frame_processor.latest_processed_frame.astype(np.uint16))
+            store[key] = pd.DataFrame(self.frame_processor.latest_processed_frame)
 
         if self.check_save_background.isChecked():
             if self.frame_processor.background is not None:
@@ -2243,7 +2245,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 for i in range(len(self.frame_processor.background_raw_stack)):
                     key = 'bkg_stack_' + str(i)
                     contents.append(key)
-                    store[key] = pd.DataFrame(self.frame_processor.background_raw_stack[i].astype(np.uint16))
+                    store[key] = pd.DataFrame(self.frame_processor.background_raw_stack[i])
             else:
                 logging.warning("Background stack not saved: no background measured")
         meta_data['contents'] = [contents]

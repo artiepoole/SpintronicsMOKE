@@ -40,7 +40,7 @@ for item in contents:
         if len(data.shape) == 2:
             if data.shape[0] == data.shape[1]:
                 # cv2.imshow(item, data / np.amax(data))
-                cv2.imshow(stream_window, cv2.putText(equalizeHistogram(data).astype(np.uint16), item,
+                cv2.imshow(stream_window, cv2.putText(equalizeHistogram(data), item,
                                                       (50, 50),
                                                       0,
                                                       1,

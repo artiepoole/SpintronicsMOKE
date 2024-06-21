@@ -170,8 +170,8 @@ class AnalyserSweepDialog(QDialog):
                 frame = self.camera_grabber.snap()
             cv2.imshow(self.parent.stream_window,
                        (self.parent.frame_processor._process_frame(
-                           frame.astype(np.int32)
-                       ).astype(np.uint16)
+                           frame
+                       )
                         ))
             if self.roi:
                 x, y, w, h = self.roi
@@ -379,8 +379,8 @@ class FieldSweepDialog(QDialog):
             self.sweep_line.setData(fields, intensities)
             cv2.imshow(self.parent.stream_window,
                        (self.parent.frame_processor._process_frame(
-                           frame.astype(np.int32)
-                       ).astype(np.uint16)
+                           frame
+                       )
                         )
                        )
             cv2.waitKey(1)
