@@ -20,7 +20,6 @@ class DoubleSpinBox(QtWidgets.QDoubleSpinBox):
         if self.value() != value:
             self.editingFinished.emit()
 
-        print("name: ", self.objectName())
 
 class SpinBox(QtWidgets.QSpinBox):
     stepChanged = QtCore.pyqtSignal()
@@ -39,4 +38,3 @@ class SpinBox(QtWidgets.QSpinBox):
         super(SpinBox, self).stepBy(step)
         if self.value() != value:
             self.editingFinished.emit()
-        print("name: ", self.objectName())
