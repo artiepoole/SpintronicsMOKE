@@ -3035,7 +3035,7 @@ of Points</string>
                 <string notr="true">background-color: rgb(255,255,255)</string>
                </property>
                <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::UpDownArrows</enum>
+                <enum>QAbstractSpinBox::NoButtons</enum>
                </property>
                <property name="minimum">
                 <double>0.010000000000000</double>
