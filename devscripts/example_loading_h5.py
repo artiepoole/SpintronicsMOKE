@@ -8,6 +8,8 @@ import os
 os.add_dll_directory(r"C:\Program Files\JetBrains\CLion 2024.1.1\bin\mingw\bin")
 from CImageProcessing import equalizeHistogram
 
+# store = pd.HDFStore('path/to/your/h5/file.h5', complevel=9, complib='xz')
+# data_retrieved = store[some_key]
 file = filedialog.askopenfilename()
 meta_data = pd.read_hdf(file, 'meta_data')
 print(meta_data)
@@ -44,6 +46,7 @@ for item in contents:
                                                       1,
                                                       (255, 255, 255)))
                 cv2.waitKey(20)
+        break  # Use to only plot one frame
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()

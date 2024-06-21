@@ -99,6 +99,7 @@ class MagnetController:
             self.analogue_output_task.stop()
         except:
             logging.error("Failed to stop analogue output")
+            # TODO: catch the warning and ignore if it is buffer ending warning.
 
         if self.mode == "DC":
             n_samples = int(-np.log(0.001) * self.decay_time * 1000)

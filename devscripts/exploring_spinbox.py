@@ -51,7 +51,6 @@ class ui(QtWidgets.QMainWindow):
         self.spin.stepChanged.connect(self.myfinished)
         self.show()
         self.activateWindow()
-
     # def eventFilter(self, source, event):
     #     if source is self.spin:
     #         match event.type():

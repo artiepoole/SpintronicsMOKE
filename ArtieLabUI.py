@@ -1379,7 +1379,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         Called when the user clicks the equalise selected button and equalises all selected LEDs
         :return:
         """
-
+        logging.info("Equalising LEDs. Do not change settings until complete.")
         selected_leds = [key for key, value in self.enabled_leds_spi.items() if value is True]
         if selected_leds:
             self.__equalise_specific_LEDs(selected_leds)
@@ -1433,6 +1433,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         :param list leds_to_eq: List of LED names (i.e. "left1") to be considered in equalisation
         :return:
         """
+        logging.info("Equalising LEDs. Do not change settings until complete.")
+        logging.info("Resetting brightness")
         self.__reset_brightness()
         logging.debug("active LED keys: " + str(leds_to_eq))
         if self.flickering:
@@ -1463,6 +1465,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         pg.QtGui.QGuiApplication.processEvents()
         for led_name in leds_to_eq:
             if led_name != dimmest_led:
+                logging.info(f"Reducing {self.led_id_enum[led_name]}.")
                 self.lamp_controller.enable_leds_using_SPI(self.led_binary_enum[led_name])
                 self.__set_led_checked(led_name)
                 intensity = UINT16_MAX
@@ -1498,12 +1501,16 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 if brightness == 0:
                     logging.error(f"Cannot equalise LED {self.led_id_enum[led_name]}" +
                                   f", minimum brightness is still too bright.")
-                    self.lamp_controller.set_one_brightness(180, self.led_binary_enum[led_name])
+                    self.__reset_brightness()
                     break
                 else:
                     logging.info(
                         f"LED {self.led_id_enum[led_name]} set to brightness {brightness} " +
                         f"with mean intensity {intensity}")
+                    self.LED_brightnesses[led_name] = brightness
+        print(f"resulting brightness values: {self.LED_brightnesses}")
+
+
         self.__resume_updates()
 
     def __set_no_leds_checked(self):
@@ -2080,6 +2087,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         adds each necessary frame to the store. If nothing is selected, it simply saves the latest frame.
         :return None:
         """
+        #todo: explore compression using "store.put" and also investigate "table=False" for metadata to avoid the [list] pickling warning.
+        # zlib, bzip2, lzo, blosc
+        # with pd.HDFStore('path/to/your/h5/file.h5', complevel=9, complib='zlib') as store:
+        #     store[some_key] = your_data_to_save_in_the_key
+        # comp level is 0 to 9 0 being none.
+        # or use
+        # store = ...
+        # store.put(key, data, comp etc..)
         logging.info("Pausing GUI to save hdf5 package")
         self.__pause_updates()
         meta_data = {
@@ -2153,7 +2168,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     key = "stack_frame_times"
                     contents.append(key)
                     store[key] = pd.DataFrame(np.array(self.frame_processor.frame_times)[-n_frames:])
-            else:
+            else:  # Not averaging
                 if self.check_save_avg.isChecked():
                     logging.warning("Average not saved: measuring in single frame mode")
                 if self.check_save_stack.isChecked():
@@ -2167,14 +2182,14 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 key = 'raw_frame_b'
                 contents.append(key)
                 store[key] = pd.DataFrame(self.frame_processor.latest_diff_frame_b.astype(np.uint16))
-        else:
+        else:  # Not difference mode
             if self.button_toggle_averaging.isChecked():
                 if self.check_save_avg.isChecked():
                     key = 'mean_frame'
                     contents.append(key)
                     store[key] = pd.DataFrame(self.frame_processor.latest_mean_frame.astype(np.uint16))
                 if self.check_save_stack.isChecked():
-                    raw_stack = self.frame_processor.raw_frame_stack.astype(np.int32)
+                    raw_stack = self.frame_processor.raw_frame_stack.astype(np.uint16)
                     n_frames = raw_stack.shape[0]
                     # Due to the way the frames overwrite during averaging, this reorders the frames such that index 0
                     # is the oldest frame
@@ -2189,7 +2204,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     key = "stack_frame_times"
                     contents.append(key)
                     store[key] = pd.DataFrame(np.array(self.frame_processor.frame_times)[-n_frames:])
-            else:
+            else:  # no averaging
                 if self.check_save_avg.isChecked():
                     logging.warning("Average not saved: measuring in single frame mode")
                 if self.check_save_stack.isChecked():

@@ -138,6 +138,7 @@ class FrameProcessor(QtCore.QObject):
         calulations etc.
         :return None:
         """
+        # TODO: Figure out how to do everything with uint16 values to save significant memory and processing.
         self.running = True
         self.closing = False
         self.waiting = False
