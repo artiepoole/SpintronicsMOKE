@@ -114,9 +114,9 @@ class CameraGrabber(QtCore.QObject):
         """
         if info:
             frames, info = self.cam.grab(n_frames, return_info=True)
-            return np.array(frames, dtype='int32'), info
+            return np.array(frames), info
         else:
-            return np.array(self.cam.grab(n_frames), dtype='int32')
+            return np.array(self.cam.grab(n_frames))
 
 
     def grab_n_frames(self, n_frames):
@@ -125,12 +125,10 @@ class CameraGrabber(QtCore.QObject):
         :return frame: frame
         :rtype: np.ndarray[np.int32, np.int32, np.int32] | None
         """
-        return np.array(self.cam.grab(n_frames), dtype='int32')
         prev_mode = self.difference_mode
         self.difference_mode = False
         self.prepare_camera()
-        logging.info(f"Grabbing {n_frames} frames")
-        frames = np.array(self.cam.grab(n_frames), dtype='int32')
+        frames = np.array(self.cam.grab(n_frames))
         self.difference_mode = prev_mode
         return frames
 
@@ -159,7 +157,7 @@ class CameraGrabber(QtCore.QObject):
                         break
                     frame = self.cam.read_newest_image(return_info=True)
                     if frame is not None:
-                        self.parent.frame_buffer.append((frame[0].astype(np.int32), frame[1]))
+                        self.parent.frame_buffer.append((frame[0], frame[1]))
                         self.parent.item_semaphore.release()
         self.cam.stop_acquisition()
         logging.info("Camera stopped")
@@ -220,7 +218,7 @@ class CameraGrabber(QtCore.QObject):
                             logging.error("Camera not busy")
                             continue
                         if frame_data[1].frame_index % 2 == 0:
-                            frame_a = (frame_data[0].astype(np.int32), frame_data[1])
+                            frame_a = (frame_data[0], frame_data[1])
                     if not self.running:
                         logging.warning("stopping without frame_a")
                         self.parent.frame_buffer.append([])
@@ -234,7 +232,7 @@ class CameraGrabber(QtCore.QObject):
                     frame_data = self.cam.read_newest_image(return_info=True)
                     if frame_data is not None:
                         if frame_data[1].frame_index % 2 == 1:
-                            frame_b = (frame_data[0].astype(np.int32), frame_data[1])
+                            frame_b = (frame_data[0], frame_data[1])
                     if not self.running:
                         logging.warning("stopping without frame_b")
                         self.parent.frame_buffer.append([])

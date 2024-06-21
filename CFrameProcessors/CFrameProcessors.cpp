@@ -6,13 +6,13 @@
 using namespace std;
 namespace py = pybind11;
 
-py::array_t<int> equalizeHistogram(const py::array_t<int> &frame_in) {
+py::array_t<uint16_t> equalizeHistogram(const py::array_t<uint16_t> &frame_in) {
     constexpr int max_val = 65535;
     py::ssize_t width = frame_in.shape(0);
     py::ssize_t height = frame_in.shape(1);
     const long total = width * height;
     constexpr long n_bins = max_val + 1;
-    auto frame_out = py::array_t<int>({width, height});
+    auto frame_out = py::array_t<uint16_t>({width, height});
     vector<int> new_level(n_bins, 0);
 
     // Counts the number of pixels in each brightness
@@ -37,11 +37,11 @@ py::array_t<int> equalizeHistogram(const py::array_t<int> &frame_in) {
     return frame_out;
 }
 
-py::array_t<int> integer_mean(const py::array_t<int> &stack_in) {
+py::array_t<uint16_t> integer_mean(const py::array_t<uint16_t> &stack_in) {
     const int n_frames = stack_in.shape(0);
     const py::ssize_t width = stack_in.shape(1);
     const py::ssize_t height = stack_in.shape(2);
-    auto frame_out = py::array_t<int>({width, height});
+    auto frame_out = py::array_t<uint16_t>({width, height});
 
     #pragma omp parallel for
     for (int ij = 0; ij < width*height; ++ij){
@@ -55,11 +55,11 @@ py::array_t<int> integer_mean(const py::array_t<int> &stack_in) {
     return frame_out;
 }
 
-py::array_t<int> basic_exposure(const py::array_t<int> &frame_in, const int &frame_max) {
+py::array_t<uint16_t> basic_exposure(const py::array_t<uint16_t> &frame_in, const int &frame_max) {
     constexpr int type_max = 65535;
     py::ssize_t width = frame_in.shape(0);
     py::ssize_t height = frame_in.shape(1);
-    auto frame_out = py::array_t<int>({width, height});
+    auto frame_out = py::array_t<uint16_t>({width, height});
 
     #pragma omp parallel for
     for (int ij = 0; ij < width*height; ++ij){

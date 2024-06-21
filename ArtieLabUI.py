@@ -133,7 +133,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.LED_control_all = False
         self.exposure_time = 0.05
         self.roi = (0, 0, 0, 0)
-        self.latest_processed_frame = np.zeros((1024, 1024), dtype=np.int32)
+        self.latest_processed_frame = np.zeros((1024, 1024), dtype=np.uint16)
         self.recording = False
         self.recording_store = None
         self.recording_meta_data = None
@@ -513,7 +513,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         :return None:
         """
         frame = self.latest_processed_frame
-        # frame = cv2.applyColorMap((frame//255).astype(np.uint8), cv2.COLORMAP_AUTUMN)
         if sum(self.frame_processor.roi) > 0:
             x, y, w, h = self.frame_processor.roi
             frame = cv2.rectangle(
@@ -533,7 +532,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 thickness=2
             )
 
-        cv2.imshow(self.stream_window, frame.astype(np.uint16))
+        cv2.imshow(self.stream_window, frame)
         cv2.waitKey(1)
 
     def __update_field_measurement(self):
@@ -1132,7 +1131,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             # Can't invoke method because of
             frames = self.camera_grabber.grab_n_frames(self.spin_background_averages.value())
             self.frame_processor.background_raw_stack = frames
-            self.frame_processor.background = integer_mean(frames)
+            self.frame_processor.background = integer_mean(frames).astype(np.int32)
         if not self.paused:
             if self.flickering:
                 QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_difference_mode",

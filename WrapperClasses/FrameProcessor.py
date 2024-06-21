@@ -28,11 +28,11 @@ def numpy_rescale(image, low, high, roi=None):
         px_low, px_high = np.percentile(roi, (low, high))
     else:
         px_low, px_high = np.percentile(image, (low, high))
-    px_low = np.int32(px_low)
-    px_high = np.int32(px_high)
+    px_low = np.uint16(px_low)
+    px_high = np.uint16(px_high)
     image[image < px_low] = px_low
     image[image > px_high] = px_high
-    return (image - px_low) * UINT16_MAX // (px_high - px_low)
+    return (image - px_low) * (UINT16_MAX // (px_high - px_low))
 
 
 def basic_exposure(image):
@@ -103,7 +103,7 @@ class FrameProcessor(QtCore.QObject):
 
     def _process_frame(self, frame):
         if self.subtracting and self.background is not None:
-            frame = (frame - self.background + UINT16_MAX) // 2
+            frame = ((frame.astype(np.int32) - self.background + UINT16_MAX) // 2).astype(np.uint16)
         match self.mode:
             case self.IMAGE_PROCESSING_NONE:
                 pass
@@ -126,7 +126,7 @@ class FrameProcessor(QtCore.QObject):
                     return equalizeHistogram(frame)
             case self.IMAGE_PROCESSING_ADAPTEQ:
                 # Uses openCV CLAHE algorithm which doesn't support int32.
-                frame = np.int32(self.adapter.apply(frame.astype(np.uint16)))
+                frame = self.adapter.apply(frame)
             case _:
                 logging.info("FrameProcessor: Unrecognized image processing mode")
         return frame
@@ -193,18 +193,22 @@ class FrameProcessor(QtCore.QObject):
                         self.frame_counter += 1
                         mean_a = integer_mean(self.diff_frame_stack_a)
                         mean_b = integer_mean(self.diff_frame_stack_b)
-                        self.latest_mean_diff = mean_a - mean_b
+                        self.latest_mean_diff = (mean_a.astype(np.int32) - mean_b.astype(np.int32))
                         # diff_frame = ((sweep_3_frames[i] - sweep_2_frames[i]) / (sweep_3_frames[i] + sweep_2_frames[i]))
                         # cv2.imshow(str(sweep_2_data[i]),
                         #            (diff_frame - diff_frame.min()) / (diff_frame.max() - diff_frame.min()))
-                        self.latest_processed_frame = self._process_frame(self.latest_mean_diff + UINT16_MAX) // 2
+                        self.latest_processed_frame = (self._process_frame(
+                            self.latest_mean_diff + UINT16_MAX) // 2
+                                                       ).astype(np.uint16)
 
                     else:
-                        self.latest_diff_frame = self.latest_diff_frame_a - self.latest_diff_frame_b
+                        self.latest_diff_frame = self.latest_diff_frame_a.astype(np.int32) - self.latest_diff_frame_b.astype(np.int32)
                         # diff_frame = ((sweep_3_frames[i] - sweep_2_frames[i]) / (sweep_3_frames[i] + sweep_2_frames[i]))
                         # cv2.imshow(str(sweep_2_data[i]),
                         #            (diff_frame - diff_frame.min()) / (diff_frame.max() - diff_frame.min()))
-                        self.latest_processed_frame = self._process_frame(self.latest_diff_frame + UINT16_MAX) // 2
+                        self.latest_processed_frame = (self._process_frame(
+                            self.latest_diff_frame + UINT16_MAX) // 2
+                                                       ).astype(np.uint16)
                     self.latest_hist_data, self.latest_hist_bins = exposure.histogram(self.latest_processed_frame)
                     if self.line_coords is not None:
                         start, end = self.line_coords
@@ -329,10 +333,10 @@ if __name__ == "__main__":
             modes = [3]
             averaging = [False, True]
             averages = [16]
-            frames = np.loadtxt("../devscripts/test_stack.dat", delimiter="\t").astype(np.int32).reshape(16, 1024,
+            frames = np.loadtxt("../devscripts/test_stack.dat", delimiter="\t").astype(np.uint16).reshape(16, 1024,
                                                                                                          1024)
             self.frame_processor.raw_frame_stack = (
-                np.array([], dtype=np.int32).
+                np.array([], dtype=np.uint16).
                 reshape(0, frames.shape[1], frames.shape[1]))
 
             loop_index = list(range(frames.shape[0])) * number_of_stacks
