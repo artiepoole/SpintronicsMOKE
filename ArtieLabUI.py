@@ -2324,7 +2324,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         try:
             tifffile.imwrite(
                 str(file_path),
-                self.frame_processor.latest_processed_frame.astype(np.uint16),
+                self.frame_processor.latest_processed_frame,
                 photometric='minisblack',
                 metadata=meta_data)
         except:
