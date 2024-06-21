@@ -1278,6 +1278,23 @@ All</string>
             </spacer>
            </item>
            <item>
+            <widget class="QLabel" name="label_target_frames">
+             <property name="text">
+              <string>Target Number</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spin_target_frames">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(255,255,255)</string>
+             </property>
+             <property name="maximum">
+              <number>1024</number>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QLabel" name="label_capturedFrames">
              <property name="text">
               <string>Frames Captured</string>
@@ -2112,7 +2129,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </size>
              </property>
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a rectangular ROI for use in sweep tools, analyser minimising and to view the intensity within an ROI as a plot.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a rectangular ROI for use in sweep tools, analyser minimising and to view the intensity within an ROI as a plot.&lt;/p&gt;&lt;p&gt;Select a ROI and then press SPACE or ENTER button! &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Select ROI</string>
@@ -2128,7 +2145,7 @@ QWidget{background-color: rgb(255,255,255)}</string>
               </size>
              </property>
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a line by drawing a rectangle to plot an intensity line profile. The flip button can be used to change its direction.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a line by drawing a rectangle to plot an intensity line profile. The flip button can be used to change its direction.&lt;/p&gt;&lt;p&gt;Select a ROI and then press SPACE or ENTER button! &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Draw Line</string>

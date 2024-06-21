@@ -140,6 +140,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.recording_contents = []
         self.recording_fields = []
         self.recording_angles = []
+        self.recording_frame_index = 0
 
         self.__populate_calibration_combobox()
         self.__populate_analyser_position()
@@ -1196,38 +1197,44 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                 self.recording_contents.append(key)
                 self.recording_store[key] = pd.DataFrame(self.frame_processor.background.astype(np.uint16))
             self.recording = True
-            pass
         else:
+            self.stop_recording()
 
-            self.recording = False
-            logging.info("Stopping recording and closing store.")
-            self.button_record.setText("Record")
-            self.recording_meta_data['contents'] = [self.recording_contents]
-            self.recording_meta_data['fields'] = [self.recording_fields]
-            self.recording_meta_data['angles'] = [self.recording_angles]
-            self.recording_store['meta_data'] = pd.DataFrame(self.recording_meta_data)
-            if "background_avg" in self.recording_contents:
-                logging.info(f"Recording Stopped. Saved {len(self.recording_contents)} frames and background avg.")
-            else:
-                logging.info(f"Recording Stopped. Saved {len(self.recording_contents)} frames.")
-            self.recording_store.close()
-            self.recording_store = None
-            self.recording_meta_data = None
-            self.recording_contents = []
-            self.recording_fields = []
-            self.recording_angles = []
-            self.spin_number_of_recorded_frames.setValue(0)
+    def stop_recording(self):
+        self.recording = False
+        logging.info("Stopping recording and closing store.")
+        self.button_record.setText("Record")
+        self.recording_meta_data['contents'] = [self.recording_contents]
+        self.recording_meta_data['fields'] = [self.recording_fields]
+        self.recording_meta_data['angles'] = [self.recording_angles]
+        self.recording_store['meta_data'] = pd.DataFrame(self.recording_meta_data)
+        if "background_avg" in self.recording_contents:
+            logging.info(f"Recording Stopped. Saved {len(self.recording_contents)} frames and background avg.")
+        else:
+            logging.info(f"Recording Stopped. Saved {len(self.recording_contents)} frames.")
+        self.recording_store.close()
+        self.recording_store = None
+        self.recording_meta_data = None
+        self.recording_contents = []
+        self.recording_fields = []
+        self.recording_angles = []
+        self.recording_frame_index = 0
+        self.spin_number_of_recorded_frames.setValue(0)
 
     def __on_frame_processor_new_raw_frame(self, frame):
         if self.recording:
-            frame = frame.astype(np.uint16)
-            frame_index = self.spin_number_of_recorded_frames.value()
-            key = f"frame_{frame_index}"
+            frame = frame
+            self.recording_frame_index
+            key = f"frame_{self.recording_frame_index}"
             self.recording_fields.append(self.magnet_controller.get_current_amplitude()[0])
             self.recording_angles.append(self.analyser_controller.position_in_degrees)
             self.recording_contents.append(key)
             self.recording_store[key] = pd.DataFrame(frame)
-            self.spin_number_of_recorded_frames.setValue(frame_index + 1)
+            self.recording_frame_index += 1
+            self.spin_number_of_recorded_frames.setValue(self.recording_frame_index)
+            if self.recording_frame_index >= self.spin_target_frames.value() and self.spin_target_frames.value() > 0:
+                self.button_record.setChecked(False)
+                self.stop_recording()
 
     def __on_frame_processor_new_processed_frame(self, frame):
         self.latest_processed_frame = frame.astype(np.uint16)
@@ -1510,7 +1517,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
                     self.LED_brightnesses[led_name] = brightness
         print(f"resulting brightness values: {self.LED_brightnesses}")
 
-
         self.__resume_updates()
 
     def __set_no_leds_checked(self):
@@ -1580,7 +1586,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.mutex.unlock()
         self.image_timer.stop()
         self.plot_timer.stop()
-
 
     def __resume_updates(self):
         self.image_timer.start(self.image_timer_rate)
@@ -2088,7 +2093,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         adds each necessary frame to the store. If nothing is selected, it simply saves the latest frame.
         :return None:
         """
-        #todo: explore compression using "store.put" and also investigate "table=False" for metadata to avoid the [list] pickling warning.
+        # todo: explore compression using "store.put" and also investigate "table=False" for metadata to avoid the [list] pickling warning.
         # zlib, bzip2, lzo, blosc
         # with pd.HDFStore('path/to/your/h5/file.h5', complevel=9, complib='zlib') as store:
         #     store[some_key] = your_data_to_save_in_the_key
