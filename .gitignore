@@ -1,11 +1,7 @@
 /devscripts/test_stack.dat
 /devscripts/Semaphore_example/SemaphoreUI.log
 /.idea/inspectionProfiles/profiles_settings.xml
-/.idea/.gitignore
-/.idea/misc.xml
-/.idea/modules.xml
-/.idea/SpintronicsMOKE.iml
-/.idea/vcs.xml
+/.idea/*
 /ArtieLabUI.log
 /intensity vs steps flipped.dat
 /test
