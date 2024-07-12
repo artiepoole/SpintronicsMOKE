@@ -14,6 +14,8 @@ class MagnetDriverUI(QtWidgets.QMainWindow):
     Standalone GUI for magnet control.
     """
     def __init__(self):
+        # Todo: This UI hasn't inherited the changes from ArtieLab so it does not pull a buffer from the DAQ and
+        #  instead reads one value at a time.
         super(MagnetDriverUI, self).__init__()  # Call the inherited classes __init__ method
         uic.loadUi(r'res\Magnet_driver_UI.ui', self)  # Load the .ui file
         self.show()
