@@ -155,7 +155,7 @@ class MagnetController:
         :rtype: tuple[float, float]
         """
 
-        voltage = self.analogue_input_task.read()
+        voltage = self.analogue_input_task.read(nidaq.constants.READ_ALL_AVAILABLE)[-1]
         field = self.interpolate_field(voltage)
         return field, voltage
 
@@ -168,7 +168,7 @@ class MagnetController:
         try:
             voltages = self.analogue_input_task.read(nidaq.constants.READ_ALL_AVAILABLE)
         except nidaq.errors.DaqReadError:
-            logging.warning("DAQmx raised an error becasuse magnetic field data was not read for too long.")
+            logging.warning("DAQmx raised an error because magnetic field data was not read for too long.")
             self.analogue_input_task.stop()
             self.analogue_input_task.start()
             return [], []

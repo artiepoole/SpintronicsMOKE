@@ -16,6 +16,7 @@ class AnalyserSweepDialog(QDialog):
     Dialog window for measuring image intensity as a function of analyser angle. Must be opened via ArtieLabUI
     (or similar)
     """
+
     def __init__(self, parent):
         super().__init__()
         uic.loadUi('res/AnalyserSweep.ui', self)
@@ -94,6 +95,7 @@ class AnalyserSweepDialog(QDialog):
         self.line_steps.setText(str(steps))
 
     def run(self):
+        logging.info("Starting Analyser Sweep - Creating file")
         self.button_run.setEnabled(False)
         self.button_cancel.setText('Stop Sweep')
         self.running = True
@@ -115,7 +117,7 @@ class AnalyserSweepDialog(QDialog):
                 '\t Did not start sweep. Close the window and check the save settings in main GUI.')
             return
         meta_data = {
-            'description': "Anaylser sweep data and assosciated frames acquired using B204 MOKE owned by the "
+            'description': "Analyser sweep data and associated frames acquired using B204 MOKE owned by the "
                            "Spintronics Group and University of "
                            "Nottingham using ArtieLab V0-2024.04.05.",
             'camera': 'Hamamatsu C11440',
@@ -153,6 +155,7 @@ class AnalyserSweepDialog(QDialog):
         contents = []
         intensities = []
         angles = []
+        logging.info("Starting Analyser Sweep - Entering measurement loop.")
         self.analyser_controller.move(-self.start_angle)  # go to zero
         angle = self.start
 
@@ -169,10 +172,8 @@ class AnalyserSweepDialog(QDialog):
             else:
                 frame = self.camera_grabber.snap()
             cv2.imshow(self.parent.stream_window,
-                       (self.parent.frame_processor._process_frame(
-                           frame
+                       self.parent.frame_processor._process_frame()
                        )
-                        ))
             if self.roi:
                 x, y, w, h = self.roi
                 intensities.append(np.mean(frame[y:y + h, x:x + w], axis=(0, 1)))
@@ -220,6 +221,7 @@ class FieldSweepDialog(QDialog):
     Dialog window for measuring image intensity as a function of applied magnetic field. Must be opened via ArtieLabUI
     (or similar)
     """
+
     def __init__(self, parent):
         super().__init__()
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
@@ -302,6 +304,7 @@ class FieldSweepDialog(QDialog):
         self.line_points.setText(str(steps))
 
     def run(self):
+        logging.info("Startng Hysteresis sweep - creating file")
         self.button_run.setEnabled(False)
         self.button_cancel.setText('Stop Sweep')
         self.running = True
@@ -353,7 +356,7 @@ class FieldSweepDialog(QDialog):
         fields = []
         voltages = []
         field = 0
-
+        logging.info("Starting Hysteresis sweep - Starting measurement loop.")
         self.camera_grabber.prepare_camera()
         self.magnet_controller.mode = "DC"
         self.magnet_controller.set_target_field(field + self.offset)
@@ -377,12 +380,10 @@ class FieldSweepDialog(QDialog):
             fields.append(field)
             voltages.append(voltage)
             self.sweep_line.setData(fields, intensities)
-            cv2.imshow(self.parent.stream_window,
-                       (self.parent.frame_processor._process_frame(
-                           frame
-                       )
-                        )
-                       )
+            cv2.imshow(
+                self.parent.stream_window,
+                self.parent.frame_processor._process_frame()
+            )
             cv2.waitKey(1)
             self.line_points.setText(str(self.points - point))
             pg.QtGui.QGuiApplication.processEvents()  # draws the updates to screen.
@@ -409,7 +410,6 @@ class FieldSweepDialog(QDialog):
             logging.info("Sweep complete. Data saved to: " + str(file_path))
             self.running = False
 
-
         logging.info("Setting field to zero and mode to off")
         self.magnet_controller.set_target_field(0)
         self.magnet_controller.mode = None
@@ -420,5 +420,3 @@ class FieldSweepDialog(QDialog):
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape or event.key() == QtCore.Qt.Key_Enter:
             event.ignore()
-
-
