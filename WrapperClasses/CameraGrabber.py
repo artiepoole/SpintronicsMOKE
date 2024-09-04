@@ -26,13 +26,34 @@ class CameraGrabber(QtCore.QObject):
         exposure_time = 0.05
         self.cam.set_trigger_mode('int')
         self.cam.set_attribute_value("EXPOSURE TIME", exposure_time)
-        binning = 2
-        self.cam.set_roi(hbin=binning, vbin=binning)
+        self.binning_mode = 2
+        self.cam.set_roi(hbin=self.binning_mode, vbin=self.binning_mode)
         self.running = False
         self.waiting = False
         self.closing = False
+        self.waiting_for_reset = False
         self.difference_mode = False
         self.mutex = QtCore.QMutex()
+
+    def _reset_camera(self):
+        self.waiting_for_reset = True
+        QtCore.QMetaObject.invokeMethod(
+            self.parent,
+            "show_cam_disconnect_error",
+            QtCore.Qt.ConnectionType.QueuedConnection
+        )
+        while self.waiting_for_reset:
+            pass
+        logging.info("Resetting camera. This will take approx 30s.")
+        # try:
+        #     self.cam.close()
+        # except DCAM.DCAMError:
+        #     logging.error("Failed to close camera. This is probably bad handling. TELL STU.")
+        DCAM.DCAM.restart_lib()
+        self.cam = DCAM.DCAMCamera(idx=0)
+        self.set_binning_mode(self.binning_mode)
+        self.prepare_camera()
+        logging.info("Reset complete.")
 
     @QtCore.pyqtSlot(float)
     def set_exposure_time(self, exposure_time):
@@ -55,9 +76,10 @@ class CameraGrabber(QtCore.QObject):
         :param float binning: binning x binning mode.
         :return:
         '''
-        logging.debug(f"Received binning mode:  {binning}x{binning}")
-        self.cam.set_roi(hbin=binning, vbin=binning)
-        logging.info(f"Set binning mode binning mode:  {binning}x{binning}")
+        logging.debug(f"Received binning mode:  {self.binning_mode}x{self.binning_mode}")
+        self.binning_mode = binning
+        self.cam.set_roi(hbin=self.binning_mode, vbin=self.binning_mode)
+        logging.info(f"Set binning mode binning mode:  {self.binning_mode}x{self.binning_mode}")
         logging.info("Camera ready")
         self.camera_ready.emit()
 
@@ -118,7 +140,6 @@ class CameraGrabber(QtCore.QObject):
         else:
             return np.array(self.cam.grab(n_frames))
 
-
     def grab_n_frames(self, n_frames):
         """
         Grabs a stack of frames from the camera but requires preparing the camera.
@@ -151,7 +172,14 @@ class CameraGrabber(QtCore.QObject):
             if got_space:
                 frame = None
                 while frame is None:
-                    if self.cam.get_status() != "busy":
+                    try:
+                        status = self.cam.get_status()
+                    except DCAM.DCAMError as error:
+                        logging.error("DCAM error raised")
+                        logging.error(error)
+                        self._reset_camera()
+                        status = self.cam.get_status()
+                    if status != "busy":
                         logging.error("Camera not busy")
                         self.parent.spaces_semaphore.release()
                         break

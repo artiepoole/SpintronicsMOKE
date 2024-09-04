@@ -1582,7 +1582,6 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.frame_processor.waiting = True
         self.frame_processor.running = False
         self.magnetic_field_timer.stop()
-        self.magnet_controller.pause_instream()
         self.mutex.unlock()
         self.image_timer.stop()
         self.plot_timer.stop()
@@ -2114,7 +2113,8 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             'magnification': self.combo_magnification.currentText(),
             'exposure_time': self.spin_exposure_time.value(),
             'field_direction': self.line_field_dir.text(),
-            'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'time'
+            ': datetime.now().strftime("%Y-%m-%d %H:%M:%S")'
             'analyser_postion': self.analyser_controller.position_in_degrees
         }
         match self.get_magnet_mode():
@@ -2422,6 +2422,20 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         super(ArtieLabUI, self).closeEvent(self.close_event)
         sys.exit()
 
+    @QtCore.pyqtSlot()
+    def show_cam_disconnect_error(self):
+        msg_box = QtWidgets.QMessageBox(self)
+        msg_box.setIcon(QtWidgets.QMessageBox.Critical)
+        msg_box.setText(
+            "Camera Error: the signal to the camera has been lost. Please follow these steps:\n"
+            "1) Turn the camera off and on again.\n"
+            "2) Wait until the green LED stops blinking slowly (approx 10 seconds).\n"
+            "3) Once the LED is constantly green, click OK to continue.\n"
+            "4) Be patient. The reset will take a few seconds.")
+        msg_box.setWindowTitle("Camera Error")
+        msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg_box.exec_()
+        self.camera_grabber.waiting_for_reset = False
 
 if __name__ == '__main__':
     """

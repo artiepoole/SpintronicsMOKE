@@ -1,13 +1,15 @@
 import nidaqmx as nidaq
+import nidaqmx.constants
 import numpy as np
 import logging
 from nidaqmx.constants import AcquisitionType
 import sys
 
 from math import log10, floor
+
+
 # import warnings
 # warnings.filterwarnings("error")
-
 
 class MagnetController:
     def __init__(self, reset=False):
@@ -40,7 +42,9 @@ class MagnetController:
             samps_per_chan=1000,
         )
         self.analogue_input_stream = self.analogue_input_task.in_stream
-
+        self.analogue_input_stream.overwrite = nidaqmx.constants.OverwriteMode.OVERWRITE_UNREAD_SAMPLES
+        self.analogue_input_stream.relative_to = nidaq.constants.ReadRelativeTo.MOST_RECENT_SAMPLE
+        self.analogue_input_stream.offset = -1
         self.analogue_input_task.start()
 
         self.analogue_output_task = nidaq.Task()
@@ -113,7 +117,6 @@ class MagnetController:
             self.analogue_output_task.write(data, auto_start=True)
             # self.analogue_output_task.start()
 
-
             logging.debug(f"Set voltage to {self.target_offset_voltage} VDC")
         elif self.mode == "AC":
             n_samples = int(round(
@@ -155,7 +158,9 @@ class MagnetController:
         :rtype: tuple[float, float]
         """
 
-        voltage = self.analogue_input_task.read(nidaq.constants.READ_ALL_AVAILABLE)[-1]
+        self.analogue_input_stream.relative_to = nidaq.constants.ReadRelativeTo.MOST_RECENT_SAMPLE
+        self.analogue_input_stream.offset = -1
+        voltage = self.analogue_input_task.read(1)[-1]
         field = self.interpolate_field(voltage)
         return field, voltage
 
@@ -165,14 +170,16 @@ class MagnetController:
         :return: field after calibration and raw voltage from PSU.
         :rtype: tuple[float, float]
         """
+
+        self.analogue_input_stream.relative_to = nidaq.constants.ReadRelativeTo.CURRENT_READ_POSITION
+        self.analogue_input_stream.offset = 0
         try:
             voltages = self.analogue_input_task.read(nidaq.constants.READ_ALL_AVAILABLE)
         except nidaq.errors.DaqReadError:
             logging.warning("DAQmx raised an error because magnetic field data was not read for too long.")
             self.analogue_input_task.stop()
             self.analogue_input_task.start()
-            return [], []
-
+            voltages = self.analogue_input_task.read(nidaq.constants.READ_ALL_AVAILABLE)
         fields = [self.interpolate_field(voltage) for voltage in voltages]
         return fields, voltages
 

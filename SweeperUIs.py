@@ -359,11 +359,11 @@ class FieldSweepDialog(QDialog):
         logging.info("Starting Hysteresis sweep - Starting measurement loop.")
         self.camera_grabber.prepare_camera()
         self.magnet_controller.mode = "DC"
-        self.magnet_controller.set_target_field(field + self.offset)
+        self.magnet_controller.set_target_offset(field + self.offset)
         for point, target_field in enumerate(target_fields):
             if not self.running:
                 break
-            self.magnet_controller.set_target_field(target_field)
+            self.magnet_controller.set_target_offset(target_field)
             field += self.step_size
             time.sleep(self.parent.exposure_time)
             if self.averaging:
@@ -382,7 +382,7 @@ class FieldSweepDialog(QDialog):
             self.sweep_line.setData(fields, intensities)
             cv2.imshow(
                 self.parent.stream_window,
-                self.parent.frame_processor._process_frame()
+                self.parent.frame_processor._process_frame(frame)
             )
             cv2.waitKey(1)
             self.line_points.setText(str(self.points - point))
@@ -411,7 +411,7 @@ class FieldSweepDialog(QDialog):
             self.running = False
 
         logging.info("Setting field to zero and mode to off")
-        self.magnet_controller.set_target_field(0)
+        self.magnet_controller.set_target_offset(0)
         self.magnet_controller.mode = None
 
         self.button_cancel.setText('Close')
