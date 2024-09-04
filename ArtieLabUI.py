@@ -154,7 +154,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.activateWindow()
 
         # Start image acquisition and update loops
-        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+        QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
         QtCore.QMetaObject.invokeMethod(self.frame_processor, "start_processing",
                                         QtCore.Qt.ConnectionType.QueuedConnection)
@@ -1092,6 +1092,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.button_display_subtraction.setEnabled(False)
 
         self.flickering = True
+        self.camera_grabber.difference_mode = True
         self.camera_grabber.waiting = True
         self.camera_grabber.running = False
         QtCore.QMetaObject.invokeMethod(
@@ -1137,13 +1138,13 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             self.frame_processor.background = integer_mean(frames).astype(np.int32)
         if not self.paused:
             if self.flickering:
-                QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_difference_mode",
+                QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start",
                                                 QtCore.Qt.ConnectionType.QueuedConnection)
-                logging.debug("Camera grabber starting difference mode")
+                logging.debug("Camera grabber starting difference mode?")
             else:
-                QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start_live_single_frame",
+                QtCore.QMetaObject.invokeMethod(self.camera_grabber, "start",
                                                 QtCore.Qt.ConnectionType.QueuedConnection)
-                logging.debug("Camera grabber starting normal mode")
+                logging.debug("Camera grabber starting normal mode?")
 
     def __on_record_button(self):
         if self.button_record.isChecked():
@@ -1266,6 +1267,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         logging.info("Resetting after flicker mode")
         self.mutex.lock()
         self.flickering = False
+        self.camera_grabber.difference_mode = False
         self.camera_grabber.waiting = True
         self.camera_grabber.running = False
         self.mutex.unlock()
@@ -1581,6 +1583,7 @@ class ArtieLabUI(QtWidgets.QMainWindow):
         self.camera_grabber.running = False
         self.frame_processor.waiting = True
         self.frame_processor.running = False
+        self.magnet_controller.pause_instream()
         self.magnetic_field_timer.stop()
         self.mutex.unlock()
         self.image_timer.stop()
@@ -2424,7 +2427,11 @@ class ArtieLabUI(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def show_cam_disconnect_error(self):
+        self.magnetic_field_timer.stop()
+        self.image_timer.stop()
+        self.plot_timer.stop()
         msg_box = QtWidgets.QMessageBox(self)
+        msg_box.setModal(True)
         msg_box.setIcon(QtWidgets.QMessageBox.Critical)
         msg_box.setText(
             "Camera Error: the signal to the camera has been lost. Please follow these steps:\n"
@@ -2434,7 +2441,10 @@ class ArtieLabUI(QtWidgets.QMainWindow):
             "4) Be patient. The reset will take a few seconds.")
         msg_box.setWindowTitle("Camera Error")
         msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg_box.exec_()
+        msg_box.exec()
+        self.image_timer.start(self.image_timer_rate)
+        self.plot_timer.start(self.plot_timer_rate)
+        self.magnetic_field_timer.start(self.magnetic_field_timer_rate)
         self.camera_grabber.waiting_for_reset = False
 
 if __name__ == '__main__':

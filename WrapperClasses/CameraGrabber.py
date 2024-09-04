@@ -26,14 +26,24 @@ class CameraGrabber(QtCore.QObject):
         exposure_time = 0.05
         self.cam.set_trigger_mode('int')
         self.cam.set_attribute_value("EXPOSURE TIME", exposure_time)
-        self.binning_mode = 2
-        self.cam.set_roi(hbin=self.binning_mode, vbin=self.binning_mode)
+        self.cam.set_roi(hbin=self.parent.binning, vbin=self.parent.binning)
         self.running = False
         self.waiting = False
         self.closing = False
         self.waiting_for_reset = False
         self.difference_mode = False
         self.mutex = QtCore.QMutex()
+
+    def test_busy(self):
+        try:
+            status = self.cam.get_status()
+        except DCAM.DCAMError as error:
+            logging.error(f"DCAM error raised: {error}")
+            self._reset_camera()
+            status = self.cam.get_status()
+        if status != "busy":
+            return False
+        return True
 
     def _reset_camera(self):
         self.waiting_for_reset = True
@@ -44,14 +54,16 @@ class CameraGrabber(QtCore.QObject):
         )
         while self.waiting_for_reset:
             pass
-        logging.info("Resetting camera. This will take approx 30s.")
-        # try:
-        #     self.cam.close()
-        # except DCAM.DCAMError:
-        #     logging.error("Failed to close camera. This is probably bad handling. TELL STU.")
-        DCAM.DCAM.restart_lib()
-        self.cam = DCAM.DCAMCamera(idx=0)
-        self.set_binning_mode(self.binning_mode)
+        logging.info("Resetting camera. This will take approx 5s.")
+        DCAM.DCAM.restart_lib()  # This doesn't fix the issue without a power cycle, sadly.
+        try:
+            self.cam = DCAM.DCAMCamera(idx=0)
+        except DCAM.DCAMError:
+            logging.error("Camera not responding even after reset! Exiting.")
+            sys.exit(-1)
+        self.set_binning_mode(self.parent.binning)
+        self.set_exposure_time(self.parent.exposure_time)
+        self.difference_mode = self.parent.flickering
         self.prepare_camera()
         logging.info("Reset complete.")
 
@@ -76,10 +88,9 @@ class CameraGrabber(QtCore.QObject):
         :param float binning: binning x binning mode.
         :return:
         '''
-        logging.debug(f"Received binning mode:  {self.binning_mode}x{self.binning_mode}")
-        self.binning_mode = binning
-        self.cam.set_roi(hbin=self.binning_mode, vbin=self.binning_mode)
-        logging.info(f"Set binning mode binning mode:  {self.binning_mode}x{self.binning_mode}")
+        logging.debug(f"Received binning mode:  {binning}x{binning}")
+        self.cam.set_roi(hbin=binning, vbin=binning)
+        logging.info(f"Set binning mode binning mode:  {binning}x{binning}")
         logging.info("Camera ready")
         self.camera_ready.emit()
 
@@ -153,18 +164,28 @@ class CameraGrabber(QtCore.QObject):
         self.difference_mode = prev_mode
         return frames
 
+
     @QtCore.pyqtSlot()
+    def start(self):
+        self.mutex.lock()
+        self.running = True
+        self.waiting = False
+        self.mutex.unlock()
+        if self.difference_mode:
+            logging.info("Starting difference mode")
+            self.start_live_difference_mode()
+        else:
+            logging.info("Starting single frame mode")
+            self.start_live_single_frame()
+
+    # @QtCore.pyqtSlot()
     def start_live_single_frame(self):
         """
         Starts a continuous measurement loop of single frames, for use with constant lighting modes.
         Appends data to a buffer when the buffer has space. Buffer is held by the parent object, typically ArtieLab.
         :return:
         """
-        self.mutex.lock()
-        self.running = True
-        self.waiting = False
-        self.difference_mode = False
-        self.mutex.unlock()
+
         self.prepare_camera()
         logging.info("Camera started in normal mode")
         while self.running:
@@ -172,14 +193,7 @@ class CameraGrabber(QtCore.QObject):
             if got_space:
                 frame = None
                 while frame is None:
-                    try:
-                        status = self.cam.get_status()
-                    except DCAM.DCAMError as error:
-                        logging.error("DCAM error raised")
-                        logging.error(error)
-                        self._reset_camera()
-                        status = self.cam.get_status()
-                    if status != "busy":
+                    if not self.test_busy():
                         logging.error("Camera not busy")
                         self.parent.spaces_semaphore.release()
                         break
@@ -197,20 +211,15 @@ class CameraGrabber(QtCore.QObject):
         if not self.waiting:
             logging.info("Camera ready")
             self.camera_ready.emit()
+        logging.info("Camera finished.")
 
-    @QtCore.pyqtSlot()
+    # @QtCore.pyqtSlot()
     def start_live_difference_mode(self):
         """
         Starts a continuous measurement loop of difference frames, for use with flickering lighting modes.
         Appends data to a buffer when the buffer has space. Buffer is held by the parent object, typically ArtieLab.
         :return:
         """
-        self.mutex.lock()
-        self.running = True
-        self.waiting = False
-        self.difference_mode = True
-        self.mutex.unlock()
-
         self.prepare_camera()
         logging.info("Camera started in live difference mode")
         self.diff_mode_acq_loop()
@@ -222,6 +231,7 @@ class CameraGrabber(QtCore.QObject):
             self.quit_ready.emit()
         if not self.waiting:
             self.camera_ready.emit()
+        logging.info("Camera finished.")
 
     def diff_mode_acq_loop(self):
         """
@@ -236,15 +246,12 @@ class CameraGrabber(QtCore.QObject):
                 frame_a = None
                 frame_b = None
                 while frame_a is None:
-                    if self.cam.get_status() != "busy":
+                    if not self.test_busy():
                         logging.error("Camera not busy")
                         self.parent.spaces_semaphore.release()
                         continue
                     frame_data = self.cam.read_newest_image(return_info=True)
                     if frame_data is not None:
-                        if self.cam.get_status() != "busy":
-                            logging.error("Camera not busy")
-                            continue
                         if frame_data[1].frame_index % 2 == 0:
                             frame_a = (frame_data[0], frame_data[1])
                     if not self.running:
@@ -253,7 +260,7 @@ class CameraGrabber(QtCore.QObject):
                         self.parent.item_semaphore.release()
                         return
                 while frame_b is None:
-                    if self.cam.get_status() != "busy":
+                    if not self.test_busy():
                         logging.error("Camera not busy")
                         self.parent.spaces_semaphore.release()
                         continue
