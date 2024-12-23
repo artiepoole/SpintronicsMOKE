@@ -21,7 +21,12 @@ Right screen (GUI controls)
 # Tools:
 - pybind11 and OpenMP were used to write a few image processing functions in c++.
 - PyLabLib was used for camera interfacing 
-- NIDAQmx was used for the rest since it's all connected to the provided NIDAQ card breakout box.
-
+- NIDAQmx was used for the other devices since they're all connected to the provided NIDAQ card breakout box.
+- OpenCV for image plotting
+- PyQtGraph for plot widgets
+- PyQt for other GUI
+- QtDesugner for UI layout
+- tifffile/Pandas for file handling
+  
 # Acknowledgements
 This was developed at University of Nottingham in collboration with the Spintronics Group, School of Physics and Astronomy.
